@@ -57,20 +57,14 @@ class RecurringMaterializerService {
 
   /// Calculate the next run date for a recurring rule based on its frequency.
   DateTime _calculateNextRun(RecurringRule rule, DateTime referenceDate) {
-    switch (rule.frequency) {
-      case RecurringFrequency.daily:
-        return referenceDate.add(const Duration(days: 1));
-      case RecurringFrequency.weekly:
-        return referenceDate.add(const Duration(days: 7));
-      case RecurringFrequency.biweekly:
-        return referenceDate.add(const Duration(days: 14));
-      case RecurringFrequency.monthly:
-        return _addMonths(referenceDate, 1);
-      case RecurringFrequency.quarterly:
-        return _addMonths(referenceDate, 3);
-      case RecurringFrequency.annually:
-        return _addMonths(referenceDate, 12);
-    }
+    return switch (rule.frequency) {
+      RecurringFrequency.daily => referenceDate.add(const Duration(days: 1)),
+      RecurringFrequency.weekly => referenceDate.add(const Duration(days: 7)),
+      RecurringFrequency.biweekly => referenceDate.add(const Duration(days: 14)),
+      RecurringFrequency.monthly => _addMonths(referenceDate, 1),
+      RecurringFrequency.quarterly => _addMonths(referenceDate, 3),
+      RecurringFrequency.annually => _addMonths(referenceDate, 12),
+    };
   }
 
   /// Check if two DateTime objects represent the same calendar day.
