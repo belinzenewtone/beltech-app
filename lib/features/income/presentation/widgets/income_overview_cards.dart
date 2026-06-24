@@ -4,6 +4,8 @@ import 'package:beltech/core/theme/app_typography.dart';
 import 'package:beltech/core/utils/currency_formatter.dart';
 import 'package:beltech/core/widgets/glass_card.dart';
 import 'package:beltech/features/income/domain/entities/income_overview.dart';
+import 'package:beltech/features/income/presentation/widgets/income_expense_ratio_card.dart';
+import 'package:beltech/features/income/presentation/widgets/savings_projection_card.dart';
 import 'package:flutter/material.dart';
 
 class IncomeOverviewCards extends StatelessWidget {
@@ -46,6 +48,16 @@ class IncomeOverviewCards extends StatelessWidget {
               : AppColors.danger,
           subtitle:
               'Income ${CurrencyFormatter.money(overview.currentMonthIncomeKes)} vs expenses ${CurrencyFormatter.money(overview.currentMonthExpenseKes)}',
+        ),
+        const SizedBox(height: AppSpacing.listGap),
+        IncomeExpenseRatioCard(
+          income: overview.currentMonthIncomeKes,
+          expenses: overview.currentMonthExpenseKes,
+        ),
+        const SizedBox(height: AppSpacing.listGap),
+        SavingsProjectionCard(
+          monthlyNetCashflow: overview.netCashflowKes,
+          months: 12,
         ),
       ],
     );
