@@ -1,5 +1,6 @@
 import 'package:beltech/core/di/repository_providers.dart';
 import 'package:beltech/features/expenses/data/services/mpesa_parser_models.dart';
+import 'package:beltech/features/expenses/data/services/sms_confidence_scorer.dart';
 import 'package:beltech/features/expenses/domain/repositories/expenses_repository.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
