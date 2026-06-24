@@ -81,6 +81,35 @@ class _ExpensesSnapshotContentState extends State<ExpensesSnapshotContent> {
         ? transactions
         : transactions.take(20).toList();
     final groupedTransactions = _groupTransactionsByDay(visibleTransactions);
+
+    // Month total — computed from all transactions (no domain change needed).
+    final now = DateTime.now();
+    final monthStart = DateTime(now.year, now.month, 1);
+    final monthTotal = widget.snapshot.transactions
+        .where((t) => !t.occurredAt.isBefore(monthStart))
+        .fold(0.0, (s, t) => s + t.amountKes);
+
+    // Week-over-week trend delta for the Week card.
+    final weekStart = DateTime(now.year, now.month, now.day)
+        .subtract(Duration(days: now.weekday - 1));
+    final prevWeekStart = weekStart.subtract(const Duration(days: 7));
+    final prevWeekTotal = widget.snapshot.transactions
+        .where(
+          (t) =>
+              !t.occurredAt.isBefore(prevWeekStart) &&
+              t.occurredAt.isBefore(weekStart),
+        )
+        .fold(0.0, (s, t) => s + t.amountKes);
+
+    String? weekDelta;
+    bool? weekDeltaIsGood;
+    if (prevWeekTotal > 0) {
+      final pct =
+          (widget.snapshot.weekKes - prevWeekTotal) / prevWeekTotal * 100;
+      weekDelta = '${pct >= 0 ? '+' : ''}${pct.round()}%';
+      weekDeltaIsGood = pct <= 0;
+    }
+
     return ListView(
       padding: const EdgeInsets.only(bottom: 20),
       children: [
@@ -94,13 +123,24 @@ class _ExpensesSnapshotContentState extends State<ExpensesSnapshotContent> {
                 accentColor: AppColors.accent,
               ),
             ),
-            const SizedBox(width: 10),
+            const SizedBox(width: 8),
             Expanded(
               child: _SummaryCard(
                 title: 'Week',
                 amount: CurrencyFormatter.money(widget.snapshot.weekKes),
                 tone: GlassCardTone.accent,
                 accentColor: AppColors.teal,
+                delta: weekDelta,
+                deltaIsGood: weekDeltaIsGood,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: _SummaryCard(
+                title: 'Month',
+                amount: CurrencyFormatter.money(monthTotal),
+                tone: GlassCardTone.accent,
+                accentColor: AppColors.warning,
               ),
             ),
           ],

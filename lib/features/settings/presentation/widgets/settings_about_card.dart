@@ -3,6 +3,7 @@ import 'package:beltech/core/theme/app_spacing.dart';
 import 'package:beltech/core/theme/app_typography.dart';
 import 'package:beltech/core/widgets/glass_card.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
 class SettingsAboutCard extends StatefulWidget {
@@ -34,6 +35,28 @@ class _SettingsAboutCardState extends State<SettingsAboutCard> {
   Widget build(BuildContext context) {
     return Column(
       children: [
+        GlassCard(
+          tone: GlassCardTone.muted,
+          onTap: () => context.pushNamed('changelog'),
+          child: Row(
+            children: [
+              const Icon(Icons.new_releases_outlined, color: AppColors.accent),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  "What's New",
+                  style: AppTypography.cardTitle(context),
+                ),
+              ),
+              const Icon(
+                Icons.chevron_right_rounded,
+                color: AppColors.textMuted,
+                size: 20,
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: AppSpacing.listGap),
         GlassCard(
           tone: GlassCardTone.muted,
           child: Row(

@@ -208,6 +208,15 @@ class ExpensesScreen extends ConsumerWidget {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     AppIconPillButton(
+                      icon: Icons.label_outline_rounded,
+                      label: 'Categorize',
+                      tone: AppIconPillTone.subtle,
+                      onPressed: writeBusy
+                          ? null
+                          : () => context.pushNamed('categorize'),
+                    ),
+                    const SizedBox(width: 8),
+                    AppIconPillButton(
                       icon: Icons.upload_file_rounded,
                       label: 'Export',
                       tone: AppIconPillTone.subtle,
