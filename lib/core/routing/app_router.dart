@@ -7,6 +7,7 @@ import 'package:beltech/features/insights/presentation/screens/insights_screen.d
 import 'package:beltech/features/income/presentation/income_screen.dart';
 import 'package:beltech/features/loans/presentation/screens/loans_screen.dart';
 import 'package:beltech/features/goals/presentation/screens/goals_screen.dart';
+import 'package:beltech/features/expenses/presentation/screens/categorize_screen.dart';
 import 'package:beltech/features/expenses/presentation/screens/fee_analytics_screen.dart';
 import 'package:beltech/features/expenses/presentation/screens/csv_import_screen.dart';
 import 'package:beltech/features/expenses/presentation/screens/import_health_screen.dart';
@@ -98,6 +99,11 @@ final appRouterProvider = Provider<GoRouter>(
         path: '/learning',
         name: 'learning',
         builder: (context, state) => const LearningScreen(),
+      ),
+      GoRoute(
+        path: '/categorize',
+        name: 'categorize',
+        builder: (context, state) => const CategorizeScreen(),
       ),
       GoRoute(
         path: '/merchant-detail',

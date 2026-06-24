@@ -166,16 +166,25 @@ class _SummaryCard extends StatelessWidget {
     required this.amount,
     this.tone = GlassCardTone.standard,
     this.accentColor,
+    this.delta,
+    this.deltaIsGood,
   });
 
   final String title;
   final String amount;
   final GlassCardTone tone;
   final Color? accentColor;
+  // Optional week-over-week delta string, e.g. '+12%' or '-5%'.
+  final String? delta;
+  // True means spending went down (green), false means up (red).
+  final bool? deltaIsGood;
 
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
+    final deltaColor = deltaIsGood == null
+        ? AppColors.textMuted
+        : (deltaIsGood! ? AppColors.success : AppColors.danger);
     return GlassCard(
       tone: tone,
       accentColor: accentColor,
@@ -184,7 +193,24 @@ class _SummaryCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(title, style: textTheme.bodyMedium),
+            Row(
+              children: [
+                Expanded(
+                  child: Text(title, style: textTheme.bodyMedium),
+                ),
+                if (delta != null)
+                  Text(
+                    delta!,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w700,
+                      color: deltaColor,
+                    ),
+                  ),
+              ],
+            ),
             const SizedBox(height: 6),
             Expanded(
               child: Align(
