@@ -5,7 +5,6 @@ import 'package:beltech/core/theme/app_typography.dart';
 import 'package:beltech/core/utils/currency_formatter.dart';
 import 'package:beltech/core/widgets/glass_card.dart';
 import 'package:beltech/core/widgets/secondary_page_shell.dart';
-import 'package:beltech/features/expenses/data/services/mpesa_parser_models.dart';
 import 'package:flutter/material.dart';
 
 class QuarantineQueueScreen extends StatefulWidget {
@@ -18,7 +17,7 @@ class QuarantineQueueScreen extends StatefulWidget {
 class _QuarantineQueueScreenState extends State<QuarantineQueueScreen> {
   late List<_QuarantineItem> _allItems;
   late List<_QuarantineItem> _filteredItems;
-  MpesaConfidence? _selectedConfidence;
+  _Confidence? _selectedConfidence;
   _SortOption _sortBy = _SortOption.dateNewest;
 
   @override
@@ -29,28 +28,28 @@ class _QuarantineQueueScreenState extends State<QuarantineQueueScreen> {
         title: 'M-Pesa Transfer',
         amount: 1500.0,
         date: DateTime.now().subtract(const Duration(days: 1)),
-        confidence: MpesaConfidence.medium,
+        confidence: _Confidence.medium,
         rawMessage: 'M-Pesa confirmed. You have received KES1,500.00...',
       ),
       _QuarantineItem(
         title: 'Paybill Payment',
         amount: 2000.0,
         date: DateTime.now().subtract(const Duration(days: 2)),
-        confidence: MpesaConfidence.low,
+        confidence: _Confidence.low,
         rawMessage: 'You have paid KES2,000.00 to Paybill 123456...',
       ),
       _QuarantineItem(
         title: 'Buy Goods',
         amount: 750.0,
         date: DateTime.now().subtract(const Duration(days: 3)),
-        confidence: MpesaConfidence.high,
+        confidence: _Confidence.high,
         rawMessage: 'You have paid KES750.00 to Merchant ABC...',
       ),
       _QuarantineItem(
         title: 'ATM Withdrawal',
         amount: 5000.0,
         date: DateTime.now().subtract(const Duration(days: 4)),
-        confidence: MpesaConfidence.medium,
+        confidence: _Confidence.medium,
         rawMessage: 'ATM withdrawal of KES5,000.00 successful...',
       ),
     ];
@@ -136,7 +135,7 @@ class _QuarantineQueueScreenState extends State<QuarantineQueueScreen> {
           _buildFilterChip(
             label: 'All Confidence',
             isSelected: _selectedConfidence == null,
-            onSelected: (_) {
+            onSelected: () {
               _selectedConfidence = null;
               _applyFiltersAndSort();
             },
@@ -144,27 +143,27 @@ class _QuarantineQueueScreenState extends State<QuarantineQueueScreen> {
           const SizedBox(width: AppSpacing.sm),
           _buildFilterChip(
             label: 'Low',
-            isSelected: _selectedConfidence == MpesaConfidence.low,
-            onSelected: (_) {
-              _selectedConfidence = MpesaConfidence.low;
+            isSelected: _selectedConfidence == _Confidence.low,
+            onSelected: () {
+              _selectedConfidence = _Confidence.low;
               _applyFiltersAndSort();
             },
           ),
           const SizedBox(width: AppSpacing.sm),
           _buildFilterChip(
             label: 'Medium',
-            isSelected: _selectedConfidence == MpesaConfidence.medium,
-            onSelected: (_) {
-              _selectedConfidence = MpesaConfidence.medium;
+            isSelected: _selectedConfidence == _Confidence.medium,
+            onSelected: () {
+              _selectedConfidence = _Confidence.medium;
               _applyFiltersAndSort();
             },
           ),
           const SizedBox(width: AppSpacing.sm),
           _buildFilterChip(
             label: 'High',
-            isSelected: _selectedConfidence == MpesaConfidence.high,
-            onSelected: (_) {
-              _selectedConfidence = MpesaConfidence.high;
+            isSelected: _selectedConfidence == _Confidence.high,
+            onSelected: () {
+              _selectedConfidence = _Confidence.high;
               _applyFiltersAndSort();
             },
           ),
@@ -212,7 +211,7 @@ class _QuarantineQueueScreenState extends State<QuarantineQueueScreen> {
     return FilterChip(
       label: Text(label),
       selected: isSelected,
-      onSelected: (_) => onSelected(),
+      onSelected: (selected) => onSelected(),
       selectedColor: AppColors.accent.withValues(alpha: 0.1),
       side: BorderSide(
         color: isSelected ? AppColors.accent : AppColors.border,
@@ -250,6 +249,8 @@ class _QuarantineQueueScreenState extends State<QuarantineQueueScreen> {
   }
 }
 
+enum _Confidence { high, medium, low }
+
 class _QuarantineItem {
   const _QuarantineItem({
     required this.title,
@@ -262,7 +263,7 @@ class _QuarantineItem {
   final String title;
   final double amount;
   final DateTime date;
-  final MpesaConfidence confidence;
+  final _Confidence confidence;
   final String rawMessage;
 }
 
@@ -361,9 +362,9 @@ class _QuarantineItemCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final confidenceColor = switch (item.confidence) {
-      MpesaConfidence.high => AppColors.success,
-      MpesaConfidence.medium => AppColors.warning,
-      MpesaConfidence.low => AppColors.danger,
+      _Confidence.high => AppColors.success,
+      _Confidence.medium => AppColors.warning,
+      _Confidence.low => AppColors.danger,
     };
 
     return GlassCard(
