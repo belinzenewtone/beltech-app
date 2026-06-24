@@ -18,11 +18,24 @@ void main() {
 
   group('RecurringMaterializerService', () {
     test('materializes due rules', () async {
+      final now = DateTime.now();
+      final dueRule = RecurringRule(
+        id: 'test_1',
+        name: 'Rent',
+        merchant: 'Landlord',
+        nextRunAt: now.subtract(const Duration(days: 1)),
+        isActive: true,
+        frequency: RecurringFrequency.monthly,
+        category: 'Housing',
+        estimatedAmount: 15000,
+      );
+
       when(() => mockRepository.getActiveRecurringRules())
-          .thenAnswer((_) async => []);
+          .thenAnswer((_) async => [dueRule]);
 
       final created = await service.materializeDueRecurring();
-      expect(created, isNotEmpty);
+      expect(created, hasLength(1));
+      expect(created.first.amount, equals(15000));
     });
 
     test('syncNow handles errors gracefully', () async {
