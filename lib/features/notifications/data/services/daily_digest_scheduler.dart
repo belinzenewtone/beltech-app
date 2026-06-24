@@ -78,7 +78,7 @@ class DailyDigestScheduler {
           merchant: item.title,
           description: item.title,
           occurredAt: item.occurredAt,
-          category: item.category ?? 'Other',
+          category: item.category,
         );
 
         if (txDay == today) {
