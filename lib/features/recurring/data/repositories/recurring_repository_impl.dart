@@ -179,6 +179,7 @@ class RecurringRepositoryImpl implements RecurringRepository {
             frequency: _frequencyFromCadence(_cadenceFrom('${row['cadence'] ?? ''}')),
             category: row['category'] as String?,
             estimatedAmount: row['amount'] == null ? null : _asDouble(row['amount']),
+            estimatedFee: null,
           ),
         )
         .toList();
