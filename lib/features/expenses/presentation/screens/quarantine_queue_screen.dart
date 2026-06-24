@@ -1,3 +1,4 @@
+import 'package:beltech/core/di/expenses_providers.dart';
 import 'package:beltech/core/theme/app_colors.dart';
 import 'package:beltech/core/theme/app_radius.dart';
 import 'package:beltech/core/theme/app_spacing.dart';
@@ -6,65 +7,30 @@ import 'package:beltech/core/utils/currency_formatter.dart';
 import 'package:beltech/core/widgets/glass_card.dart';
 import 'package:beltech/core/widgets/secondary_page_shell.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class QuarantineQueueScreen extends StatefulWidget {
+class QuarantineQueueScreen extends ConsumerStatefulWidget {
   const QuarantineQueueScreen({super.key});
 
   @override
-  State<QuarantineQueueScreen> createState() => _QuarantineQueueScreenState();
+  ConsumerState<QuarantineQueueScreen> createState() => _QuarantineQueueScreenState();
 }
 
-class _QuarantineQueueScreenState extends State<QuarantineQueueScreen> {
-  late List<_QuarantineItem> _allItems;
-  late List<_QuarantineItem> _filteredItems;
+class _QuarantineQueueScreenState extends ConsumerState<QuarantineQueueScreen> {
   _Confidence? _selectedConfidence;
   _SortOption _sortBy = _SortOption.dateNewest;
 
-  @override
-  void initState() {
-    super.initState();
-    _allItems = [
-      _QuarantineItem(
-        title: 'M-Pesa Transfer',
-        amount: 1500.0,
-        date: DateTime.now().subtract(const Duration(days: 1)),
-        confidence: _Confidence.medium,
-        rawMessage: 'M-Pesa confirmed. You have received KES1,500.00...',
-      ),
-      _QuarantineItem(
-        title: 'Paybill Payment',
-        amount: 2000.0,
-        date: DateTime.now().subtract(const Duration(days: 2)),
-        confidence: _Confidence.low,
-        rawMessage: 'You have paid KES2,000.00 to Paybill 123456...',
-      ),
-      _QuarantineItem(
-        title: 'Buy Goods',
-        amount: 750.0,
-        date: DateTime.now().subtract(const Duration(days: 3)),
-        confidence: _Confidence.high,
-        rawMessage: 'You have paid KES750.00 to Merchant ABC...',
-      ),
-      _QuarantineItem(
-        title: 'ATM Withdrawal',
-        amount: 5000.0,
-        date: DateTime.now().subtract(const Duration(days: 4)),
-        confidence: _Confidence.medium,
-        rawMessage: 'ATM withdrawal of KES5,000.00 successful...',
-      ),
-    ];
-    _applyFiltersAndSort();
-  }
-
-  void _applyFiltersAndSort() {
-    _filteredItems = _allItems.where((item) {
+  List<_PresentationQuarantineItem> _getFilteredAndSortedItems(
+    List<_PresentationQuarantineItem> items,
+  ) {
+    final filtered = items.where((item) {
       if (_selectedConfidence != null && item.confidence != _selectedConfidence) {
         return false;
       }
       return true;
     }).toList();
 
-    _filteredItems.sort((a, b) {
+    filtered.sort((a, b) {
       return switch (_sortBy) {
         _SortOption.dateNewest => b.date.compareTo(a.date),
         _SortOption.dateOldest => a.date.compareTo(b.date),
@@ -74,11 +40,13 @@ class _QuarantineQueueScreenState extends State<QuarantineQueueScreen> {
       };
     });
 
-    setState(() {});
+    return filtered;
   }
 
   @override
   Widget build(BuildContext context) {
+    final quarantineState = ref.watch(quarantineQueueNotifierProvider);
+    final notifier = ref.read(quarantineQueueNotifierProvider.notifier);
     return SecondaryPageShell(
       title: 'Review Queue',
       child: Column(
@@ -105,25 +73,106 @@ class _QuarantineQueueScreenState extends State<QuarantineQueueScreen> {
           _buildFilterAndSortBar(context),
           const SizedBox(height: AppSpacing.md),
           Expanded(
-            child: _filteredItems.isEmpty
-                ? _buildEmptyState(context)
-                : ListView.separated(
-                    itemCount: _filteredItems.length,
-                    separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.listGap),
-                    itemBuilder: (_, index) {
-                      final item = _filteredItems[index];
-                      return _AnimatedQuarantineItemCard(
-                        key: ValueKey(item.title),
-                        item: item,
-                        onApprove: () {},
-                        onReject: () {},
-                        onEdit: () {},
+            child: quarantineState.when(
+              loading: () => const Center(
+                child: CircularProgressIndicator(),
+              ),
+              error: (error, stackTrace) => Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.error_outline,
+                      size: 48,
+                      color: AppColors.danger,
+                    ),
+                    const SizedBox(height: AppSpacing.md),
+                    Text(
+                      'Failed to load transactions',
+                      style: AppTypography.cardTitle(context)
+                          .copyWith(color: AppColors.textSecondary),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      error.toString(),
+                      style: AppTypography.bodySm(context)
+                          .copyWith(color: AppColors.textSecondary),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ),
+              ),
+              data: (items) {
+                final presentationItems = items.map(_toPresentationItem).toList();
+                final filteredItems = _getFilteredAndSortedItems(presentationItems);
+
+                return filteredItems.isEmpty
+                    ? _buildEmptyState(context)
+                    : ListView.separated(
+                        itemCount: filteredItems.length,
+                        separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.listGap),
+                        itemBuilder: (_, index) {
+                          final item = filteredItems[index];
+                          return _AnimatedQuarantineItemCard(
+                            key: ValueKey(item.id),
+                            item: item,
+                            onApprove: () => _handleApprove(item, notifier),
+                            onReject: () => _handleReject(item, notifier),
+                            onEdit: () => _handleEdit(item, notifier),
+                          );
+                        },
                       );
-                    },
-                  ),
+              },
+            ),
           ),
         ],
       ),
+    );
+  }
+
+  _PresentationQuarantineItem _toPresentationItem(QuarantineItem item) {
+    final confidence = switch (item.analysis.overallScore) {
+      >= 0.8 => _Confidence.high,
+      >= 0.5 => _Confidence.medium,
+      _ => _Confidence.low,
+    };
+
+    return _PresentationQuarantineItem(
+      id: item.id,
+      title: item.candidate.title,
+      amount: item.candidate.amountKes,
+      date: item.candidate.occurredAt,
+      confidence: confidence,
+      rawMessage: item.candidate.rawMessage,
+      domainItem: item,
+    );
+  }
+
+  Future<void> _handleApprove(
+    _PresentationQuarantineItem item,
+    QuarantineQueueNotifier notifier,
+  ) async {
+    await notifier.approve(item.domainItem);
+  }
+
+  Future<void> _handleReject(
+    _PresentationQuarantineItem item,
+    QuarantineQueueNotifier notifier,
+  ) async {
+    await notifier.reject(item.domainItem);
+  }
+
+  Future<void> _handleEdit(
+    _PresentationQuarantineItem item,
+    QuarantineQueueNotifier notifier,
+  ) async {
+    // TODO: Implement edit dialog/sheet
+    // For now, just call approve with original values
+    await notifier.approveWithEdits(
+      item.domainItem,
+      item.title,
+      item.amount,
+      item.domainItem.candidate.category,
     );
   }
 
@@ -251,20 +300,24 @@ class _QuarantineQueueScreenState extends State<QuarantineQueueScreen> {
 
 enum _Confidence { high, medium, low }
 
-class _QuarantineItem {
-  const _QuarantineItem({
+class _PresentationQuarantineItem {
+  const _PresentationQuarantineItem({
+    required this.id,
     required this.title,
     required this.amount,
     required this.date,
     required this.confidence,
     required this.rawMessage,
+    required this.domainItem,
   });
 
+  final String id;
   final String title;
   final double amount;
   final DateTime date;
   final _Confidence confidence;
   final String rawMessage;
+  final QuarantineItem domainItem;
 }
 
 enum _SortOption {
@@ -287,7 +340,7 @@ class _AnimatedQuarantineItemCard extends StatefulWidget {
     required this.onEdit,
   });
 
-  final _QuarantineItem item;
+  final _PresentationQuarantineItem item;
   final VoidCallback onApprove;
   final VoidCallback onReject;
   final VoidCallback onEdit;
@@ -354,7 +407,7 @@ class _QuarantineItemCard extends StatelessWidget {
     required this.onEdit,
   });
 
-  final _QuarantineItem item;
+  final _PresentationQuarantineItem item;
   final VoidCallback onApprove;
   final VoidCallback onReject;
   final VoidCallback onEdit;
