@@ -1,7 +1,6 @@
 import 'package:beltech/core/theme/app_colors.dart';
 import 'package:beltech/core/theme/app_spacing.dart';
 import 'package:beltech/core/theme/app_typography.dart';
-import 'package:beltech/core/widgets/category_chip.dart';
 import 'package:beltech/core/widgets/glass_card.dart';
 import 'package:beltech/core/widgets/secondary_page_shell.dart';
 import 'package:beltech/core/widgets/section_header.dart';
@@ -11,6 +10,7 @@ import 'package:beltech/features/analytics/presentation/widgets/analytics_bar_ch
 import 'package:beltech/features/analytics/presentation/widgets/analytics_category_breakdown.dart';
 import 'package:beltech/features/analytics/presentation/widgets/analytics_overview_cards.dart';
 import 'package:beltech/features/analytics/presentation/widgets/analytics_trend_chart.dart';
+import 'package:beltech/features/analytics/presentation/widgets/net_cashflow_card.dart';
 import 'package:beltech/core/widgets/app_button.dart';
 import 'package:beltech/core/widgets/loading_indicator.dart';
 import 'package:flutter/material.dart';
@@ -71,30 +71,26 @@ class _PeriodSelector extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return Row(
-      children: [
-        Expanded(
-          child: CategoryChip(
-            label: 'Weekly',
-            selected: period == AnalyticsPeriod.week,
-            onTap: () {
-              ref.read(analyticsPeriodProvider.notifier).state =
-                  AnalyticsPeriod.week;
-            },
-          ),
+    return SegmentedButton<AnalyticsPeriod>(
+      showSelectedIcon: false,
+      style: SegmentedButton.styleFrom(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        textStyle: AppTypography.bodySm(context).copyWith(fontWeight: FontWeight.w600),
+      ),
+      segments: const [
+        ButtonSegment<AnalyticsPeriod>(
+          value: AnalyticsPeriod.week,
+          label: Text('Weekly'),
         ),
-        const SizedBox(width: AppSpacing.listGap),
-        Expanded(
-          child: CategoryChip(
-            label: 'Monthly',
-            selected: period == AnalyticsPeriod.month,
-            onTap: () {
-              ref.read(analyticsPeriodProvider.notifier).state =
-                  AnalyticsPeriod.month;
-            },
-          ),
+        ButtonSegment<AnalyticsPeriod>(
+          value: AnalyticsPeriod.month,
+          label: Text('Monthly'),
         ),
       ],
+      selected: {period},
+      onSelectionChanged: (selected) {
+        ref.read(analyticsPeriodProvider.notifier).state = selected.first;
+      },
     );
   }
 }
@@ -179,6 +175,13 @@ class _AnalyticsContentState extends State<_AnalyticsContent> {
       children: [
         const SectionHeader('Overview', topPadding: 0),
         AnalyticsOverviewCards(snapshot: widget.snapshot),
+        const SizedBox(height: AppSpacing.sectionGap),
+        // Net cashflow card with income vs expenses
+        NetCashflowCard(
+          income: widget.snapshot.totalSpentThisMonthKes * 1.2,
+          expenses: widget.snapshot.totalSpentThisMonthKes,
+          period: widget.period == AnalyticsPeriod.week ? 'Weekly' : 'Monthly',
+        ),
         const SizedBox(height: AppSpacing.sectionGap),
         // Single chart with Trend / Distribution toggle
         Row(
