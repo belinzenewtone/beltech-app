@@ -246,6 +246,29 @@ class ExpensesRepositoryImpl implements ExpensesRepository {
       _dismissQuarantineItemImpl(this, quarantineId);
 
   @override
+  Future<void> approveQuarantineItem(int quarantineId) =>
+      _approveQuarantineItemImpl(this, quarantineId);
+
+  @override
+  Future<void> rejectQuarantineItem(int quarantineId) =>
+      _rejectQuarantineItemImpl(this, quarantineId);
+
+  @override
+  Future<void> updateAndApproveQuarantineItem({
+    required int quarantineId,
+    required String title,
+    required double amountKes,
+    String? category,
+  }) =>
+      _updateAndApproveQuarantineItemImpl(
+        this,
+        quarantineId: quarantineId,
+        title: title,
+        amountKes: amountKes,
+        category: category,
+      );
+
+  @override
   Future<int> replayImportQueue() => _replayImportQueueImpl(this);
 
   @override

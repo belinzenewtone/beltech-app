@@ -47,6 +47,17 @@ abstract class ExpensesRepository {
 
   Future<void> dismissQuarantineItem(int quarantineId);
 
+  Future<void> approveQuarantineItem(int quarantineId);
+
+  Future<void> rejectQuarantineItem(int quarantineId);
+
+  Future<void> updateAndApproveQuarantineItem({
+    required int quarantineId,
+    required String title,
+    required double amountKes,
+    String? category,
+  });
+
   Future<MerchantDetail> fetchMerchantDetail(String merchantTitle);
 
   Future<FeeAnalytics> fetchFeeAnalytics();

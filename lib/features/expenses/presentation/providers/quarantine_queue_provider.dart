@@ -52,8 +52,9 @@ class QuarantineQueueNotifier extends StateNotifier<AsyncValue<List<QuarantineIt
   /// Approve a quarantined transaction and move it to confirmed expenses.
   Future<void> approve(QuarantineItem item) async {
     try {
-      // TODO: Call repository.confirmQuarantineItem(item)
-      // Remove from queue
+      await _repository.approveQuarantineItem(
+        int.tryParse(item.candidate.mpesaCode) ?? 0,
+      );
       final currentItems = state.maybeWhen(
         data: (items) => items,
         orElse: () => <QuarantineItem>[],
@@ -68,8 +69,9 @@ class QuarantineQueueNotifier extends StateNotifier<AsyncValue<List<QuarantineIt
   /// Reject a quarantined transaction (mark as spam/false positive).
   Future<void> reject(QuarantineItem item) async {
     try {
-      // TODO: Call repository.rejectQuarantineItem(item)
-      // Remove from queue
+      await _repository.rejectQuarantineItem(
+        int.tryParse(item.candidate.mpesaCode) ?? 0,
+      );
       final currentItems = state.maybeWhen(
         data: (items) => items,
         orElse: () => <QuarantineItem>[],
@@ -84,11 +86,17 @@ class QuarantineQueueNotifier extends StateNotifier<AsyncValue<List<QuarantineIt
   /// Edit and approve a quarantined transaction.
   Future<void> approveWithEdits(
     QuarantineItem item,
-    ParsedMpesaCandidate edited,
+    String title,
+    double amount,
+    String? category,
   ) async {
     try {
-      // TODO: Call repository.updateAndConfirmQuarantineItem(item, edited)
-      // Remove from queue
+      await _repository.updateAndApproveQuarantineItem(
+        quarantineId: int.tryParse(item.candidate.mpesaCode) ?? 0,
+        title: title,
+        amountKes: amount,
+        category: category,
+      );
       final currentItems = state.maybeWhen(
         data: (items) => items,
         orElse: () => <QuarantineItem>[],

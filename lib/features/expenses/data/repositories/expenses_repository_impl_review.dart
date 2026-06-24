@@ -175,6 +175,146 @@ Future<void> _dismissQuarantineItemImpl(
   repo._store.emitChange();
 }
 
+Future<void> _approveQuarantineItemImpl(
+  ExpensesRepositoryImpl repo,
+  int quarantineId,
+) async {
+  await repo._store.ensureInitialized();
+  final rows = await repo._store.executor.runSelect(
+    'SELECT source_hash, semantic_hash, title, category, amount, occurred_at, confidence '
+    'FROM sms_quarantine WHERE id = ? AND status = ? LIMIT 1',
+    [quarantineId, 'pending'],
+  );
+  if (rows.isEmpty) {
+    return;
+  }
+  final row = rows.first;
+  final occurredAt = DateTime.fromMillisecondsSinceEpoch(
+    repo._asInt(row['occurred_at']),
+  );
+  final title = '${row['title'] ?? 'MPESA Transaction'}';
+  final category = '${row['category'] ?? 'Other'}';
+
+  // Add transaction
+  await repo._store.addTransaction(
+    title: title,
+    category: category,
+    amountKes: repo._asDouble(row['amount']),
+    occurredAt: occurredAt,
+    source: 'quarantine_approved',
+    sourceHash: '${row['source_hash'] ?? ''}',
+  );
+
+  // Update quarantine status
+  await repo._store.executor.runUpdate(
+    'UPDATE sms_quarantine SET status = ? WHERE id = ?',
+    ['approved', quarantineId],
+  );
+
+  // Log audit
+  await _logAuditImpl(
+    repo,
+    sourceHash: '${row['source_hash'] ?? ''}',
+    semanticHash: '${row['semantic_hash'] ?? ''}',
+    route: MpesaParseRoute.quarantine.name,
+    confidence: repo._asDouble(row['confidence']),
+    decision: 'quarantine_approved',
+    status: 'done',
+    payload: _auditPayloadForAction(origin: 'quarantine'),
+  );
+
+  repo._store.emitChange();
+}
+
+Future<void> _rejectQuarantineItemImpl(
+  ExpensesRepositoryImpl repo,
+  int quarantineId,
+) async {
+  await repo._store.ensureInitialized();
+  final rows = await repo._store.executor.runSelect(
+    'SELECT source_hash, semantic_hash, confidence '
+    'FROM sms_quarantine WHERE id = ? AND status = ? LIMIT 1',
+    [quarantineId, 'pending'],
+  );
+  if (rows.isEmpty) {
+    return;
+  }
+  final row = rows.first;
+
+  // Update quarantine status to rejected
+  await repo._store.executor.runUpdate(
+    'UPDATE sms_quarantine SET status = ? WHERE id = ?',
+    ['rejected', quarantineId],
+  );
+
+  // Log audit
+  await _logAuditImpl(
+    repo,
+    sourceHash: '${row['source_hash'] ?? ''}',
+    semanticHash: '${row['semantic_hash'] ?? ''}',
+    route: MpesaParseRoute.quarantine.name,
+    confidence: repo._asDouble(row['confidence']),
+    decision: 'quarantine_rejected',
+    status: 'done',
+    payload: _auditPayloadForAction(origin: 'quarantine'),
+  );
+
+  repo._store.emitChange();
+}
+
+Future<void> _updateAndApproveQuarantineItemImpl(
+  ExpensesRepositoryImpl repo, {
+  required int quarantineId,
+  required String title,
+  required double amountKes,
+  String? category,
+}) async {
+  await repo._store.ensureInitialized();
+  final rows = await repo._store.executor.runSelect(
+    'SELECT source_hash, semantic_hash, occurred_at, confidence '
+    'FROM sms_quarantine WHERE id = ? AND status = ? LIMIT 1',
+    [quarantineId, 'pending'],
+  );
+  if (rows.isEmpty) {
+    return;
+  }
+  final row = rows.first;
+  final occurredAt = DateTime.fromMillisecondsSinceEpoch(
+    repo._asInt(row['occurred_at']),
+  );
+  final finalCategory = category ?? 'Other';
+
+  // Add transaction with edited values
+  await repo._store.addTransaction(
+    title: title,
+    category: finalCategory,
+    amountKes: amountKes,
+    occurredAt: occurredAt,
+    source: 'quarantine_edited_approved',
+    sourceHash: '${row['source_hash'] ?? ''}',
+  );
+
+  // Update quarantine status
+  await repo._store.executor.runUpdate(
+    'UPDATE sms_quarantine SET status = ? WHERE id = ?',
+    ['approved_with_edits', quarantineId],
+  );
+
+  // Log audit
+  await _logAuditImpl(
+    repo,
+    sourceHash: '${row['source_hash'] ?? ''}',
+    semanticHash: '${row['semantic_hash'] ?? ''}',
+    route: MpesaParseRoute.quarantine.name,
+    confidence: repo._asDouble(row['confidence']),
+    decision: 'quarantine_approved_edited',
+    status: 'done',
+    payload: _auditPayloadForAction(origin: 'quarantine'),
+  );
+
+  repo._store.emitChange();
+}
+
 Future<bool> _isDuplicateImpl(
   ExpensesRepositoryImpl repo,
   ParsedMpesaCandidate candidate,
