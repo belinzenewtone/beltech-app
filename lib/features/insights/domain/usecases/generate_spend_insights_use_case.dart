@@ -4,7 +4,6 @@
 /// current spending patterns, budget adherence, recurring transactions,
 /// and historical trends.
 
-import 'package:riverpod/riverpod.dart';
 import 'package:beltech/features/expenses/domain/entities/expense.dart';
 import 'package:beltech/features/budget/domain/entities/budget.dart';
 import 'package:beltech/features/recurring/domain/entities/recurring_rule.dart';
