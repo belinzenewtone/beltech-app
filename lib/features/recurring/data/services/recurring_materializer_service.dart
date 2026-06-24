@@ -34,9 +34,7 @@ class RecurringMaterializerService {
         // Create expense from recurring rule
         final expense = _createExpenseFromRule(rule);
         created.add(expense);
-
-        // Update rule's next run date
-        final nextRun = _calculateNextRun(rule, now);
+        // TODO: Update rule's next run date in repository
       }
     }
 

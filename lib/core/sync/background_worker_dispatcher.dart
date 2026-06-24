@@ -88,7 +88,6 @@ class BackgroundWorkerRuntime {
       final learningReminder = LearningReminderService(learning, notifications);
       final digestScheduler = DailyDigestScheduler(
         expensesRepository: expenses,
-        incomeRepository: income,
         notificationService: notifications,
       );
       final flagStore = FeatureFlagStore();

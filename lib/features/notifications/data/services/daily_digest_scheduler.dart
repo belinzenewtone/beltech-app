@@ -1,25 +1,20 @@
 import 'package:beltech/core/notifications/local_notification_service.dart';
 import 'package:beltech/features/expenses/domain/entities/expense.dart';
 import 'package:beltech/features/expenses/domain/repositories/expenses_repository.dart';
-import 'package:beltech/features/income/domain/repositories/income_repository.dart';
 import 'package:beltech/features/insights/domain/usecases/generate_spend_insights_use_case.dart';
 import 'package:beltech/features/notifications/data/services/daily_digest_worker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// Scheduler for daily digest notifications.
-/// Runs once per day at a configured time to aggregate spending summary.
+/// Runs once per day to aggregate spending summary.
 class DailyDigestScheduler {
-  DailyDigestScheduler({
+  const DailyDigestScheduler({
     required this.expensesRepository,
-    required this.incomeRepository,
     required this.notificationService,
-    this.scheduleTimeHour = 20, // 8 PM by default
   });
 
   final ExpensesRepository expensesRepository;
-  final IncomeRepository incomeRepository;
   final LocalNotificationService notificationService;
-  final int scheduleTimeHour;
 
   /// Check if digest should run today and generate/send if needed.
   Future<void> checkAndScheduleDaily() async {
