@@ -9,6 +9,16 @@ class RecurringMaterializerService {
 
   final RecurringRepository _recurringRepository;
 
+  /// Sync entry point called by background worker.
+  /// Materializes due recurring expenses.
+  Future<void> syncNow() async {
+    try {
+      await materializeDueRecurring();
+    } catch (e) {
+      // Log but don't throw - background worker should continue
+    }
+  }
+
   /// Materialize all due recurring rules into expenses.
   /// Returns the list of expenses created.
   Future<List<Expense>> materializeDueRecurring() async {
