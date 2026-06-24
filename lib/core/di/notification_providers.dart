@@ -4,7 +4,6 @@ import 'package:beltech/core/di/repository_providers.dart';
 import 'package:beltech/core/di/feature_flag_providers.dart';
 import 'package:beltech/core/notifications/local_notification_service.dart';
 import 'package:beltech/core/notifications/notification_insights_service.dart';
-import 'package:beltech/features/insights/domain/usecases/generate_spend_insights_use_case.dart';
 import 'package:beltech/features/notifications/data/services/daily_digest_worker.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -116,5 +115,5 @@ final notificationPreferenceControllerProvider =
 );
 
 final dailyDigestWorkerProvider = Provider((ref) {
-  return const DailyDigestWorker(GenerateSpendInsightsUseCase());
+  return const DailyDigestWorker();
 });

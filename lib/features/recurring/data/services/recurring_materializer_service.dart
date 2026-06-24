@@ -70,31 +70,8 @@ class RecurringMaterializerService {
     );
   }
 
-  /// Calculate the next run date for a recurring rule based on its frequency.
-  DateTime _calculateNextRun(RecurringRule rule, DateTime referenceDate) {
-    return switch (rule.frequency) {
-      RecurringFrequency.daily => referenceDate.add(const Duration(days: 1)),
-      RecurringFrequency.weekly => referenceDate.add(const Duration(days: 7)),
-      RecurringFrequency.biweekly => referenceDate.add(const Duration(days: 14)),
-      RecurringFrequency.monthly => _addMonths(referenceDate, 1),
-      RecurringFrequency.quarterly => _addMonths(referenceDate, 3),
-      RecurringFrequency.annually => _addMonths(referenceDate, 12),
-    };
-  }
-
   /// Check if two DateTime objects represent the same calendar day.
   bool _isSameDay(DateTime a, DateTime b) {
     return a.year == b.year && a.month == b.month && a.day == b.day;
-  }
-
-  /// Add months to a DateTime while handling month boundaries.
-  DateTime _addMonths(DateTime date, int months) {
-    var month = date.month + months;
-    var year = date.year;
-    while (month > 12) {
-      month -= 12;
-      year += 1;
-    }
-    return DateTime(year, month, date.day);
   }
 }

@@ -1,4 +1,3 @@
-import 'package:beltech/features/expenses/domain/entities/expense.dart';
 import 'package:beltech/features/recurring/data/services/recurring_materializer_service.dart';
 import 'package:beltech/features/recurring/domain/entities/recurring_rule.dart' show RecurringRule, RecurringFrequency;
 import 'package:beltech/features/recurring/domain/repositories/recurring_repository.dart';

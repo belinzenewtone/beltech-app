@@ -1,11 +1,8 @@
 import 'package:beltech/features/expenses/domain/entities/expense.dart';
-import 'package:beltech/features/insights/domain/usecases/generate_spend_insights_use_case.dart';
 
 /// Daily digest aggregator that compiles spending summaries and sends notifications.
 class DailyDigestWorker {
-  const DailyDigestWorker(this._spendInsightsUseCase);
-
-  final GenerateSpendInsightsUseCase _spendInsightsUseCase;
+  const DailyDigestWorker();
 
   /// Generate a daily digest containing top insights, merchants, and trends.
   Future<DailyDigest> generateDailyDigest({
