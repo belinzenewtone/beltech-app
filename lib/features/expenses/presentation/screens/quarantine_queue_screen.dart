@@ -19,6 +19,8 @@ class QuarantineQueueScreen extends ConsumerStatefulWidget {
 class _QuarantineQueueScreenState extends ConsumerState<QuarantineQueueScreen> {
   _Confidence? _selectedConfidence;
   _SortOption _sortBy = _SortOption.dateNewest;
+  Set<String> _selectedIds = {};
+  bool _isSelectionMode = false;
 
   List<_PresentationQuarantineItem> _getFilteredAndSortedItems(
     List<_PresentationQuarantineItem> items,
@@ -108,19 +110,49 @@ class _QuarantineQueueScreenState extends ConsumerState<QuarantineQueueScreen> {
 
                 return filteredItems.isEmpty
                     ? _buildEmptyState(context)
-                    : ListView.separated(
-                        itemCount: filteredItems.length,
-                        separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.listGap),
-                        itemBuilder: (_, index) {
-                          final item = filteredItems[index];
-                          return _AnimatedQuarantineItemCard(
-                            key: ValueKey(item.id),
-                            item: item,
-                            onApprove: () => _handleApprove(item, notifier),
-                            onReject: () => _handleReject(item, notifier),
-                            onEdit: () => _handleEdit(item, notifier),
-                          );
-                        },
+                    : Stack(
+                        children: [
+                          ListView.separated(
+                            itemCount: filteredItems.length,
+                            separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.listGap),
+                            itemBuilder: (_, index) {
+                              final item = filteredItems[index];
+                              final isSelected = _selectedIds.contains(item.id);
+                              return _AnimatedQuarantineItemCard(
+                                key: ValueKey(item.id),
+                                item: item,
+                                isSelected: isSelected,
+                                onSelect: (selected) {
+                                  setState(() {
+                                    if (selected) {
+                                      _selectedIds.add(item.id);
+                                      _isSelectionMode = true;
+                                    } else {
+                                      _selectedIds.remove(item.id);
+                                      if (_selectedIds.isEmpty) {
+                                        _isSelectionMode = false;
+                                      }
+                                    }
+                                  });
+                                },
+                                onApprove: () => _handleApprove(item, notifier),
+                                onReject: () => _handleReject(item, notifier),
+                                onEdit: () => _handleEdit(item, notifier),
+                              );
+                            },
+                          ),
+                          if (_isSelectionMode)
+                            Positioned(
+                              bottom: 0,
+                              left: 0,
+                              right: 0,
+                              child: _buildBulkActionBar(
+                                context,
+                                filteredItems,
+                                notifier,
+                              ),
+                            ),
+                        ],
                       );
               },
             ),
@@ -173,6 +205,126 @@ class _QuarantineQueueScreenState extends ConsumerState<QuarantineQueueScreen> {
       item.title,
       item.amount,
       item.domainItem.candidate.category,
+    );
+  }
+
+  Future<void> _handleBulkApprove(
+    List<_PresentationQuarantineItem> allItems,
+    QuarantineQueueNotifier notifier,
+  ) async {
+    final itemsToApprove = allItems.where((item) => _selectedIds.contains(item.id)).toList();
+    for (final item in itemsToApprove) {
+      await notifier.approve(item.domainItem);
+    }
+    setState(() {
+      _selectedIds.clear();
+      _isSelectionMode = false;
+    });
+  }
+
+  Future<void> _handleBulkReject(
+    List<_PresentationQuarantineItem> allItems,
+    QuarantineQueueNotifier notifier,
+  ) async {
+    final itemsToReject = allItems.where((item) => _selectedIds.contains(item.id)).toList();
+    for (final item in itemsToReject) {
+      await notifier.reject(item.domainItem);
+    }
+    setState(() {
+      _selectedIds.clear();
+      _isSelectionMode = false;
+    });
+  }
+
+  void _toggleSelectAll(List<_PresentationQuarantineItem> items) {
+    setState(() {
+      if (_selectedIds.length == items.length) {
+        _selectedIds.clear();
+        _isSelectionMode = false;
+      } else {
+        _selectedIds = items.map((item) => item.id).toSet();
+        _isSelectionMode = true;
+      }
+    });
+  }
+
+  Widget _buildBulkActionBar(
+    BuildContext context,
+    List<_PresentationQuarantineItem> allItems,
+    QuarantineQueueNotifier notifier,
+  ) {
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        border: Border(
+          top: BorderSide(color: AppColors.border, width: 1),
+        ),
+      ),
+      padding: const EdgeInsets.all(AppSpacing.md),
+      child: Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                '${_selectedIds.length} selected',
+                style: AppTypography.bodySm(context),
+              ),
+              Row(
+                children: [
+                  TextButton(
+                    onPressed: () => _toggleSelectAll(allItems),
+                    child: Text(
+                      _selectedIds.length == allItems.length
+                          ? 'Deselect All'
+                          : 'Select All',
+                      style: TextStyle(color: AppColors.accent),
+                    ),
+                  ),
+                  TextButton(
+                    onPressed: () {
+                      setState(() {
+                        _selectedIds.clear();
+                        _isSelectionMode = false;
+                      });
+                    },
+                    child: const Text('Cancel'),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.md),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: () => _handleBulkReject(allItems, notifier),
+                  style: OutlinedButton.styleFrom(
+                    side: BorderSide(
+                      color: AppColors.danger.withValues(alpha: 0.3),
+                    ),
+                  ),
+                  child: Text(
+                    'Reject All',
+                    style: TextStyle(color: AppColors.danger),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: FilledButton(
+                  onPressed: () => _handleBulkApprove(allItems, notifier),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: AppColors.success,
+                  ),
+                  child: const Text('Approve All'),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 
@@ -340,12 +492,16 @@ class _AnimatedQuarantineItemCard extends StatefulWidget {
   const _AnimatedQuarantineItemCard({
     super.key,
     required this.item,
+    required this.isSelected,
+    required this.onSelect,
     required this.onApprove,
     required this.onReject,
     required this.onEdit,
   });
 
   final _PresentationQuarantineItem item;
+  final bool isSelected;
+  final ValueChanged<bool> onSelect;
   final VoidCallback onApprove;
   final VoidCallback onReject;
   final VoidCallback onEdit;
@@ -395,6 +551,8 @@ class _AnimatedQuarantineItemCardState extends State<_AnimatedQuarantineItemCard
         position: _slideAnimation,
         child: _QuarantineItemCard(
           item: widget.item,
+          isSelected: widget.isSelected,
+          onSelect: widget.onSelect,
           onApprove: widget.onApprove,
           onReject: widget.onReject,
           onEdit: widget.onEdit,
@@ -407,12 +565,16 @@ class _AnimatedQuarantineItemCardState extends State<_AnimatedQuarantineItemCard
 class _QuarantineItemCard extends StatelessWidget {
   const _QuarantineItemCard({
     required this.item,
+    required this.isSelected,
+    required this.onSelect,
     required this.onApprove,
     required this.onReject,
     required this.onEdit,
   });
 
   final _PresentationQuarantineItem item;
+  final bool isSelected;
+  final ValueChanged<bool> onSelect;
   final VoidCallback onApprove;
   final VoidCallback onReject;
   final VoidCallback onEdit;
@@ -432,6 +594,10 @@ class _QuarantineItemCard extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
+              Checkbox(
+                value: isSelected,
+                onChanged: (value) => onSelect(value ?? false),
+              ),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
