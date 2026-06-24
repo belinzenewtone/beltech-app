@@ -1,7 +1,10 @@
 import 'package:beltech/core/notifications/local_notification_service.dart';
+import 'package:beltech/features/expenses/domain/entities/expense.dart';
 import 'package:beltech/features/expenses/domain/repositories/expenses_repository.dart';
 import 'package:beltech/features/income/domain/repositories/income_repository.dart';
+import 'package:beltech/features/insights/domain/usecases/generate_spend_insights_use_case.dart';
 import 'package:beltech/features/notifications/data/services/daily_digest_worker.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 /// Scheduler for daily digest notifications.
 /// Runs once per day at a configured time to aggregate spending summary.
@@ -62,10 +65,10 @@ class DailyDigestScheduler {
       final yesterday = today.subtract(const Duration(days: 1));
       final weekAgo = today.subtract(const Duration(days: 7));
 
-      // Filter transactions by date (convert ExpenseItem to Expense-like structure)
-      final todaysExpenses = <ExpenseData>[];
-      final yesterdaysExpenses = <ExpenseData>[];
-      final thisWeekExpenses = <ExpenseData>[];
+      // Filter transactions by date and convert to Expense domain entities
+      final todaysExpenses = <Expense>[];
+      final yesterdaysExpenses = <Expense>[];
+      final thisWeekExpenses = <Expense>[];
 
       for (final item in snapshot.transactions) {
         final txDay = DateTime(
@@ -74,11 +77,13 @@ class DailyDigestScheduler {
           item.occurredAt.day,
         );
 
-        final expense = ExpenseData(
+        final expense = Expense(
+          id: 'digest_${item.id}_${today.millisecondsSinceEpoch}',
           amount: item.amountKes,
           merchant: item.title,
+          description: item.title,
+          occurredAt: item.occurredAt,
           category: item.category ?? 'Other',
-          date: item.occurredAt,
         );
 
         if (txDay == today) {
@@ -96,12 +101,11 @@ class DailyDigestScheduler {
         return null;
       }
 
-      final worker = DailyDigestWorker(null);
-      // Convert to Expense-like for worker
+      final worker = DailyDigestWorker(const GenerateSpendInsightsUseCase());
       final digest = await worker.generateDailyDigest(
-        todaysExpenses: [], // TODO: Convert ExpenseData to Expense
-        yesterdaysExpenses: [],
-        thisWeekExpenses: [],
+        todaysExpenses: todaysExpenses,
+        yesterdaysExpenses: yesterdaysExpenses,
+        thisWeekExpenses: thisWeekExpenses,
       );
 
       return digest;
@@ -112,27 +116,28 @@ class DailyDigestScheduler {
 
   /// Get last run date from preferences.
   Future<DateTime?> _getLastRunDate() async {
-    // TODO: Implement with SharedPreferences
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final lastRunStr = prefs.getString('daily_digest_last_run');
+      if (lastRunStr != null) {
+        return DateTime.parse(lastRunStr);
+      }
+    } catch (_) {
+      // Silently fail and return null
+    }
     return null;
   }
 
   /// Set last run date in preferences.
   Future<void> _setLastRunDate(DateTime date) async {
-    // TODO: Implement with SharedPreferences
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(
+        'daily_digest_last_run',
+        date.toIso8601String(),
+      );
+    } catch (_) {
+      // Silently fail - not critical
+    }
   }
-}
-
-/// Simplified expense data for digest calculation.
-class ExpenseData {
-  const ExpenseData({
-    required this.amount,
-    required this.merchant,
-    required this.category,
-    required this.date,
-  });
-
-  final double amount;
-  final String merchant;
-  final String category;
-  final DateTime date;
 }

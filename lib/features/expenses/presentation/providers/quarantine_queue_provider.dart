@@ -17,10 +17,6 @@ class QuarantineItem {
   String get id => '${candidate.mpesaCode}_${candidate.occurredAt.millisecondsSinceEpoch}';
 }
 
-/// Provider for the expenses repository.
-final expensesRepositoryProvider = Provider((ref) {
-  return ref.watch(expensesRepositoryProvider);
-});
 
 /// Quarantine queue: list of low-confidence SMS imports pending review.
 /// Watches the expenses repository and filters transactions with confidence < high.
