@@ -27,6 +27,16 @@ class HomeToolsRow extends StatelessWidget {
           child: Row(
             children: [
               _ToolPill(
+                icon: Icons.space_dashboard_outlined,
+                label: 'Planner',
+                iconColor: AppColors.accent,
+                onTap: () {
+                  AppHaptics.lightImpact();
+                  context.pushNamed('planner');
+                },
+              ),
+              const SizedBox(width: 8),
+              _ToolPill(
                 icon: Icons.search_rounded,
                 label: 'Search',
                 iconColor: AppColors.teal,
@@ -89,18 +99,18 @@ class _ToolPill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final brightness = Theme.of(context).brightness;
-    
+
     return GestureDetector(
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
-          color: brightness == Brightness.light 
-              ? AppColors.background 
+          color: brightness == Brightness.light
+              ? AppColors.background
               : AppColors.surfaceElevated,
           border: Border.all(
-            color: brightness == Brightness.light 
-                ? AppColors.borderFor(brightness) 
+            color: brightness == Brightness.light
+                ? AppColors.borderFor(brightness)
                 : AppColors.border,
           ),
           borderRadius: BorderRadius.circular(AppRadius.full),

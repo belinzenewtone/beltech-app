@@ -2,6 +2,7 @@ import 'package:beltech/features/auth/presentation/auth_gate.dart';
 import 'package:beltech/features/analytics/presentation/analytics_screen.dart';
 import 'package:beltech/features/bills/presentation/screens/bills_screen.dart';
 import 'package:beltech/features/budget/presentation/budget_screen.dart';
+import 'package:beltech/features/changelog/presentation/screens/changelog_screen.dart';
 import 'package:beltech/features/export/presentation/export_screen.dart';
 import 'package:beltech/features/insights/presentation/screens/insights_screen.dart';
 import 'package:beltech/features/income/presentation/income_screen.dart';
@@ -13,6 +14,7 @@ import 'package:beltech/features/expenses/presentation/screens/csv_import_screen
 import 'package:beltech/features/expenses/presentation/screens/import_health_screen.dart';
 import 'package:beltech/features/expenses/presentation/screens/merchant_detail_screen.dart';
 import 'package:beltech/features/learning/presentation/screens/learning_screen.dart';
+import 'package:beltech/features/planner/presentation/screens/planner_screen.dart';
 import 'package:beltech/features/recurring/presentation/recurring_screen.dart';
 import 'package:beltech/features/review/presentation/week_review_screen.dart';
 import 'package:beltech/features/search/presentation/global_search_screen.dart';
@@ -104,6 +106,16 @@ final appRouterProvider = Provider<GoRouter>(
         path: '/categorize',
         name: 'categorize',
         builder: (context, state) => const CategorizeScreen(),
+      ),
+      GoRoute(
+        path: '/changelog',
+        name: 'changelog',
+        builder: (context, state) => const ChangelogScreen(),
+      ),
+      GoRoute(
+        path: '/planner',
+        name: 'planner',
+        builder: (context, state) => const PlannerScreen(),
       ),
       GoRoute(
         path: '/merchant-detail',
