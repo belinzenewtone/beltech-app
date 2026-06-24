@@ -163,7 +163,7 @@ class _QuarantineQueueScreenState extends ConsumerState<QuarantineQueueScreen> {
   }
 
   _PresentationQuarantineItem _toPresentationItem(QuarantineItem item) {
-    final confidence = switch (item.analysis.overallScore) {
+    final confidence = switch (item.analysis.score) {
       >= 0.8 => _Confidence.high,
       >= 0.5 => _Confidence.medium,
       _ => _Confidence.low,
