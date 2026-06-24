@@ -34,6 +34,7 @@ import 'package:beltech/features/income/domain/repositories/income_repository.da
 import 'package:beltech/features/recurring/data/repositories/recurring_repository_impl.dart';
 import 'package:beltech/features/recurring/data/services/recurring_materializer_service.dart';
 import 'package:beltech/features/recurring/domain/repositories/recurring_repository.dart';
+import 'package:beltech/features/notifications/data/services/daily_digest_scheduler.dart';
 import 'package:beltech/features/review/domain/usecases/build_week_review_data_use_case.dart';
 import 'package:beltech/features/review/domain/usecases/build_week_review_ritual_use_case.dart';
 import 'package:beltech/features/tasks/data/repositories/tasks_repository_impl.dart';
@@ -85,6 +86,11 @@ class BackgroundWorkerRuntime {
       final notifications = LocalNotificationService();
       final billReminder = BillReminderService(bills, notifications);
       final learningReminder = LearningReminderService(learning, notifications);
+      final digestScheduler = DailyDigestScheduler(
+        expensesRepository: expenses,
+        incomeRepository: income,
+        notificationService: notifications,
+      );
       final flagStore = FeatureFlagStore();
       final insights = NotificationInsightsService(
         notifications,
@@ -110,6 +116,7 @@ class BackgroundWorkerRuntime {
         await recurringService.syncNow();
         await billReminder.checkAndNotify();
         await learningReminder.checkAndNotify();
+        await digestScheduler.checkAndScheduleDaily();
       }
       if (await flagStore.isEnabledFor(
         FeatureFlag.smartNotifications,
