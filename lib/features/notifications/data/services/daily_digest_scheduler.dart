@@ -8,7 +8,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 /// Scheduler for daily digest notifications.
 /// Runs once per day to aggregate spending summary.
 class DailyDigestScheduler {
-  const DailyDigestScheduler({
+  DailyDigestScheduler({
     required this.expensesRepository,
     required this.notificationService,
   });
