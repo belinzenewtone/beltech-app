@@ -181,7 +181,7 @@ class _CsvTransactionRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GlassCard(
-      tone: transaction.isValid ? GlassCardTone.normal : GlassCardTone.muted,
+      tone: transaction.isValid ? GlassCardTone.standard : GlassCardTone.muted,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
