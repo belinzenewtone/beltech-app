@@ -1,5 +1,6 @@
 import 'package:beltech/data/local/drift/app_drift_store.dart';
 import 'package:beltech/features/recurring/domain/entities/recurring_template.dart';
+import 'package:beltech/features/recurring/domain/entities/recurring_rule.dart';
 import 'package:beltech/features/recurring/domain/repositories/recurring_repository.dart';
 
 class RecurringRepositoryImpl implements RecurringRepository {
@@ -154,6 +155,41 @@ class RecurringRepositoryImpl implements RecurringRepository {
     }
     _store.emitChange();
     return inserted;
+  }
+
+  @override
+  Future<List<RecurringRule>> getActiveRecurringRules() async {
+    await _store.ensureInitialized();
+    final rows = await _store.executor.runSelect(
+      'SELECT id, title, description, category, amount, cadence, next_run_at '
+      'FROM recurring_templates '
+      'WHERE enabled = 1 '
+      'ORDER BY next_run_at ASC',
+      const [],
+    );
+    return rows
+        .map(
+          (row) => RecurringRule(
+            id: '${_asInt(row['id'])}',
+            name: '${row['title'] ?? ''}',
+            merchant: '${row['description'] ?? ''}',
+            nextRunAt:
+                DateTime.fromMillisecondsSinceEpoch(_asInt(row['next_run_at'])),
+            isActive: true,
+            frequency: _frequencyFromCadence(_cadenceFrom('${row['cadence'] ?? ''}')),
+            category: row['category'] as String?,
+            estimatedAmount: row['amount'] == null ? null : _asDouble(row['amount']),
+          ),
+        )
+        .toList();
+  }
+
+  RecurringFrequency _frequencyFromCadence(RecurringCadence cadence) {
+    return switch (cadence) {
+      RecurringCadence.daily => RecurringFrequency.daily,
+      RecurringCadence.weekly => RecurringFrequency.weekly,
+      RecurringCadence.monthly => RecurringFrequency.monthly,
+    };
   }
 
   Future<List<RecurringTemplate>> _loadTemplates() async {

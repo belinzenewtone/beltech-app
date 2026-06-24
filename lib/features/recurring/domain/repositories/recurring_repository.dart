@@ -1,7 +1,10 @@
 import 'package:beltech/features/recurring/domain/entities/recurring_template.dart';
+import 'package:beltech/features/recurring/domain/entities/recurring_rule.dart';
 
 abstract class RecurringRepository {
   Stream<List<RecurringTemplate>> watchTemplates();
+
+  Future<List<RecurringRule>> getActiveRecurringRules();
 
   Future<void> addTemplate({
     required RecurringKind kind,

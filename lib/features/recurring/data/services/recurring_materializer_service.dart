@@ -91,13 +91,3 @@ class RecurringMaterializerService {
     return DateTime(year, month, date.day);
   }
 }
-
-/// Frequency of recurring transactions.
-enum RecurringFrequency {
-  daily,
-  weekly,
-  biweekly,
-  monthly,
-  quarterly,
-  annually,
-}
