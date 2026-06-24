@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:beltech_app/core/sync/sync_conflict_state_machine.dart';
+import 'package:beltech/core/sync/sync_conflict_state_machine.dart';
 
 void main() {
   group('SyncConflictResolver', () {
