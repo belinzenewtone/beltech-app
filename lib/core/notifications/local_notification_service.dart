@@ -114,6 +114,34 @@ class LocalNotificationService {
     return _cancelById(_notifId(_nsEvent, eventId));
   }
 
+  /// Show a generic notification immediately.
+  Future<void> showNotification({
+    required String id,
+    required String title,
+    required String body,
+    Map<String, String>? payload,
+  }) async {
+    final enabled = await isNotificationsEnabled();
+    if (!enabled) {
+      return;
+    }
+    await _ensureInitialized();
+    // Use FNV hash of id string to get a stable numeric ID
+    int idHash = 0x811c9dc5;
+    for (final byte in id.codeUnits) {
+      idHash ^= byte;
+      idHash = (idHash * 0x01000193) & 0xFFFFFFFF;
+    }
+    final numericId = idHash & 0x7FFFFFFF;
+    await _plugin.show(
+      id: numericId,
+      title: title,
+      body: body,
+      notificationDetails: _details,
+      payload: payload?['type'] ?? '/home',
+    );
+  }
+
   Future<void> showInsight({
     required int insightId,
     required String title,

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:beltech/features/expenses/domain/entities/expense.dart';
 import 'package:beltech/features/recurring/domain/entities/recurring_rule.dart';
 import 'package:beltech/features/recurring/domain/repositories/recurring_repository.dart';
@@ -5,9 +7,22 @@ import 'package:beltech/features/recurring/domain/repositories/recurring_reposit
 /// Service that materializes recurring transactions into actual expenses.
 /// Runs hourly to check for due recurring rules and create expense entries.
 class RecurringMaterializerService {
-  const RecurringMaterializerService(this._recurringRepository);
+  RecurringMaterializerService(this._recurringRepository);
 
   final RecurringRepository _recurringRepository;
+  Timer? _timer;
+
+  /// Start periodic materialization at the specified interval.
+  Future<void> start({Duration interval = const Duration(minutes: 5)}) async {
+    _timer?.cancel();
+    _timer = Timer.periodic(interval, (_) => syncNow());
+  }
+
+  /// Stop periodic materialization.
+  Future<void> stop() async {
+    _timer?.cancel();
+    _timer = null;
+  }
 
   /// Sync entry point called by background worker.
   /// Materializes due recurring expenses.

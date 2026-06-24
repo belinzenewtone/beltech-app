@@ -49,6 +49,8 @@ enum InsightType {
 
 /// Generate spend insights use case.
 class GenerateSpendInsightsUseCase {
+  const GenerateSpendInsightsUseCase();
+
   /// Generate insights based on current spending data.
   ///
   /// Rules applied (in priority order):

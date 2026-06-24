@@ -96,7 +96,7 @@ class DailyDigestScheduler {
         return null;
       }
 
-      final worker = DailyDigestWorker(const GenerateSpendInsightsUseCase());
+      final worker = const DailyDigestWorker(GenerateSpendInsightsUseCase());
       final digest = await worker.generateDailyDigest(
         todaysExpenses: todaysExpenses,
         yesterdaysExpenses: yesterdaysExpenses,
