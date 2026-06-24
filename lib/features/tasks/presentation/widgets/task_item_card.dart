@@ -101,19 +101,9 @@ class TaskItemCard extends ConsumerWidget {
                   AppHaptics.lightImpact();
                   onSelectToggle();
                 },
-          child: IntrinsicHeight(
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
+          child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                Container(
-                  width: 4,
-                  margin: const EdgeInsets.symmetric(vertical: 4),
-                  decoration: BoxDecoration(
-                    color: priorityColor,
-                    borderRadius: BorderRadius.circular(AppRadius.md),
-                  ),
-                ),
-                const SizedBox(width: 10),
                 IconButton(
                   tooltip: selectionMode
                       ? (selected ? 'Deselect task' : 'Select task')
@@ -140,8 +130,13 @@ class TaskItemCard extends ConsumerWidget {
                         ? (selected ? AppColors.accent : secondaryText)
                         : (task.completed ? AppColors.success : secondaryText),
                   ),
+                  constraints: const BoxConstraints(
+                    minWidth: 40,
+                    minHeight: 40,
+                  ),
+                  padding: const EdgeInsets.all(8),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: AppSpacing.sm),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -202,9 +197,10 @@ class TaskItemCard extends ConsumerWidget {
                   ),
                 ),
                 if (!selectionMode) ...[
+                  const Spacer(),
                   if (elapsedText != null)
                     Padding(
-                      padding: const EdgeInsets.only(right: 2),
+                      padding: const EdgeInsets.only(right: 8),
                       child: Center(
                         child: Text(
                           elapsedText,
@@ -215,36 +211,46 @@ class TaskItemCard extends ConsumerWidget {
                         ),
                       ),
                     ),
-                  IconButton(
-                    tooltip: isTimerRunning ? 'Stop timer' : 'Start timer',
-                    onPressed: busy
-                        ? null
-                        : () {
-                            AppHaptics.lightImpact();
-                            ref
-                                .read(timerControllerProvider(task.id).notifier)
-                                .toggleTimer();
-                          },
-                    icon: Icon(
-                      isTimerRunning
-                          ? Icons.pause_rounded
-                          : Icons.play_arrow_rounded,
+                  SizedBox(
+                    width: 40,
+                    height: 40,
+                    child: IconButton(
+                      tooltip: isTimerRunning ? 'Stop timer' : 'Start timer',
+                      onPressed: busy
+                          ? null
+                          : () {
+                              AppHaptics.lightImpact();
+                              ref
+                                  .read(timerControllerProvider(task.id).notifier)
+                                  .toggleTimer();
+                            },
+                      icon: Icon(
+                        isTimerRunning
+                            ? Icons.pause_rounded
+                            : Icons.play_arrow_rounded,
+                        size: 18,
+                      ),
+                      color: isTimerRunning ? AppColors.accent : null,
+                      padding: const EdgeInsets.all(8),
                     ),
-                    color: isTimerRunning ? AppColors.accent : null,
                   ),
-                  IconButton(
-                    tooltip: 'Edit task',
-                    onPressed: busy
-                        ? null
-                        : () {
-                            onEdit();
-                          },
-                    icon: const Icon(Icons.edit_outlined),
+                  SizedBox(
+                    width: 40,
+                    height: 40,
+                    child: IconButton(
+                      tooltip: 'Edit task',
+                      onPressed: busy
+                          ? null
+                          : () {
+                              onEdit();
+                            },
+                      icon: const Icon(Icons.edit_outlined, size: 18),
+                      padding: const EdgeInsets.all(8),
+                    ),
                   ),
                 ],
               ],
             ),
-          ),
         ),
       ),
     );
