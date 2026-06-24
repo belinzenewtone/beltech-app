@@ -185,8 +185,9 @@ class _QuarantineQueueScreenState extends ConsumerState<QuarantineQueueScreen> {
             label: 'All Confidence',
             isSelected: _selectedConfidence == null,
             onSelected: () {
-              _selectedConfidence = null;
-              _applyFiltersAndSort();
+              setState(() {
+                _selectedConfidence = null;
+              });
             },
           ),
           const SizedBox(width: AppSpacing.sm),
@@ -194,8 +195,9 @@ class _QuarantineQueueScreenState extends ConsumerState<QuarantineQueueScreen> {
             label: 'Low',
             isSelected: _selectedConfidence == _Confidence.low,
             onSelected: () {
-              _selectedConfidence = _Confidence.low;
-              _applyFiltersAndSort();
+              setState(() {
+                _selectedConfidence = _Confidence.low;
+              });
             },
           ),
           const SizedBox(width: AppSpacing.sm),
@@ -203,8 +205,9 @@ class _QuarantineQueueScreenState extends ConsumerState<QuarantineQueueScreen> {
             label: 'Medium',
             isSelected: _selectedConfidence == _Confidence.medium,
             onSelected: () {
-              _selectedConfidence = _Confidence.medium;
-              _applyFiltersAndSort();
+              setState(() {
+                _selectedConfidence = _Confidence.medium;
+              });
             },
           ),
           const SizedBox(width: AppSpacing.sm),
@@ -212,15 +215,17 @@ class _QuarantineQueueScreenState extends ConsumerState<QuarantineQueueScreen> {
             label: 'High',
             isSelected: _selectedConfidence == _Confidence.high,
             onSelected: () {
-              _selectedConfidence = _Confidence.high;
-              _applyFiltersAndSort();
+              setState(() {
+                _selectedConfidence = _Confidence.high;
+              });
             },
           ),
           const SizedBox(width: AppSpacing.lg),
           PopupMenuButton<_SortOption>(
             onSelected: (option) {
-              _sortBy = option;
-              _applyFiltersAndSort();
+              setState(() {
+                _sortBy = option;
+              });
             },
             itemBuilder: (_) => _SortOption.values
                 .map((option) => PopupMenuItem(
