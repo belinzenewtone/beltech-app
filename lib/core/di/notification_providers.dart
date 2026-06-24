@@ -48,6 +48,18 @@ final weeklyReviewNotificationsEnabledProvider = FutureProvider<bool>(
       ref.watch(notificationInsightsServiceProvider).isWeeklyReviewEnabled(),
 );
 
+final dailyDigestScheduleTimeProvider = FutureProvider<(int, int)>(
+  (ref) => ref.watch(localNotificationServiceProvider).getDailyDigestScheduleTime(),
+);
+
+final budgetAlertThresholdsProvider = FutureProvider<(double, double, double)>(
+  (ref) => ref.watch(localNotificationServiceProvider).getBudgetAlertThresholds(),
+);
+
+final doNotDisturbHoursProvider = FutureProvider<(int, int)>(
+  (ref) => ref.watch(localNotificationServiceProvider).getDoNotDisturbHours(),
+);
+
 class NotificationPreferenceController extends AutoDisposeAsyncNotifier<void> {
   @override
   Future<void> build() async {}
@@ -105,6 +117,48 @@ class NotificationPreferenceController extends AutoDisposeAsyncNotifier<void> {
         attributes: {'enabled': enabled},
       );
       ref.invalidate(weeklyReviewNotificationsEnabledProvider);
+    });
+  }
+
+  Future<void> setDailyDigestScheduleTime(int hour, int minute) async {
+    state = const AsyncLoading();
+    state = await AsyncValue.guard(() async {
+      await ref
+          .read(localNotificationServiceProvider)
+          .setDailyDigestScheduleTime(hour, minute);
+      await ref.read(revampTelemetryServiceProvider).track(
+        'daily_digest_schedule_changed',
+        attributes: {'hour': hour, 'minute': minute},
+      );
+      ref.invalidate(dailyDigestScheduleTimeProvider);
+    });
+  }
+
+  Future<void> setBudgetAlertThresholds(double high, double medium, double low) async {
+    state = const AsyncLoading();
+    state = await AsyncValue.guard(() async {
+      await ref
+          .read(localNotificationServiceProvider)
+          .setBudgetAlertThresholds(high, medium, low);
+      await ref.read(revampTelemetryServiceProvider).track(
+        'budget_alert_thresholds_changed',
+        attributes: {'high': high, 'medium': medium, 'low': low},
+      );
+      ref.invalidate(budgetAlertThresholdsProvider);
+    });
+  }
+
+  Future<void> setDoNotDisturbHours(int startHour, int endHour) async {
+    state = const AsyncLoading();
+    state = await AsyncValue.guard(() async {
+      await ref
+          .read(localNotificationServiceProvider)
+          .setDoNotDisturbHours(startHour, endHour);
+      await ref.read(revampTelemetryServiceProvider).track(
+        'dnd_hours_changed',
+        attributes: {'start_hour': startHour, 'end_hour': endHour},
+      );
+      ref.invalidate(doNotDisturbHoursProvider);
     });
   }
 }

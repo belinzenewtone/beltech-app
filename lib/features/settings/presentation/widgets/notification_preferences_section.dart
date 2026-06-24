@@ -12,6 +12,8 @@ class NotificationPreferencesSection extends ConsumerWidget {
     final dailyDigestState = ref.watch(dailyDigestEnabledProvider);
     final weeklyReviewState =
         ref.watch(weeklyReviewNotificationsEnabledProvider);
+    final dailyDigestTimeState = ref.watch(dailyDigestScheduleTimeProvider);
+    final budgetThresholdsState = ref.watch(budgetAlertThresholdsProvider);
     final notificationWriteState =
         ref.watch(notificationPreferenceControllerProvider);
 
@@ -19,11 +21,16 @@ class NotificationPreferencesSection extends ConsumerWidget {
     final budgetAlertsEnabled = budgetAlertsState.valueOrNull ?? true;
     final dailyDigestEnabled = dailyDigestState.valueOrNull ?? true;
     final weeklyReviewEnabled = weeklyReviewState.valueOrNull ?? true;
+    final (digestHour, digestMinute) = dailyDigestTimeState.valueOrNull ?? (7, 0);
+    final (budgetHigh, budgetMedium, budgetLow) =
+        budgetThresholdsState.valueOrNull ?? (90.0, 70.0, 50.0);
 
     final readOnly = notificationsEnabledState.isLoading ||
         budgetAlertsState.isLoading ||
         dailyDigestState.isLoading ||
         weeklyReviewState.isLoading ||
+        dailyDigestTimeState.isLoading ||
+        budgetThresholdsState.isLoading ||
         notificationWriteState.isLoading;
     final childPreferencesReadOnly = readOnly || !notificationsEnabled;
 
@@ -55,11 +62,56 @@ class NotificationPreferencesSection extends ConsumerWidget {
                       .setBudgetAlertsEnabled(value);
                 },
         ),
+        if (budgetAlertsEnabled && !childPreferencesReadOnly)
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Budget Alert Thresholds',
+                  style: Theme.of(context).textTheme.titleSmall,
+                ),
+                const SizedBox(height: 12),
+                _buildThresholdSlider(
+                  context,
+                  'Critical Alert (High)',
+                  budgetHigh,
+                  (value) async {
+                    await ref
+                        .read(notificationPreferenceControllerProvider.notifier)
+                        .setBudgetAlertThresholds(value, budgetMedium, budgetLow);
+                  },
+                ),
+                const SizedBox(height: 8),
+                _buildThresholdSlider(
+                  context,
+                  'Warning (Medium)',
+                  budgetMedium,
+                  (value) async {
+                    await ref
+                        .read(notificationPreferenceControllerProvider.notifier)
+                        .setBudgetAlertThresholds(budgetHigh, value, budgetLow);
+                  },
+                ),
+                const SizedBox(height: 8),
+                _buildThresholdSlider(
+                  context,
+                  'Info (Low)',
+                  budgetLow,
+                  (value) async {
+                    await ref
+                        .read(notificationPreferenceControllerProvider.notifier)
+                        .setBudgetAlertThresholds(budgetHigh, budgetMedium, value);
+                  },
+                ),
+              ],
+            ),
+          ),
         SwitchListTile(
           contentPadding: EdgeInsets.zero,
           title: const Text('Daily Summary Digest'),
-          subtitle:
-              const Text('Send one daily summary after 7:00 AM local time'),
+          subtitle: Text('Send one daily summary at ${digestHour.toString().padLeft(2, '0')}:${digestMinute.toString().padLeft(2, '0')}'),
           value: dailyDigestEnabled,
           onChanged: childPreferencesReadOnly
               ? null
@@ -69,6 +121,29 @@ class NotificationPreferencesSection extends ConsumerWidget {
                       .setDailyDigestEnabled(value);
                 },
         ),
+        if (dailyDigestEnabled && !childPreferencesReadOnly)
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8.0),
+            child: ListTile(
+              contentPadding: EdgeInsets.zero,
+              title: const Text('Digest Time'),
+              subtitle: Text(
+                '${digestHour.toString().padLeft(2, '0')}:${digestMinute.toString().padLeft(2, '0')}',
+              ),
+              trailing: const Icon(Icons.access_time),
+              onTap: () async {
+                final picked = await showTimePicker(
+                  context: context,
+                  initialTime: TimeOfDay(hour: digestHour, minute: digestMinute),
+                );
+                if (picked != null) {
+                  await ref
+                      .read(notificationPreferenceControllerProvider.notifier)
+                      .setDailyDigestScheduleTime(picked.hour, picked.minute);
+                }
+              },
+            ),
+          ),
         SwitchListTile(
           contentPadding: EdgeInsets.zero,
           title: const Text('Weekly Review Ritual'),
@@ -83,6 +158,39 @@ class NotificationPreferencesSection extends ConsumerWidget {
                       .read(notificationPreferenceControllerProvider.notifier)
                       .setWeeklyReviewEnabled(value);
                 },
+        ),
+      ],
+    );
+  }
+
+  Widget _buildThresholdSlider(
+    BuildContext context,
+    String label,
+    double value,
+    Function(double) onChanged,
+  ) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: Theme.of(context).textTheme.bodySmall,
+        ),
+        const SizedBox(height: 4),
+        Row(
+          children: [
+            Expanded(
+              child: Slider(
+                value: value,
+                min: 10,
+                max: 100,
+                divisions: 9,
+                label: '${value.toStringAsFixed(0)}%',
+                onChanged: onChanged,
+              ),
+            ),
+            Text('${value.toStringAsFixed(0)}%'),
+          ],
         ),
       ],
     );

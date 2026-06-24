@@ -174,6 +174,47 @@ class LocalNotificationService {
     }
   }
 
+  Future<(int, int)> getDailyDigestScheduleTime() async {
+    final prefs = await SharedPreferences.getInstance();
+    final hour = prefs.getInt('daily_digest_hour') ?? 7;
+    final minute = prefs.getInt('daily_digest_minute') ?? 0;
+    return (hour, minute);
+  }
+
+  Future<void> setDailyDigestScheduleTime(int hour, int minute) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt('daily_digest_hour', hour);
+    await prefs.setInt('daily_digest_minute', minute);
+  }
+
+  Future<(double, double, double)> getBudgetAlertThresholds() async {
+    final prefs = await SharedPreferences.getInstance();
+    final high = prefs.getDouble('budget_alert_high_threshold') ?? 90.0;
+    final medium = prefs.getDouble('budget_alert_medium_threshold') ?? 70.0;
+    final low = prefs.getDouble('budget_alert_low_threshold') ?? 50.0;
+    return (high, medium, low);
+  }
+
+  Future<void> setBudgetAlertThresholds(double high, double medium, double low) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setDouble('budget_alert_high_threshold', high);
+    await prefs.setDouble('budget_alert_medium_threshold', medium);
+    await prefs.setDouble('budget_alert_low_threshold', low);
+  }
+
+  Future<(int, int)> getDoNotDisturbHours() async {
+    final prefs = await SharedPreferences.getInstance();
+    final startHour = prefs.getInt('dnd_start_hour') ?? 22;
+    final endHour = prefs.getInt('dnd_end_hour') ?? 7;
+    return (startHour, endHour);
+  }
+
+  Future<void> setDoNotDisturbHours(int startHour, int endHour) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt('dnd_start_hour', startHour);
+    await prefs.setInt('dnd_end_hour', endHour);
+  }
+
   Future<bool> requestNotificationPermissionWithRationale(
     BuildContext context,
   ) async {
