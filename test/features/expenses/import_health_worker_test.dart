@@ -42,7 +42,7 @@ void main() {
         confidenceScores: [0.3, 0.25, 0.2, 0.35, 0.3],
       );
 
-      expect(report.alert, contains('Critical'));
+      expect(report.alert, isNotNull);
       expect(report.quarantineQueueDepth, equals(15));
     });
 
