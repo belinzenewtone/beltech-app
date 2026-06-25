@@ -1,0 +1,325 @@
+import 'package:beltech/core/theme/app_motion.dart';
+import 'package:beltech/core/theme/app_spacing.dart';
+import 'package:beltech/core/widgets/app_feedback.dart';
+import 'package:beltech/core/widgets/app_icon_pill_button.dart';
+import 'package:beltech/core/widgets/app_search_bar.dart';
+import 'package:beltech/core/widgets/app_skeleton.dart';
+import 'package:beltech/core/widgets/error_message.dart';
+import 'package:beltech/core/widgets/page_header.dart';
+import 'package:beltech/core/widgets/page_shell.dart';
+import 'package:beltech/features/budget/presentation/providers/budget_providers.dart';
+import 'package:beltech/features/expenses/domain/entities/expense_import_review.dart';
+import 'package:beltech/features/expenses/domain/entities/expense_import_intelligence.dart';
+import 'package:beltech/features/expenses/presentation/providers/expenses_providers.dart';
+import 'package:beltech/features/expenses/presentation/expenses_screen_helpers.dart';
+import 'package:beltech/features/expenses/presentation/widgets/expense_dialogs.dart';
+import 'package:beltech/features/expenses/presentation/widgets/expenses_snapshot_content.dart';
+import 'package:beltech/features/expenses/presentation/widgets/import_health_banner.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+
+class ExpensesScreen extends ConsumerStatefulWidget {
+  const ExpensesScreen({super.key});
+
+  @override
+  ConsumerState<ExpensesScreen> createState() => _ExpensesScreenState();
+}
+
+class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
+  final _searchController = TextEditingController();
+  String _searchQuery = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _searchController.addListener(() {
+      setState(() => _searchQuery = _searchController.text);
+    });
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final snapshotState = ref.watch(expensesSnapshotProvider);
+    final selectedFilter = ref.watch(expenseFilterProvider);
+    // select() narrows rebuild scope: only rebuild this screen when isLoading
+    // actually flips — not on every intermediate writeState emission.
+    final writeBusy = ref.watch(
+      expenseWriteControllerProvider.select((s) => s.isLoading),
+    );
+    final importMetricsState = ref.watch(expenseImportMetricsProvider);
+    final reviewQueueState = ref.watch(expenseReviewQueueProvider);
+    final quarantineState = ref.watch(expenseQuarantineQueueProvider);
+    final paybillProfilesState = ref.watch(expensePaybillProfilesProvider);
+    final fulizaLifecycleState = ref.watch(expenseFulizaLifecycleProvider);
+    final budgetSnapshotState = ref.watch(budgetSnapshotProvider);
+
+    final contentSwitchDuration = AppMotion.duration(
+      context,
+      normalMs: 180,
+      reducedMs: 0,
+    );
+
+    final snapshotChild = snapshotState.when(
+      data: (snapshot) {
+        consumeExpenseSearchTarget(context, ref, snapshot);
+        return KeyedSubtree(
+          key: const ValueKey<String>('expenses-data'),
+          child: ExpensesSnapshotContent(
+            snapshot: snapshot,
+            selectedFilter: selectedFilter,
+            busy: writeBusy,
+            searchQuery: _searchQuery,
+            budgetSnapshot: budgetSnapshotState.valueOrNull,
+            onFilterChanged: (filter) {
+              ref.read(expenseFilterProvider.notifier).state = filter;
+            },
+            onEditExpense: (expense) async {
+              await editExpenseEntry(context, ref, expense);
+            },
+            onMerchantTap: (expense) {
+              context.pushNamed('merchant-detail', extra: expense.title);
+            },
+            onDeleteExpense: (expense) async {
+              await ref
+                  .read(expenseWriteControllerProvider.notifier)
+                  .deleteExpense(expense.id);
+              if (!context.mounted) return;
+              if (ref.read(expenseWriteControllerProvider).hasError) return;
+              // Undo snackbar
+              final messenger = ScaffoldMessenger.maybeOf(context);
+              if (messenger == null) return;
+              messenger.hideCurrentSnackBar();
+              final keyboardInset =
+                  MediaQuery.maybeOf(context)?.viewInsets.bottom ?? 0;
+              final closed = await messenger
+                  .showSnackBar(
+                    SnackBar(
+                      content: const Text(
+                        'Transaction deleted',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      action: SnackBarAction(label: 'Undo', onPressed: () {}),
+                      behavior: SnackBarBehavior.floating,
+                      margin: EdgeInsets.fromLTRB(
+                        16,
+                        0,
+                        16,
+                        88 + keyboardInset,
+                      ),
+                      duration: const Duration(seconds: 4),
+                    ),
+                  )
+                  .closed;
+              if (closed == SnackBarClosedReason.action && context.mounted) {
+                await ref
+                    .read(expenseWriteControllerProvider.notifier)
+                    .addExpense(
+                      title: expense.title,
+                      category: expense.category,
+                      amountKes: expense.amountKes,
+                      occurredAt: expense.occurredAt,
+                    );
+              }
+            },
+            importMetrics:
+                importMetricsState.valueOrNull ??
+                const ExpenseImportMetrics(
+                  reviewQueueCount: 0,
+                  quarantineCount: 0,
+                  retryQueueCount: 0,
+                  failedQueueCount: 0,
+                ),
+            reviewItems: reviewQueueState.valueOrNull ?? const [],
+            quarantineItems: quarantineState.valueOrNull ?? const [],
+            paybillProfiles:
+                paybillProfilesState.valueOrNull ?? const <PaybillProfile>[],
+            fulizaEvents:
+                fulizaLifecycleState.valueOrNull ??
+                const <FulizaLifecycleEvent>[],
+            onApproveReview: (item) async {
+              await ref
+                  .read(expenseWriteControllerProvider.notifier)
+                  .approveReviewItem(item.id);
+              if (context.mounted &&
+                  !ref.read(expenseWriteControllerProvider).hasError) {
+                AppFeedback.success(context, 'Review item approved', ref: ref);
+              }
+            },
+            onRejectReview: (item) async {
+              await ref
+                  .read(expenseWriteControllerProvider.notifier)
+                  .rejectReviewItem(item.id);
+              if (context.mounted &&
+                  !ref.read(expenseWriteControllerProvider).hasError) {
+                AppFeedback.info(context, 'Review item rejected', ref: ref);
+              }
+            },
+            onDismissQuarantine: (item) async {
+              await ref
+                  .read(expenseWriteControllerProvider.notifier)
+                  .dismissQuarantineItem(item.id);
+              if (context.mounted &&
+                  !ref.read(expenseWriteControllerProvider).hasError) {
+                AppFeedback.info(
+                  context,
+                  'Quarantine item dismissed',
+                  ref: ref,
+                );
+              }
+            },
+            onReplayImportQueue: () async {
+              await replayExpenseImportQueue(context, ref);
+            },
+          ),
+        );
+      },
+      loading: () => const KeyedSubtree(
+        key: ValueKey<String>('expenses-loading'),
+        child: FinanceSkeletonList(),
+      ),
+      error: (_, __) => KeyedSubtree(
+        key: const ValueKey<String>('expenses-error'),
+        child: ErrorMessage(
+          label: 'Unable to load expenses',
+          onRetry: () => ref.invalidate(expensesSnapshotProvider),
+        ),
+      ),
+    );
+
+    ref.listen<AsyncValue<void>>(expenseWriteControllerProvider, (
+      previous,
+      next,
+    ) {
+      if (next.hasError) {
+        AppFeedback.error(
+          context,
+          'Unable to save transaction. Please try again.',
+          ref: ref,
+        );
+      }
+    });
+
+    // Resolve import metrics for the health banner (safe fallback to zeros).
+    final importMetrics =
+        ref.watch(expenseImportMetricsProvider).valueOrNull ??
+        const ExpenseImportMetrics(
+          reviewQueueCount: 0,
+          quarantineCount: 0,
+          retryQueueCount: 0,
+          failedQueueCount: 0,
+        );
+
+    return PageShell(
+      scrollable: false,
+      topPadding: 0, // banner sits above the page title
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // ── Import Health Banner (compact full-width top strip) ───────────────
+          Container(
+            margin: const EdgeInsets.symmetric(
+              horizontal: -AppSpacing.screenHorizontal,
+            ),
+            child: ImportHealthBanner(
+              metrics: importMetrics,
+              onTap: () => context.pushNamed('import-health'),
+            ),
+          ),
+          const SizedBox(height: AppSpacing.screenTop),
+          // ── Action pills ──────────────────────────────────────────────────────
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            clipBehavior: Clip.none,
+            child: Row(
+              children: [
+                AppIconPillButton(
+                  icon: Icons.add_rounded,
+                  label: 'Add',
+                  tone: AppIconPillTone.accent,
+                  onPressed: writeBusy
+                      ? null
+                      : () async {
+                          final input = await showAddExpenseDialog(context);
+                          if (input == null) return;
+                          await ref
+                              .read(expenseWriteControllerProvider.notifier)
+                              .addExpense(
+                                title: input.title,
+                                category: input.category,
+                                amountKes: input.amountKes,
+                                occurredAt: input.occurredAt,
+                              );
+                          if (context.mounted &&
+                              !ref
+                                  .read(expenseWriteControllerProvider)
+                                  .hasError) {
+                            AppFeedback.success(
+                              context,
+                              'Transaction added',
+                              ref: ref,
+                            );
+                          }
+                        },
+                ),
+                const SizedBox(width: 8),
+                AppIconPillButton(
+                  icon: Icons.hub_outlined,
+                  label: 'Hub',
+                  tone: AppIconPillTone.subtle,
+                  onPressed: () => context.pushNamed('import-health'),
+                ),
+                const SizedBox(width: 8),
+                AppIconPillButton(
+                  icon: Icons.sms_outlined,
+                  label: 'Import SMS',
+                  tone: AppIconPillTone.subtle,
+                  onPressed: writeBusy
+                      ? null
+                      : () => handleExpenseSmsImport(context, ref),
+                ),
+                const SizedBox(width: 8),
+                AppIconPillButton(
+                  icon: Icons.upload_file_outlined,
+                  label: 'Import CSV',
+                  tone: AppIconPillTone.subtle,
+                  onPressed: writeBusy
+                      ? null
+                      : () => context.pushNamed('csv-import'),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: AppSpacing.md),
+          const PageHeader(
+            title: 'Finance',
+            subtitle: 'Track spending and imports',
+          ),
+          const SizedBox(height: AppSpacing.md),
+          AppSearchBar(
+            controller: _searchController,
+            hint: 'Search transactions...',
+          ),
+          const SizedBox(height: AppSpacing.md),
+          Expanded(
+            child: AnimatedSwitcher(
+              duration: contentSwitchDuration,
+              switchInCurve: Curves.easeOutCubic,
+              switchOutCurve: Curves.easeInCubic,
+              transitionBuilder: (child, animation) =>
+                  FadeTransition(opacity: animation, child: child),
+              child: snapshotChild,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}

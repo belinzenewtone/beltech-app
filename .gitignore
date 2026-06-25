@@ -1,0 +1,34 @@
+# Flutter/Dart
+.dart_tool/
+.packages
+.flutter-plugins
+.flutter-plugins-dependencies
+.fvm/
+build/
+coverage/
+
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# Misc
+*.log
+*.tmp
+
+# Supabase CLI temp
+supabase/.temp/
+
+# Local Flutter SDK installed for this environment
+third_party/flutter-3.44.3/
+
+# Android signing secrets
+android/key.properties
+*.jks
+*.keystore
+
+# Claude Code session data
+.claude/
+
+# Competitor project (used for local audit only)
+KOTLIN-PROJECT-main/

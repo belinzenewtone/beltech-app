@@ -1,0 +1,35 @@
+Analyzing DART-2.0-main...                                      
+
+warning - Unused import: 'package:beltech/core/theme/glass_styles.dart' - lib\core\navigation\app_shell.dart:19:8 - unused_import
+warning - Unused import: 'package:beltech/core/theme/glass_styles.dart' - lib\core\navigation\widgets\app_tab_bar.dart:5:8 - unused_import
+   info - The local variable '_textPrimary' starts with an underscore - lib\core\theme\app_theme_light.dart:18:9 - no_leading_underscores_for_local_identifiers
+   info - The local variable '_textSecondary' starts with an underscore - lib\core\theme\app_theme_light.dart:19:9 - no_leading_underscores_for_local_identifiers
+   info - The local variable '_textMuted' starts with an underscore - lib\core\theme\app_theme_light.dart:20:9 - no_leading_underscores_for_local_identifiers
+   info - The local variable '_surface' starts with an underscore - lib\core\theme\app_theme_light.dart:21:9 - no_leading_underscores_for_local_identifiers
+   info - The local variable '_surfaceMuted' starts with an underscore - lib\core\theme\app_theme_light.dart:22:9 - no_leading_underscores_for_local_identifiers
+   info - The local variable '_border' starts with an underscore - lib\core\theme\app_theme_light.dart:23:9 - no_leading_underscores_for_local_identifiers
+warning - The value of the local variable 'accent' isn't used - lib\core\widgets\app_button.dart:39:11 - unused_local_variable
+warning - Unused import: 'dart:convert' - lib\data\local\db_encryption_key_store.dart:1:8 - unused_import
+warning - Unused import: 'package:beltech/core/theme/glass_styles.dart' - lib\features\assistant\presentation\assistant_screen.dart:3:8 - unused_import
+warning - Unused import: 'package:beltech/core/theme/app_typography.dart' - lib\features\assistant\presentation\assistant_screen.dart:5:8 - unused_import
+   info - Use 'const' with the constructor to improve performance - lib\features\assistant\presentation\assistant_screen.dart:87:19 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - lib\features\assistant\presentation\assistant_screen.dart:93:19 - prefer_const_constructors
+warning - Unused import: 'package:beltech/core/theme/glass_styles.dart' - lib\features\auth\presentation\auth_gate.dart:4:8 - unused_import
+   info - Use 'const' with the constructor to improve performance - lib\features\auth\presentation\auth_gate.dart:113:22 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - lib\features\auth\presentation\widgets\auth_form_card.dart:249:28 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - lib\features\auth\presentation\widgets\auth_form_card.dart:251:30 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - lib\features\auth\presentation\widgets\auth_form_card.dart:253:32 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - lib\features\expenses\presentation\expenses_screen.dart:235:15 - prefer_const_constructors
+warning - Unused import: 'package:beltech/core/theme/app_colors.dart' - lib\features\income\presentation\income_screen.dart:1:8 - unused_import
+   info - Use 'const' with the constructor to improve performance - lib\features\onboarding\presentation\onboarding_screen.dart:177:44 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - lib\features\onboarding\presentation\onboarding_screen.dart:187:44 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - lib\features\onboarding\presentation\onboarding_screen.dart:238:43 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - lib\features\onboarding\presentation\onboarding_screen.dart:278:44 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - lib\features\onboarding\presentation\onboarding_screen.dart:313:28 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - lib\features\onboarding\presentation\onboarding_screen.dart:315:30 - prefer_const_constructors
+warning - Unused import: 'package:beltech/core/theme/app_colors.dart' - lib\features\profile\presentation\profile_screen.dart:1:8 - unused_import
+warning - Unused import: 'package:beltech/core/theme/app_colors.dart' - lib\features\search\presentation\global_search_screen.dart:5:8 - unused_import
+   info - Use a function declaration rather than a variable assignment to bind a function to a name - lib\main.dart:34:9 - prefer_function_declarations_over_variables
+   info - 'copyWith' is deprecated and shouldn't be used. Assign values directly to the instance - lib\main.dart:51:53 - deprecated_member_use
+   info - The local variable '_notifier' starts with an underscore - test\core\sync\sync_status_notifier_test.dart:26:22 - no_leading_underscores_for_local_identifiers
+

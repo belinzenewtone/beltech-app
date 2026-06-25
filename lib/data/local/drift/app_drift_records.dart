@@ -1,0 +1,100 @@
+class DriftTransactionRecord {
+  const DriftTransactionRecord({
+    required this.id,
+    required this.title,
+    required this.category,
+    required this.amountKes,
+    required this.occurredAt,
+    this.balanceAfterKes,
+  });
+  final int id;
+  final String title;
+  final String category;
+  final double amountKes;
+  final DateTime occurredAt;
+  final double? balanceAfterKes;
+}
+
+class CategoryTotalRecord {
+  const CategoryTotalRecord({required this.category, required this.totalKes});
+  final String category;
+  final double totalKes;
+}
+
+class HomeOverviewRecord {
+  const HomeOverviewRecord({
+    required this.todayKes,
+    required this.weekKes,
+    required this.completedCount,
+    required this.pendingCount,
+    required this.upcomingEventsCount,
+    required this.weeklySpendingKes,
+    required this.recentTransactions,
+  });
+  final double todayKes;
+  final double weekKes;
+  final int completedCount;
+  final int pendingCount;
+  final int upcomingEventsCount;
+  final Map<String, double> weeklySpendingKes;
+  final List<DriftTransactionRecord> recentTransactions;
+}
+
+class ExpensesSnapshotRecord {
+  const ExpensesSnapshotRecord({
+    required this.todayKes,
+    required this.weekKes,
+    required this.categories,
+    required this.transactions,
+  });
+  final double todayKes;
+  final double weekKes;
+  final List<CategoryTotalRecord> categories;
+  final List<DriftTransactionRecord> transactions;
+}
+
+class DriftTaskRecord {
+  const DriftTaskRecord({
+    required this.id,
+    required this.title,
+    required this.description,
+    required this.completed,
+    required this.priority,
+    required this.reminderEnabled,
+    required this.reminderMinutesBefore,
+    this.dueDate,
+  });
+  final int id;
+  final String title;
+  final String? description;
+  final bool completed;
+  final String priority;
+  final DateTime? dueDate;
+  final bool reminderEnabled;
+  final int reminderMinutesBefore;
+}
+
+class DriftEventRecord {
+  const DriftEventRecord({
+    required this.id,
+    required this.title,
+    required this.startAt,
+    required this.completed,
+    required this.priority,
+    required this.eventType,
+    required this.reminderEnabled,
+    required this.reminderMinutesBefore,
+    this.endAt,
+    this.note,
+  });
+  final int id;
+  final String title;
+  final DateTime startAt;
+  final bool completed;
+  final String priority;
+  final String eventType;
+  final DateTime? endAt;
+  final String? note;
+  final bool reminderEnabled;
+  final int reminderMinutesBefore;
+}

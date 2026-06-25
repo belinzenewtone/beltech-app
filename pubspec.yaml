@@ -1,0 +1,85 @@
+name: beltech
+description: Personal management app with clean architecture and glassmorphism UI.
+publish_to: "none"
+version: 2.0.0+5
+
+environment:
+  sdk: ">=3.12.2 <4.0.0"
+  flutter: ">=3.44.3 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.8
+  flutter_riverpod: ^2.6.1
+  drift: ^2.20.0
+  sqlcipher_flutter_libs: ^0.5.4
+  path_provider: ^2.1.5
+  path: ^1.9.0
+  flutter_secure_storage: ^9.2.4
+  crypto: ^3.0.6
+  local_auth: ^2.3.0
+  fl_chart: ^0.69.2
+  http: ^1.6.0
+  permission_handler: ^12.0.1
+  image_picker: ^1.2.0
+  flutter_sms_inbox: ^1.0.4
+  shared_preferences: ^2.5.4
+  flutter_local_notifications: ^21.0.0
+  workmanager: ^0.9.0+3
+  timezone: ^0.11.0
+  flutter_timezone: ^5.0.1
+  package_info_plus: ^8.3.0
+  url_launcher: ^6.3.1
+  share_plus: ^10.1.4
+  file_picker: ^8.1.0
+  intl: ^0.20.2
+  flutter_markdown: ^0.7.7+1
+  go_router: ^17.1.0
+  connectivity_plus: ^6.1.4
+  google_fonts: ^6.2.1
+  shorebird_code_push: ^1.1.0
+  sentry_flutter: ^9.15.0
+  flutter_windowmanager: ^0.2.0
+  pdf: ^3.12.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+  drift_dev: ^2.20.1
+  build_runner: ^2.4.12
+  mocktail: ^1.0.4
+  flutter_launcher_icons: ^0.14.4
+
+dependency_overrides:
+  sqlcipher_flutter_libs:
+    path: third_party/sqlcipher_flutter_libs
+  flutter_windowmanager:
+    path: third_party/flutter_windowmanager
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/branding/
+    - assets/google_fonts/
+    - shorebird.yaml
+
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: assets/branding/beltech_logo.jpeg
+  adaptive_icon_background: "#000000"
+  adaptive_icon_foreground: assets/branding/beltech_logo.jpeg
+  web:
+    generate: true
+    image_path: assets/branding/beltech_logo.jpeg
+    background_color: "#000000"
+    theme_color: "#000000"
+  windows:
+    generate: true
+    image_path: assets/branding/beltech_logo.jpeg
+    icon_size: 256
+  macos:
+    generate: true
+    image_path: assets/branding/beltech_logo.jpeg

@@ -1,0 +1,6 @@
+# Use one permanent release keystore for all app installs/updates.
+# Do not rotate this key unless you have a managed migration plan.
+storePassword=YOUR_STORE_PASSWORD
+keyPassword=YOUR_KEY_PASSWORD
+keyAlias=upload
+storeFile=C:\\Users\\BELINZE NEWTONE\\upload-keystore.jks
