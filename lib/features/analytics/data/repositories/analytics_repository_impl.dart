@@ -10,7 +10,7 @@ class AnalyticsRepositoryImpl implements AnalyticsRepository {
   final AppDriftStore _store;
 
   @override
-  Stream<AnalyticsSnapshot> watchSnapshot() {
+  Stream<AnalyticsSnapshot> watchSnapshot(AnalyticsPeriod period) {
     return Stream<AnalyticsSnapshot>.multi((controller) async {
       var emitting = false;
 
@@ -20,7 +20,7 @@ class AnalyticsRepositoryImpl implements AnalyticsRepository {
         }
         emitting = true;
         try {
-          controller.add(await _loadSnapshot());
+          controller.add(await _loadSnapshot(period));
         } catch (error, stackTrace) {
           controller.addError(error, stackTrace);
         } finally {
@@ -37,7 +37,7 @@ class AnalyticsRepositoryImpl implements AnalyticsRepository {
     });
   }
 
-  Future<AnalyticsSnapshot> _loadSnapshot() async {
+  Future<AnalyticsSnapshot> _loadSnapshot(AnalyticsPeriod period) async {
     await _store.ensureInitialized();
 
     final now = DateTime.now();
@@ -46,12 +46,17 @@ class AnalyticsRepositoryImpl implements AnalyticsRepository {
     final weekStart = _weekStart(now);
     final weekEnd = weekStart.add(const Duration(days: 7));
 
+    final (rangeStart, rangeEnd) = switch (period) {
+      AnalyticsPeriod.week => (weekStart, weekEnd),
+      AnalyticsPeriod.month => (monthStart, monthEnd),
+    };
+
     final txRows = await _store.executor.runSelect(
       'SELECT amount, category, occurred_at '
       'FROM transactions '
       'WHERE occurred_at >= ? AND occurred_at < ? '
       'ORDER BY occurred_at ASC',
-      [monthStart.millisecondsSinceEpoch, monthEnd.millisecondsSinceEpoch],
+      [rangeStart.millisecondsSinceEpoch, rangeEnd.millisecondsSinceEpoch],
     );
     final weekRows = await _store.executor.runSelect(
       'SELECT amount, occurred_at '
@@ -70,12 +75,15 @@ class AnalyticsRepositoryImpl implements AnalyticsRepository {
       [monthStart.millisecondsSinceEpoch, monthEnd.millisecondsSinceEpoch],
     );
 
-    final monthTotal = txRows.fold<double>(
+    final periodTotal = txRows.fold<double>(
       0,
       (sum, row) => sum + _asDouble(row['amount']),
     );
-    final elapsedDays = now.day <= 0 ? 1 : now.day;
-    final averageDaily = monthTotal / elapsedDays;
+    final totalDaysInRange = rangeEnd.difference(rangeStart).inDays;
+    final elapsedDays = now.isBefore(rangeEnd)
+        ? now.difference(rangeStart).inDays + 1
+        : totalDaysInRange;
+    final averageDaily = periodTotal / (elapsedDays <= 0 ? 1 : elapsedDays);
 
     final completed = taskRows
         .where((row) => _asInt(row['completed']) == 1)
@@ -121,22 +129,21 @@ class AnalyticsRepositoryImpl implements AnalyticsRepository {
       categoryTotals[category] = (categoryTotals[category] ?? 0) + amount;
     }
 
-    final categoryBreakdown =
-        categoryTotals.entries
-            .map(
-              (entry) => AnalyticsCategoryShare(
-                category: entry.key,
-                totalKes: entry.value,
-                percentage: monthTotal <= 0
-                    ? 0
-                    : (entry.value / monthTotal) * 100,
-              ),
-            )
-            .toList()
-          ..sort((a, b) => b.totalKes.compareTo(a.totalKes));
+    final categoryBreakdown = categoryTotals.entries
+        .map(
+          (entry) => AnalyticsCategoryShare(
+            category: entry.key,
+            totalKes: entry.value,
+            percentage: periodTotal <= 0
+                ? 0
+                : (entry.value / periodTotal) * 100,
+          ),
+        )
+        .toList()
+      ..sort((a, b) => b.totalKes.compareTo(a.totalKes));
 
     return AnalyticsSnapshot(
-      totalSpentThisMonthKes: monthTotal,
+      totalSpentThisMonthKes: periodTotal,
       averageDailySpendingKes: averageDaily,
       totalTasksCompleted: completed,
       totalTasksPending: pending,

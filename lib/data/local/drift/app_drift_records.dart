@@ -44,11 +44,13 @@ class ExpensesSnapshotRecord {
   const ExpensesSnapshotRecord({
     required this.todayKes,
     required this.weekKes,
+    required this.monthKes,
     required this.categories,
     required this.transactions,
   });
   final double todayKes;
   final double weekKes;
+  final double monthKes;
   final List<CategoryTotalRecord> categories;
   final List<DriftTransactionRecord> transactions;
 }

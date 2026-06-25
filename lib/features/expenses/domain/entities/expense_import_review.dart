@@ -79,12 +79,25 @@ class ExpenseImportMetrics {
     required this.quarantineCount,
     required this.retryQueueCount,
     required this.failedQueueCount,
+    this.lastImportAt,
+    this.lastMpesaCode,
+    this.lastError,
   });
 
   final int reviewQueueCount;
   final int quarantineCount;
   final int retryQueueCount;
   final int failedQueueCount;
+
+  /// When the most recently touched import-queue row was last updated.
+  final DateTime? lastImportAt;
+
+  /// The M-Pesa transaction code extracted from the most recent queue row,
+  /// if one could be parsed.
+  final String? lastMpesaCode;
+
+  /// The last recorded import error, if any.
+  final String? lastError;
 
   @override
   bool operator ==(Object other) =>
@@ -94,7 +107,10 @@ class ExpenseImportMetrics {
           reviewQueueCount == other.reviewQueueCount &&
           quarantineCount == other.quarantineCount &&
           retryQueueCount == other.retryQueueCount &&
-          failedQueueCount == other.failedQueueCount;
+          failedQueueCount == other.failedQueueCount &&
+          lastImportAt == other.lastImportAt &&
+          lastMpesaCode == other.lastMpesaCode &&
+          lastError == other.lastError;
 
   @override
   int get hashCode => Object.hash(
@@ -102,5 +118,8 @@ class ExpenseImportMetrics {
     quarantineCount,
     retryQueueCount,
     failedQueueCount,
+    lastImportAt,
+    lastMpesaCode,
+    lastError,
   );
 }

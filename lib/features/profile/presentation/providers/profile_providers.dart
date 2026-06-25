@@ -15,14 +15,18 @@ class ProfileWriteController extends AutoDisposeAsyncNotifier<void> {
 
   Future<void> updateProfile({
     required String name,
+    required String username,
     required String email,
     required String phone,
   }) async {
     state = const AsyncLoading();
     state = await AsyncValue.guard(() async {
-      await ref
-          .read(profileRepositoryProvider)
-          .updateProfile(name: name, email: email, phone: phone);
+      await ref.read(profileRepositoryProvider).updateProfile(
+        name: name,
+        username: username,
+        email: email,
+        phone: phone,
+      );
     });
   }
 

@@ -9,7 +9,6 @@ import 'package:beltech/core/widgets/page_header.dart';
 import 'package:beltech/core/widgets/page_shell.dart';
 import 'package:beltech/features/budget/presentation/providers/budget_providers.dart';
 import 'package:beltech/features/expenses/domain/entities/expense_import_review.dart';
-import 'package:beltech/features/expenses/domain/entities/expense_import_intelligence.dart';
 import 'package:beltech/features/expenses/presentation/providers/expenses_providers.dart';
 import 'package:beltech/features/expenses/presentation/expenses_screen_helpers.dart';
 import 'package:beltech/features/expenses/presentation/widgets/expense_dialogs.dart';
@@ -53,11 +52,6 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
     final writeBusy = ref.watch(
       expenseWriteControllerProvider.select((s) => s.isLoading),
     );
-    final importMetricsState = ref.watch(expenseImportMetricsProvider);
-    final reviewQueueState = ref.watch(expenseReviewQueueProvider);
-    final quarantineState = ref.watch(expenseQuarantineQueueProvider);
-    final paybillProfilesState = ref.watch(expensePaybillProfilesProvider);
-    final fulizaLifecycleState = ref.watch(expenseFulizaLifecycleProvider);
     final budgetSnapshotState = ref.watch(budgetSnapshotProvider);
 
     final contentSwitchDuration = AppMotion.duration(
@@ -128,55 +122,6 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
                       occurredAt: expense.occurredAt,
                     );
               }
-            },
-            importMetrics:
-                importMetricsState.valueOrNull ??
-                const ExpenseImportMetrics(
-                  reviewQueueCount: 0,
-                  quarantineCount: 0,
-                  retryQueueCount: 0,
-                  failedQueueCount: 0,
-                ),
-            reviewItems: reviewQueueState.valueOrNull ?? const [],
-            quarantineItems: quarantineState.valueOrNull ?? const [],
-            paybillProfiles:
-                paybillProfilesState.valueOrNull ?? const <PaybillProfile>[],
-            fulizaEvents:
-                fulizaLifecycleState.valueOrNull ??
-                const <FulizaLifecycleEvent>[],
-            onApproveReview: (item) async {
-              await ref
-                  .read(expenseWriteControllerProvider.notifier)
-                  .approveReviewItem(item.id);
-              if (context.mounted &&
-                  !ref.read(expenseWriteControllerProvider).hasError) {
-                AppFeedback.success(context, 'Review item approved', ref: ref);
-              }
-            },
-            onRejectReview: (item) async {
-              await ref
-                  .read(expenseWriteControllerProvider.notifier)
-                  .rejectReviewItem(item.id);
-              if (context.mounted &&
-                  !ref.read(expenseWriteControllerProvider).hasError) {
-                AppFeedback.info(context, 'Review item rejected', ref: ref);
-              }
-            },
-            onDismissQuarantine: (item) async {
-              await ref
-                  .read(expenseWriteControllerProvider.notifier)
-                  .dismissQuarantineItem(item.id);
-              if (context.mounted &&
-                  !ref.read(expenseWriteControllerProvider).hasError) {
-                AppFeedback.info(
-                  context,
-                  'Quarantine item dismissed',
-                  ref: ref,
-                );
-              }
-            },
-            onReplayImportQueue: () async {
-              await replayExpenseImportQueue(context, ref);
             },
           ),
         );

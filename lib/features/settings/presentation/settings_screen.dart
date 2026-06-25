@@ -1,12 +1,14 @@
 import 'package:beltech/core/di/notification_providers.dart';
 import 'package:beltech/core/theme/app_colors.dart';
 import 'package:beltech/core/theme/app_spacing.dart';
+import 'package:go_router/go_router.dart';
 import 'package:beltech/core/theme/app_typography.dart';
 import 'package:beltech/core/widgets/app_card.dart';
 import 'package:beltech/core/widgets/app_feedback.dart';
 import 'package:beltech/core/widgets/loading_indicator.dart';
 import 'package:beltech/core/widgets/secondary_page_shell.dart';
 import 'package:beltech/features/auth/domain/entities/auth_state.dart';
+import 'package:beltech/features/settings/presentation/widgets/settings_row.dart';
 import 'package:beltech/features/auth/presentation/providers/auth_providers.dart';
 import 'package:beltech/features/settings/presentation/widgets/notification_preferences_section.dart';
 import 'package:beltech/features/settings/presentation/widgets/settings_about_card.dart';
@@ -43,6 +45,26 @@ class SettingsScreen extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Profile
+          AppCard(
+            tone: AppCardTone.muted,
+            padding: EdgeInsets.zero,
+            child: SettingsRow(
+              icon: Icons.person_outline_rounded,
+              title: 'Profile',
+              subtitle: 'Edit name, username and photo',
+              isFirst: true,
+              isLast: true,
+              trailing: const Icon(
+                Icons.chevron_right_rounded,
+                color: AppColors.textMuted,
+                size: 20,
+              ),
+              onTap: () => context.pushNamed('profile'),
+            ),
+          ),
+          const SizedBox(height: AppSpacing.sectionGap),
+
           // Appearance
           const SettingsAppearanceCard(),
           const SizedBox(height: AppSpacing.sectionGap),

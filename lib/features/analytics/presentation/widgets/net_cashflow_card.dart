@@ -48,16 +48,26 @@ class NetCashflowCard extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: AppSpacing.md),
+          const Divider(height: 24, thickness: 1),
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('Net', style: AppTypography.bodySm(context)),
-              Text(
-                CurrencyFormatter.money(net),
-                style: AppTypography.bodyMd(context).copyWith(
-                  fontWeight: FontWeight.w700,
-                  color: isPositive ? AppColors.success : AppColors.danger,
+              const Expanded(child: SizedBox.shrink()),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Net', style: AppTypography.bodySm(context)),
+                    const SizedBox(height: 4),
+                    Text(
+                      CurrencyFormatter.money(net),
+                      style: AppTypography.bodyMd(context).copyWith(
+                        fontWeight: FontWeight.w700,
+                        color: isPositive ? AppColors.success : AppColors.danger,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
                 ),
               ),
             ],

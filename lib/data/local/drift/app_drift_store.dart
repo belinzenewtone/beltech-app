@@ -78,7 +78,9 @@ class AppDriftStore {
   Stream<List<DriftEventRecord>> watchEventsInRange(
     DateTime start,
     DateTime end,
-  ) => _watch(() => _loadEventsInRange(start, end));
+  ) =>
+      _watch(() => _loadEventsInRange(start, end));
+  Stream<List<DriftEventRecord>> watchAllEvents() => _watch(_loadAllEvents);
 
   Future<void> addTransaction({
     required String title,
@@ -222,7 +224,11 @@ class AppDriftStore {
   Future<List<DriftEventRecord>> _loadEventsInRange(
     DateTime start,
     DateTime end,
-  ) => _AppDriftQueries.loadEventsInRange(this, start, end);
+  ) =>
+      _AppDriftQueries.loadEventsInRange(this, start, end);
+
+  Future<List<DriftEventRecord>> _loadAllEvents() =>
+      _AppDriftQueries.loadAllEvents(this);
 
   Future<int> _countRows(String tableName) =>
       _AppDriftQueries.countRows(this, tableName);

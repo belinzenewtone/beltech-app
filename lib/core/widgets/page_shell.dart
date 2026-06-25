@@ -115,8 +115,10 @@ class _PageShellState extends State<PageShell>
       );
     }
 
+    final brightness = Theme.of(context).brightness;
+
     return Container(
-      color: AppColors.background,
+      color: AppColors.backgroundFor(brightness),
       child: SafeArea(bottom: false, child: content),
     );
   }

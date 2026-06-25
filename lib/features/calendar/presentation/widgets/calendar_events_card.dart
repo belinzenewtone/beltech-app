@@ -32,7 +32,7 @@ class CalendarEventsCard extends StatelessWidget {
       return const AppEmptyState(
         icon: Icons.event_outlined,
         title: 'No events',
-        subtitle: 'Tap Add to create one.',
+        subtitle: 'Tap the Add button to create one.',
       );
     }
 
@@ -86,9 +86,10 @@ class CalendarEventsCard extends StatelessWidget {
                 children: [
                   Container(
                     width: 4,
-                    margin: const EdgeInsets.symmetric(vertical: 4),
                     decoration: BoxDecoration(
-                      color: typeColor,
+                      color: event.completed
+                          ? AppColors.textMuted
+                          : typeColor,
                       borderRadius: BorderRadius.circular(AppRadius.md),
                     ),
                   ),
@@ -111,8 +112,8 @@ class CalendarEventsCard extends StatelessWidget {
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: AppTypography.bodyMd(context).copyWith(
-                            decoration: event.completed
-                                ? TextDecoration.lineThrough
+                            color: event.completed
+                                ? AppColors.textMuted
                                 : null,
                             fontWeight: FontWeight.w500,
                           ),

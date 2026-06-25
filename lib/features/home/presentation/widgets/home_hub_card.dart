@@ -1,5 +1,4 @@
 import 'package:beltech/core/feedback/app_haptics.dart';
-import 'package:beltech/core/navigation/shell_providers.dart';
 import 'package:beltech/core/theme/app_colors.dart';
 import 'package:beltech/core/theme/app_radius.dart';
 import 'package:beltech/core/theme/app_spacing.dart';
@@ -54,8 +53,7 @@ class HomeHubCard extends ConsumerWidget {
                   : '${overview.upcomingEventsCount} upcoming',
               onTap: () {
                 AppHaptics.lightImpact();
-                ref.read(shellTabIndexProvider.notifier).state =
-                    ShellTab.calendar.index;
+                context.pushNamed('events');
               },
             ),
             Divider(
@@ -67,9 +65,9 @@ class HomeHubCard extends ConsumerWidget {
                   : AppColors.border,
             ),
             _HubRow(
-              icon: Icons.leaderboard_outlined,
+              icon: Icons.bar_chart_rounded,
               iconColor: AppColors.accent,
-              title: 'Insights',
+              title: 'Analytics',
               trailingText: '',
               onTap: () {
                 AppHaptics.lightImpact();
@@ -85,14 +83,13 @@ class HomeHubCard extends ConsumerWidget {
                   : AppColors.border,
             ),
             _HubRow(
-              icon: Icons.auto_awesome_rounded,
+              icon: Icons.search_rounded,
               iconColor: AppColors.accent,
-              title: 'Assistant',
+              title: 'Search',
               trailingText: '',
               onTap: () {
                 AppHaptics.lightImpact();
-                ref.read(shellTabIndexProvider.notifier).state =
-                    ShellTab.assistant.index;
+                context.pushNamed('search');
               },
             ),
           ],

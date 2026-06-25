@@ -16,29 +16,31 @@ import 'package:flutter/material.dart';
 class AppEmptyState extends StatelessWidget {
   const AppEmptyState({
     super.key,
-    required this.icon,
+    this.icon,
     required this.title,
     this.subtitle,
     this.action,
     this.iconColor,
+    this.cardWrapped = true,
   });
 
-  final IconData icon;
+  final IconData? icon;
   final String title;
   final String? subtitle;
   final Widget? action;
   final Color? iconColor;
+  final bool cardWrapped;
 
   @override
   Widget build(BuildContext context) {
     final color = iconColor ?? AppColors.accent;
 
-    return AppCard(
-      tone: AppCardTone.muted,
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 28),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
+    Widget content = Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment:
+          icon != null ? CrossAxisAlignment.center : CrossAxisAlignment.start,
+      children: [
+        if (icon != null) ...[
           Container(
             width: 64,
             height: 64,
@@ -49,22 +51,32 @@ class AppEmptyState extends StatelessWidget {
             child: Icon(icon, color: color, size: 30),
           ),
           const SizedBox(height: 14),
-          Text(
-            title,
-            style: AppTypography.cardTitle(context),
-            textAlign: TextAlign.center,
-          ),
-          if (subtitle != null) ...[
-            const SizedBox(height: 6),
-            Text(
-              subtitle!,
-              style: AppTypography.bodySm(context),
-              textAlign: TextAlign.center,
-            ),
-          ],
-          if (action != null) ...[const SizedBox(height: 18), action!],
         ],
-      ),
+        Text(
+          title,
+          style: AppTypography.cardTitle(context),
+          textAlign: icon != null ? TextAlign.center : TextAlign.start,
+        ),
+        if (subtitle != null) ...[
+          const SizedBox(height: 6),
+          Text(
+            subtitle!,
+            style: AppTypography.bodySm(context),
+            textAlign: icon != null ? TextAlign.center : TextAlign.start,
+          ),
+        ],
+        if (action != null) ...[const SizedBox(height: 18), action!],
+      ],
     );
+
+    if (cardWrapped) {
+      content = AppCard(
+        tone: AppCardTone.muted,
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 28),
+        child: content,
+      );
+    }
+
+    return content;
   }
 }

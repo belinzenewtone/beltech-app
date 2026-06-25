@@ -53,13 +53,14 @@ class AssistantProfileStore {
 
   Future<void> updateProfile({
     required String name,
+    required String username,
     required String email,
     required String phone,
   }) async {
     await _ensureInitialized();
     await _db.runUpdate(
-      'UPDATE user_profile SET name = ?, email = ?, phone = ? WHERE id = 1',
-      [name, email, phone],
+      'UPDATE user_profile SET name = ?, username = ?, email = ?, phone = ? WHERE id = 1',
+      [name, username, email, phone],
     );
     _emitChange();
   }
@@ -107,6 +108,7 @@ class AssistantProfileStore {
       'CREATE TABLE IF NOT EXISTS user_profile('
       'id INTEGER PRIMARY KEY,'
       'name TEXT NOT NULL,'
+      'username TEXT NOT NULL,'
       'email TEXT NOT NULL,'
       'phone TEXT NOT NULL,'
       'member_since_label TEXT NOT NULL,'
@@ -114,6 +116,7 @@ class AssistantProfileStore {
       'avatar_url TEXT'
       ')',
     );
+    await _tryAddUsernameColumn();
     await _tryAddAvatarUrlColumn();
     await _db.runCustom(
       'CREATE TABLE IF NOT EXISTS assistant_messages('
@@ -133,8 +136,8 @@ class AssistantProfileStore {
     if (profileCount == 0) {
       final now = DateTime.now();
       await _db.runInsert(
-        'INSERT INTO user_profile(id, name, email, phone, member_since_label, verified) VALUES (?, ?, ?, ?, ?, ?)',
-        [1, 'User', '-', '-', _formatMemberSinceLabel(now), 0],
+        'INSERT INTO user_profile(id, name, username, email, phone, member_since_label, verified) VALUES (?, ?, ?, ?, ?, ?, ?)',
+        [1, 'User', '', '-', '-', _formatMemberSinceLabel(now), 0],
       );
     }
 
@@ -149,12 +152,13 @@ class AssistantProfileStore {
 
   Future<DriftProfileRecord> _loadProfile() async {
     final rows = await _db.runSelect(
-      'SELECT name, email, phone, member_since_label, verified, avatar_url FROM user_profile WHERE id = 1',
+      'SELECT name, username, email, phone, member_since_label, verified, avatar_url FROM user_profile WHERE id = 1',
       const [],
     );
     final row = rows.first;
     return DriftProfileRecord(
       name: (row['name'] ?? '') as String,
+      username: (row['username'] ?? '') as String,
       email: (row['email'] ?? '') as String,
       phone: (row['phone'] ?? '') as String,
       memberSinceLabel: (row['member_since_label'] ?? '') as String,
@@ -203,6 +207,16 @@ class AssistantProfileStore {
       return value.toInt();
     }
     return int.tryParse('$value') ?? 0;
+  }
+
+  Future<void> _tryAddUsernameColumn() async {
+    try {
+      await _db.runCustom(
+        'ALTER TABLE user_profile ADD COLUMN username TEXT NOT NULL DEFAULT ""',
+      );
+    } catch (_) {
+      return;
+    }
   }
 
   Future<void> _tryAddAvatarUrlColumn() async {

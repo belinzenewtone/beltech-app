@@ -25,8 +25,9 @@ class SecondaryPageShell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final brightness = Theme.of(context).brightness;
     return Container(
-      color: AppColors.background,
+      color: AppColors.backgroundFor(brightness),
       child: SafeArea(
         bottom: false,
         child: Scaffold(

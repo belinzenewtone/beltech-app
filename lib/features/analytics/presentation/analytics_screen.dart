@@ -11,6 +11,7 @@ import 'package:beltech/features/analytics/presentation/widgets/analytics_catego
 import 'package:beltech/features/analytics/presentation/widgets/analytics_overview_cards.dart';
 import 'package:beltech/features/analytics/presentation/widgets/analytics_trend_chart.dart';
 import 'package:beltech/features/analytics/presentation/widgets/net_cashflow_card.dart';
+import 'package:beltech/features/expenses/presentation/providers/expense_categories_provider.dart';
 import 'package:beltech/core/widgets/app_button.dart';
 import 'package:beltech/core/widgets/loading_indicator.dart';
 import 'package:flutter/material.dart';
@@ -139,17 +140,17 @@ class _LoadingAnalytics extends StatelessWidget {
   }
 }
 
-class _AnalyticsContent extends StatefulWidget {
+class _AnalyticsContent extends ConsumerStatefulWidget {
   const _AnalyticsContent({required this.snapshot, required this.period});
 
   final AnalyticsSnapshot snapshot;
   final AnalyticsPeriod period;
 
   @override
-  State<_AnalyticsContent> createState() => _AnalyticsContentState();
+  ConsumerState<_AnalyticsContent> createState() => _AnalyticsContentState();
 }
 
-class _AnalyticsContentState extends State<_AnalyticsContent> {
+class _AnalyticsContentState extends ConsumerState<_AnalyticsContent> {
   /// Which chart mode is active: 0 = Trend (line), 1 = Distribution (bar)
   int _chartMode = 0;
 
@@ -163,7 +164,10 @@ class _AnalyticsContentState extends State<_AnalyticsContent> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const SectionHeader('Overview', topPadding: 0),
-        AnalyticsOverviewCards(snapshot: widget.snapshot),
+        AnalyticsOverviewCards(
+          snapshot: widget.snapshot,
+          period: widget.period,
+        ),
         const SizedBox(height: AppSpacing.sectionGap),
         NetCashflowCard(
           income: widget.snapshot.totalSpentThisMonthKes * 1.2,
@@ -205,9 +209,11 @@ class _AnalyticsContentState extends State<_AnalyticsContent> {
                 ),
         ),
         const SizedBox(height: AppSpacing.sectionGap),
-        const SectionHeader('Categories'),
         AnalyticsCategoryBreakdown(
           categories: widget.snapshot.categoryBreakdown,
+          totalKes: widget.snapshot.totalSpentThisMonthKes,
+          registry: ref.watch(expenseCategoriesProvider).valueOrNull ??
+              expenseCategoryDefaults,
         ),
       ],
     );

@@ -47,7 +47,7 @@ class _CalendarEventsPane extends StatelessWidget {
               icon: Icons.event_outlined,
               title: sortedEvents.isEmpty ? 'No events' : 'Nothing found',
               subtitle: sortedEvents.isEmpty
-                  ? 'Tap Add to create one.'
+                  ? 'Tap the Add button to create one.'
                   : 'Try a different search or tap Show done.',
             );
           }

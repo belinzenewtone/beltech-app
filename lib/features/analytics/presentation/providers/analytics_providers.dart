@@ -7,5 +7,7 @@ final analyticsPeriodProvider = StateProvider<AnalyticsPeriod>(
 );
 
 final analyticsSnapshotProvider = StreamProvider<AnalyticsSnapshot>(
-  (ref) => ref.watch(analyticsRepositoryProvider).watchSnapshot(),
+  (ref) => ref
+      .watch(analyticsRepositoryProvider)
+      .watchSnapshot(ref.watch(analyticsPeriodProvider)),
 );

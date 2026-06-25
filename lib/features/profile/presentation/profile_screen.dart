@@ -9,6 +9,7 @@ import 'package:beltech/features/auth/presentation/providers/account_providers.d
 import 'package:beltech/features/profile/presentation/providers/profile_providers.dart';
 import 'package:beltech/features/profile/presentation/widgets/profile_content_section.dart';
 import 'package:beltech/features/profile/presentation/widgets/profile_dialogs.dart';
+import 'package:beltech/features/profile/presentation/widgets/profile_security_section.dart';
 import 'package:beltech/features/profile/presentation/widgets/profile_tool_hub.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -63,7 +64,6 @@ class ProfileScreen extends ConsumerWidget {
                   workspaceLabel: 'Local Workspace',
                   onEdit: () => showEditProfileDialog(context, ref, profile),
                   onOpenSettings: () => context.pushNamed('settings'),
-                  onChangePassword: () => showPasswordDialog(context, ref),
                   onAvatarCameraTap: () async {
                     try {
                       final picker = ImagePicker();
@@ -109,16 +109,19 @@ class ProfileScreen extends ConsumerWidget {
                       AppFeedback.error(context, message, ref: ref);
                     }
                   },
-                  showSignOut: true,
-                  signingOut: authWriteState.isLoading,
+                ),
+                const SizedBox(height: AppSpacing.sectionGap),
+                const ProfileToolHub(),
+                const SizedBox(height: AppSpacing.sectionGap),
+                ProfileSecuritySection(
+                  onChangePassword: () => showPasswordDialog(context, ref),
                   onSignOut: () async {
                     await ref
                         .read(accountAuthControllerProvider.notifier)
                         .signOut();
                   },
+                  signingOut: authWriteState.isLoading,
                 ),
-                const SizedBox(height: AppSpacing.sectionGap),
-                const ProfileToolHub(),
                 const SizedBox(height: AppSpacing.sectionGap),
                 Center(
                   child: Text(

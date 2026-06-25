@@ -12,6 +12,7 @@ void main() {
       expenses: ExpensesSnapshot(
         todayKes: 0,
         weekKes: 0,
+        monthKes: 0,
         categories: const [],
         transactions: [
           ExpenseItem(

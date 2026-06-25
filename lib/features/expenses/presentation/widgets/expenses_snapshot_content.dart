@@ -1,18 +1,11 @@
 import 'package:beltech/core/theme/app_colors.dart';
 import 'package:beltech/core/theme/app_spacing.dart';
 import 'package:beltech/core/theme/app_typography.dart';
-import 'package:beltech/core/utils/category_visual.dart';
-import 'package:flutter/services.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:beltech/core/utils/currency_formatter.dart';
-import 'package:beltech/core/widgets/app_button.dart';
 import 'package:beltech/core/widgets/app_capsule.dart';
 import 'package:beltech/core/widgets/app_empty_state.dart';
 import 'package:beltech/core/widgets/app_card.dart';
-import 'package:beltech/core/widgets/app_form_sheet.dart';
 import 'package:beltech/features/budget/domain/entities/budget_snapshot.dart';
-import 'package:beltech/features/expenses/domain/entities/expense_import_intelligence.dart';
-import 'package:beltech/features/expenses/domain/entities/expense_import_review.dart';
 import 'package:beltech/features/expenses/domain/entities/expense_item.dart';
 import 'package:beltech/features/expenses/presentation/providers/expenses_providers.dart';
 import 'package:beltech/features/expenses/presentation/widgets/transaction_row.dart';
@@ -20,7 +13,6 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 part 'expenses_snapshot_content_cards.dart';
-part 'expenses_snapshot_content_imports.dart';
 
 final _expenseDayHeaderFormat = DateFormat('EEE, MMM d');
 
@@ -36,15 +28,6 @@ class ExpensesSnapshotContent extends StatefulWidget {
     required this.onEditExpense,
     required this.onDeleteExpense,
     required this.onMerchantTap,
-    required this.importMetrics,
-    required this.reviewItems,
-    required this.quarantineItems,
-    required this.paybillProfiles,
-    required this.fulizaEvents,
-    required this.onApproveReview,
-    required this.onRejectReview,
-    required this.onDismissQuarantine,
-    required this.onReplayImportQueue,
   });
 
   final ExpensesSnapshot snapshot;
@@ -56,15 +39,6 @@ class ExpensesSnapshotContent extends StatefulWidget {
   final ValueChanged<ExpenseItem> onEditExpense;
   final ValueChanged<ExpenseItem> onDeleteExpense;
   final ValueChanged<ExpenseItem> onMerchantTap;
-  final ExpenseImportMetrics importMetrics;
-  final List<ExpenseReviewItem> reviewItems;
-  final List<ExpenseQuarantineItem> quarantineItems;
-  final List<PaybillProfile> paybillProfiles;
-  final List<FulizaLifecycleEvent> fulizaEvents;
-  final ValueChanged<ExpenseReviewItem> onApproveReview;
-  final ValueChanged<ExpenseReviewItem> onRejectReview;
-  final ValueChanged<ExpenseQuarantineItem> onDismissQuarantine;
-  final Future<void> Function() onReplayImportQueue;
 
   @override
   State<ExpensesSnapshotContent> createState() =>
@@ -124,42 +98,66 @@ class _ExpensesSnapshotContentState extends State<ExpensesSnapshotContent> {
       padding: const EdgeInsets.only(bottom: AppSpacing.contentBottomSafe),
       children: [
         // ── Summary ───────────────────────────────────────────────────────────
-        Row(
-          children: [
-            Expanded(
-              child: _SummaryCard(
-                title: 'Today',
-                amount: CurrencyFormatter.money(widget.snapshot.todayKes),
-                tone: AppCardTone.accent,
-                accentColor: AppColors.accent,
+        SizedBox(
+          height: 96,
+          child: ListView(
+            scrollDirection: Axis.horizontal,
+            clipBehavior: Clip.none,
+            children: [
+              SizedBox(
+                width: 160,
+                child: _SummaryCard(
+                  title: 'Today',
+                  amount: CurrencyFormatter.money(widget.snapshot.todayKes),
+                  tone: AppCardTone.accent,
+                  accentColor: AppColors.accent,
+                ),
               ),
-            ),
-            const SizedBox(width: AppSpacing.sm),
-            Expanded(
-              child: _SummaryCard(
-                title: 'Week',
-                amount: CurrencyFormatter.money(widget.snapshot.weekKes),
-                tone: AppCardTone.accent,
-                accentColor: AppColors.teal,
-                delta: weekDelta,
-                deltaIsGood: weekDeltaIsGood,
+              const SizedBox(width: AppSpacing.sm),
+              SizedBox(
+                width: 160,
+                child: _SummaryCard(
+                  title: 'Week',
+                  amount: CurrencyFormatter.money(widget.snapshot.weekKes),
+                  tone: AppCardTone.standard,
+                  delta: weekDelta,
+                  deltaIsGood: weekDeltaIsGood,
+                ),
               ),
-            ),
-          ],
+              const SizedBox(width: AppSpacing.sm),
+              SizedBox(
+                width: 160,
+                child: _SummaryCard(
+                  title: 'Month',
+                  amount: CurrencyFormatter.money(widget.snapshot.monthKes),
+                  tone: AppCardTone.standard,
+                ),
+              ),
+            ],
+          ),
         ),
         const SizedBox(height: AppSpacing.md),
         // ── Budget + Forecast ─────────────────────────────────────────────────
-        Row(
-          children: [
-            Expanded(
-              child: _BudgetMiniCard(
-                budgetSnapshot: widget.budgetSnapshot,
-                monthTotal: monthTotal,
+        SizedBox(
+          height: 120,
+          child: ListView(
+            scrollDirection: Axis.horizontal,
+            clipBehavior: Clip.none,
+            children: [
+              SizedBox(
+                width: 170,
+                child: _BudgetMiniCard(
+                  budgetSnapshot: widget.budgetSnapshot,
+                  monthTotal: monthTotal,
+                ),
               ),
-            ),
-            const SizedBox(width: AppSpacing.sm),
-            Expanded(child: _ForecastMiniCard(monthTotal: monthTotal)),
-          ],
+              const SizedBox(width: AppSpacing.sm),
+              SizedBox(
+                width: 170,
+                child: _ForecastMiniCard(monthTotal: monthTotal),
+              ),
+            ],
+          ),
         ),
         const SizedBox(height: AppSpacing.md),
         // ── Filter chips ──────────────────────────────────────────────────────
@@ -187,25 +185,6 @@ class _ExpensesSnapshotContentState extends State<ExpensesSnapshotContent> {
               );
             }).toList(),
           ),
-        ),
-        const SizedBox(height: AppSpacing.md),
-        _CategoryCard(categories: widget.snapshot.categories),
-        if (widget.fulizaEvents.isNotEmpty) ...[
-          const SizedBox(height: AppSpacing.lg),
-          _FulizaSummaryCard(events: widget.fulizaEvents),
-        ],
-        const SizedBox(height: AppSpacing.lg),
-        _ImportPipelineCard(
-          metrics: widget.importMetrics,
-          reviewItems: widget.reviewItems,
-          quarantineItems: widget.quarantineItems,
-          paybillProfiles: widget.paybillProfiles,
-          fulizaEvents: widget.fulizaEvents,
-          busy: widget.busy,
-          onApproveReview: widget.onApproveReview,
-          onRejectReview: widget.onRejectReview,
-          onDismissQuarantine: widget.onDismissQuarantine,
-          onReplayImportQueue: widget.onReplayImportQueue,
         ),
         const SizedBox(height: AppSpacing.md),
         Row(

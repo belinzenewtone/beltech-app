@@ -3,6 +3,7 @@ import 'package:beltech/features/analytics/presentation/analytics_screen.dart';
 import 'package:beltech/features/bills/presentation/screens/bills_screen.dart';
 import 'package:beltech/features/budget/presentation/budget_screen.dart';
 import 'package:beltech/features/changelog/presentation/screens/changelog_screen.dart';
+import 'package:beltech/features/events/presentation/events_screen.dart';
 import 'package:beltech/features/export/presentation/export_screen.dart';
 import 'package:beltech/features/insights/presentation/screens/insights_screen.dart';
 import 'package:beltech/features/income/presentation/income_screen.dart';
@@ -81,6 +82,11 @@ final appRouterProvider = Provider<GoRouter>(
         path: '/tasks',
         name: 'tasks',
         builder: (context, state) => const TasksScreen(),
+      ),
+      GoRoute(
+        path: '/events',
+        name: 'events',
+        builder: (context, state) => const EventsScreen(),
       ),
       GoRoute(
         path: '/bills',

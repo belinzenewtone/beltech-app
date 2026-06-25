@@ -228,3 +228,36 @@ final weekEventsProvider = StreamProvider<List<CalendarEvent>>((ref) {
       .watch(calendarRepositoryProvider)
       .watchEventsInRange(weekStart, weekEnd);
 });
+
+enum EventFilter { all, upcoming, completed }
+
+final eventFilterProvider = StateProvider<EventFilter>((_) => EventFilter.all);
+
+final eventSearchQueryProvider = StateProvider<String>((_) => '');
+
+final allEventsProvider = StreamProvider<List<CalendarEvent>>((ref) {
+  return ref.watch(calendarRepositoryProvider).watchAllEvents();
+});
+
+final filteredEventsProvider = Provider<AsyncValue<List<CalendarEvent>>>((ref) {
+  final eventsState = ref.watch(allEventsProvider);
+  final filter = ref.watch(eventFilterProvider);
+  final query = ref.watch(eventSearchQueryProvider).trim().toLowerCase();
+
+  return eventsState.whenData((events) {
+    var visible = events;
+    switch (filter) {
+      case EventFilter.upcoming:
+        visible = events.where((event) => !event.completed).toList();
+      case EventFilter.completed:
+        visible = events.where((event) => event.completed).toList();
+      case EventFilter.all:
+        visible = events;
+    }
+    if (query.isEmpty) return visible;
+    return visible.where((event) {
+      final haystack = '${event.title} ${event.note ?? ''}'.toLowerCase();
+      return haystack.contains(query);
+    }).toList();
+  });
+});

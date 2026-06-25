@@ -3,8 +3,6 @@ import 'package:beltech/core/security/session_lock_settings_repository.dart';
 import 'package:beltech/core/theme/app_theme.dart';
 import 'package:beltech/features/auth/domain/entities/auth_state.dart';
 import 'package:beltech/features/auth/presentation/providers/auth_providers.dart';
-import 'package:beltech/features/expenses/domain/entities/expense_import_intelligence.dart';
-import 'package:beltech/features/expenses/domain/entities/expense_import_review.dart';
 import 'package:beltech/features/expenses/domain/entities/expense_item.dart';
 import 'package:beltech/features/expenses/presentation/providers/expenses_providers.dart';
 import 'package:beltech/features/expenses/presentation/widgets/expenses_snapshot_content.dart';
@@ -144,6 +142,7 @@ void main() {
               snapshot: ExpensesSnapshot(
                 todayKes: 400,
                 weekKes: 1200,
+                monthKes: 3500,
                 categories: const [
                   CategoryExpenseTotal(category: 'Bills', totalKes: 800),
                 ],
@@ -163,61 +162,6 @@ void main() {
               onFilterChanged: (_) {},
               onEditExpense: (_) {},
               onDeleteExpense: (_) {},
-              importMetrics: const ExpenseImportMetrics(
-                reviewQueueCount: 1,
-                quarantineCount: 1,
-                retryQueueCount: 2,
-                failedQueueCount: 1,
-              ),
-              reviewItems: [
-                ExpenseReviewItem(
-                  id: 1,
-                  title: 'ATM Withdrawal',
-                  category: 'Cash',
-                  amountKes: 300,
-                  occurredAt: DateTime(2026, 3, 20, 10, 0),
-                  confidence: 0.68,
-                  rawMessage: 'sample',
-                ),
-              ],
-              quarantineItems: [
-                ExpenseQuarantineItem(
-                  id: 1,
-                  reason: 'Low confidence classification',
-                  confidence: 0.42,
-                  rawMessage: 'sample',
-                  createdAt: DateTime(2026, 3, 20, 12, 0),
-                ),
-              ],
-              paybillProfiles: [
-                PaybillProfile(
-                  id: 1,
-                  paybill: '998877',
-                  displayName: 'KPLC Prepaid',
-                  lastSeenAt: DateTime(2026, 3, 21, 9, 0),
-                  usageCount: 3,
-                ),
-              ],
-              fulizaEvents: [
-                FulizaLifecycleEvent(
-                  id: 1,
-                  mpesaCode: 'AA12BB34CC',
-                  kind: FulizaLifecycleKind.draw,
-                  amountKes: 500,
-                  occurredAt: DateTime(2026, 3, 21, 10, 0),
-                ),
-                FulizaLifecycleEvent(
-                  id: 2,
-                  mpesaCode: 'DD56EE78FF',
-                  kind: FulizaLifecycleKind.repayment,
-                  amountKes: 200,
-                  occurredAt: DateTime(2026, 3, 21, 12, 0),
-                ),
-              ],
-              onApproveReview: (_) {},
-              onRejectReview: (_) {},
-              onDismissQuarantine: (_) {},
-              onReplayImportQueue: () async {},
               onMerchantTap: (_) {},
             ),
           ),

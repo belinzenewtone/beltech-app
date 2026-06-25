@@ -36,12 +36,14 @@ void main() {
     final nextProfile = repository.watchProfile().skip(1).first;
     await repository.updateProfile(
       name: 'New Name',
+      username: 'newname',
       email: 'new@example.com',
       phone: '0712345678',
     );
 
     final updated = await nextProfile.timeout(const Duration(seconds: 2));
     expect(updated.name, 'New Name');
+    expect(updated.username, 'newname');
     expect(updated.email, 'new@example.com');
     expect(updated.phone, '0712345678');
   });

@@ -14,9 +14,6 @@ class NotificationPreferencesSection extends ConsumerWidget {
     final notificationsEnabledState = ref.watch(notificationsEnabledProvider);
     final budgetAlertsState = ref.watch(budgetAlertsEnabledProvider);
     final dailyDigestState = ref.watch(dailyDigestEnabledProvider);
-    final weeklyReviewState = ref.watch(
-      weeklyReviewNotificationsEnabledProvider,
-    );
     final dailyDigestTimeState = ref.watch(dailyDigestScheduleTimeProvider);
     final budgetThresholdsState = ref.watch(budgetAlertThresholdsProvider);
     final notificationWriteState = ref.watch(
@@ -26,7 +23,6 @@ class NotificationPreferencesSection extends ConsumerWidget {
     final notificationsEnabled = notificationsEnabledState.valueOrNull ?? true;
     final budgetAlertsEnabled = budgetAlertsState.valueOrNull ?? true;
     final dailyDigestEnabled = dailyDigestState.valueOrNull ?? true;
-    final weeklyReviewEnabled = weeklyReviewState.valueOrNull ?? true;
     final (digestHour, digestMinute) =
         dailyDigestTimeState.valueOrNull ?? (7, 0);
     final (budgetHigh, budgetMedium, budgetLow) =
@@ -36,7 +32,6 @@ class NotificationPreferencesSection extends ConsumerWidget {
         notificationsEnabledState.isLoading ||
         budgetAlertsState.isLoading ||
         dailyDigestState.isLoading ||
-        weeklyReviewState.isLoading ||
         dailyDigestTimeState.isLoading ||
         budgetThresholdsState.isLoading ||
         notificationWriteState.isLoading;
@@ -121,29 +116,12 @@ class NotificationPreferencesSection extends ConsumerWidget {
               }
             },
           ),
-        SettingsRow(
-          icon: Icons.calendar_today_outlined,
-          title: 'Weekly Review',
-          subtitle: 'Sunday evening ritual nudge',
-          trailing: Switch.adaptive(
-            value: weeklyReviewEnabled,
-            onChanged: childPreferencesReadOnly
-                ? null
-                : (value) async {
-                    await ref
-                        .read(notificationPreferenceControllerProvider.notifier)
-                        .setWeeklyReviewEnabled(value);
-                  },
-          ),
-          dividerAbove: true,
-          isLast: true,
-        ),
       ],
     );
   }
 }
 
-class _BudgetThresholdSliders extends StatelessWidget {
+class _BudgetThresholdSliders extends StatefulWidget {
   const _BudgetThresholdSliders({
     required this.high,
     required this.medium,
@@ -157,6 +135,40 @@ class _BudgetThresholdSliders extends StatelessWidget {
   final void Function(double high, double medium, double low) onChanged;
 
   @override
+  State<_BudgetThresholdSliders> createState() =>
+      _BudgetThresholdSlidersState();
+}
+
+class _BudgetThresholdSlidersState extends State<_BudgetThresholdSliders> {
+  late double _high;
+  late double _medium;
+  late double _low;
+
+  @override
+  void initState() {
+    super.initState();
+    _high = widget.high;
+    _medium = widget.medium;
+    _low = widget.low;
+  }
+
+  @override
+  void didUpdateWidget(covariant _BudgetThresholdSliders oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.high != widget.high) _high = widget.high;
+    if (oldWidget.medium != widget.medium) _medium = widget.medium;
+    if (oldWidget.low != widget.low) _low = widget.low;
+  }
+
+  void _update(double high, double medium, double low) {
+    setState(() {
+      _high = high;
+      _medium = medium;
+      _low = low;
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(56, 4, 16, 12),
@@ -167,20 +179,23 @@ class _BudgetThresholdSliders extends StatelessWidget {
           const SizedBox(height: 12),
           _ThresholdSlider(
             label: 'Critical',
-            value: high,
-            onChanged: (value) => onChanged(value, medium, low),
+            value: _high,
+            onChanged: (value) => _update(value, _medium, _low),
+            onChangeEnd: (value) => widget.onChanged(value, _medium, _low),
           ),
           const SizedBox(height: 8),
           _ThresholdSlider(
             label: 'Warning',
-            value: medium,
-            onChanged: (value) => onChanged(high, value, low),
+            value: _medium,
+            onChanged: (value) => _update(_high, value, _low),
+            onChangeEnd: (value) => widget.onChanged(_high, value, _low),
           ),
           const SizedBox(height: 8),
           _ThresholdSlider(
             label: 'Info',
-            value: low,
-            onChanged: (value) => onChanged(high, medium, value),
+            value: _low,
+            onChanged: (value) => _update(_high, _medium, value),
+            onChangeEnd: (value) => widget.onChanged(_high, _medium, value),
           ),
         ],
       ),
@@ -193,11 +208,13 @@ class _ThresholdSlider extends StatelessWidget {
     required this.label,
     required this.value,
     required this.onChanged,
+    this.onChangeEnd,
   });
 
   final String label;
   final double value;
   final ValueChanged<double> onChanged;
+  final ValueChanged<double>? onChangeEnd;
 
   @override
   Widget build(BuildContext context) {
@@ -217,6 +234,7 @@ class _ThresholdSlider extends StatelessWidget {
             inactiveColor: AppColors.border,
             label: '${value.toStringAsFixed(0)}%',
             onChanged: onChanged,
+            onChangeEnd: onChangeEnd,
           ),
         ),
         SizedBox(

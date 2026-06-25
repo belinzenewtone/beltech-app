@@ -6,12 +6,21 @@ import 'package:beltech/features/analytics/domain/entities/analytics_snapshot.da
 import 'package:flutter/material.dart';
 
 class AnalyticsOverviewCards extends StatelessWidget {
-  const AnalyticsOverviewCards({super.key, required this.snapshot});
+  const AnalyticsOverviewCards({
+    super.key,
+    required this.snapshot,
+    required this.period,
+  });
 
   final AnalyticsSnapshot snapshot;
+  final AnalyticsPeriod period;
 
   @override
   Widget build(BuildContext context) {
+    final periodLabel = switch (period) {
+      AnalyticsPeriod.week => 'This Week',
+      AnalyticsPeriod.month => 'This Month',
+    };
     return Column(
       children: [
         IntrinsicHeight(
@@ -20,7 +29,7 @@ class AnalyticsOverviewCards extends StatelessWidget {
             children: [
               Expanded(
                 child: _MetricCard(
-                  title: 'This Month',
+                  title: periodLabel,
                   value: CurrencyFormatter.money(
                     snapshot.totalSpentThisMonthKes,
                   ),

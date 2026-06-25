@@ -40,6 +40,7 @@ class ExpensesRepositoryImpl implements ExpensesRepository {
       (record) => ExpensesSnapshot(
         todayKes: record.todayKes,
         weekKes: record.weekKes,
+        monthKes: record.monthKes,
         categories: record.categories
             .map(
               (item) => CategoryExpenseTotal(
@@ -168,6 +169,7 @@ class ExpensesRepositoryImpl implements ExpensesRepository {
         'route = ?, '
         'confidence = ?, '
         'status = CASE WHEN status IN (?, ?) THEN ? ELSE status END, '
+        'attempt = CASE WHEN status IN (?, ?) THEN 0 ELSE attempt END, '
         'next_retry_at = CASE WHEN status IN (?, ?) THEN NULL ELSE next_retry_at END, '
         'last_error = CASE WHEN status IN (?, ?) THEN NULL ELSE last_error END, '
         'updated_at = ? '
@@ -183,6 +185,8 @@ class ExpensesRepositoryImpl implements ExpensesRepository {
           'retry',
           'failed',
           'pending',
+          'retry',
+          'failed',
           'retry',
           'failed',
           'retry',

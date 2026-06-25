@@ -57,6 +57,8 @@ class _ImportHealthScreenState extends ConsumerState<ImportHealthScreen> {
       title: 'Import Health',
       child: Column(
         children: [
+          _pipelineCardSection(),
+          const SizedBox(height: AppSpacing.sectionGap),
           _overviewMetricsSection(),
           const SizedBox(height: AppSpacing.sectionGap),
           _queueStatusSection(),
@@ -69,6 +71,38 @@ class _ImportHealthScreenState extends ConsumerState<ImportHealthScreen> {
           _integritySection(),
         ],
       ),
+    );
+  }
+
+  Widget _pipelineCardSection() {
+    final metricsAsync = ref.watch(expenseImportMetricsProvider);
+    final busy = ref.watch(expenseWriteControllerProvider).isLoading;
+    return metricsAsync.when(
+      data: (metrics) => ImportPipelineCard(
+        metrics: metrics,
+        busy: busy,
+        onRetry: () async {
+          final imported = await ref
+              .read(expenseWriteControllerProvider.notifier)
+              .replayImportQueue();
+          if (!mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Retried imports: $imported processed'),
+              behavior: SnackBarBehavior.floating,
+              duration: const Duration(seconds: 2),
+            ),
+          );
+        },
+      ),
+      loading: () => const AppCard(
+        tone: AppCardTone.muted,
+        child: SizedBox(
+          height: 120,
+          child: Center(child: CircularProgressIndicator()),
+        ),
+      ),
+      error: (_, __) => const SizedBox.shrink(),
     );
   }
 
@@ -139,30 +173,65 @@ class _ImportHealthScreenState extends ConsumerState<ImportHealthScreen> {
 
   Widget _queueStatusSection() {
     final metricsAsync = ref.watch(expenseImportMetricsProvider);
+    final busy = ref.watch(expenseWriteControllerProvider).isLoading;
     return metricsAsync.when(
-      data: (metrics) => AppCard(
-        tone: AppCardTone.muted,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Queue Status', style: AppTypography.cardTitle(context)),
-            const SizedBox(height: AppSpacing.md),
-            ImportQueueRow(
-              icon: Icons.refresh_rounded,
-              label: 'Retry Queue',
-              count: metrics.retryQueueCount,
-              color: AppColors.warning,
-            ),
-            const SizedBox(height: AppSpacing.sm),
-            ImportQueueRow(
-              icon: Icons.error_outline_rounded,
-              label: 'Failed',
-              count: metrics.failedQueueCount,
-              color: AppColors.danger,
-            ),
-          ],
-        ),
-      ),
+      data: (metrics) {
+        final pendingCount = metrics.retryQueueCount + metrics.failedQueueCount;
+        return AppCard(
+          tone: AppCardTone.muted,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Queue Status', style: AppTypography.cardTitle(context)),
+              const SizedBox(height: AppSpacing.md),
+              ImportQueueRow(
+                icon: Icons.refresh_rounded,
+                label: 'Retry Queue',
+                count: metrics.retryQueueCount,
+                color: AppColors.warning,
+              ),
+              const SizedBox(height: AppSpacing.sm),
+              ImportQueueRow(
+                icon: Icons.error_outline_rounded,
+                label: 'Failed',
+                count: metrics.failedQueueCount,
+                color: AppColors.danger,
+              ),
+              if (pendingCount > 0) ...[
+                const SizedBox(height: AppSpacing.md),
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    onPressed: busy
+                        ? null
+                        : () async {
+                            final imported = await ref
+                                .read(expenseWriteControllerProvider.notifier)
+                                .replayImportQueue();
+                            if (!mounted) return;
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Retried imports: $imported processed'),
+                                behavior: SnackBarBehavior.floating,
+                                duration: const Duration(seconds: 2),
+                              ),
+                            );
+                          },
+                    icon: busy
+                        ? const SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Icon(Icons.refresh_rounded, size: 18),
+                    label: const Text('Retry now'),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        );
+      },
       loading: () => const SizedBox.shrink(),
       error: (_, __) => const SizedBox.shrink(),
     );

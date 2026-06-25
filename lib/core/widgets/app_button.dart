@@ -28,6 +28,7 @@ class AppButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final brightness = Theme.of(context).brightness;
     final isEnabled = onPressed != null && !loading;
 
     final (height, hPad, fontSize) = switch (size) {
@@ -43,12 +44,12 @@ class AppButton extends StatelessWidget {
         AppColors.accentLight.withValues(alpha: 0.25),
       ),
       AppButtonVariant.secondary => (
-        AppColors.surfaceMuted,
+        AppColors.surfaceMutedFor(brightness),
         AppColors.accent,
         AppColors.accent.withValues(alpha: 0.35),
       ),
       AppButtonVariant.ghost => (
-        AppColors.surfaceSoft,
+        AppColors.surfaceMutedFor(brightness).withValues(alpha: 0.55),
         AppColors.accent,
         Colors.transparent,
       ),

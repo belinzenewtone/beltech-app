@@ -24,11 +24,35 @@ Future<ExpenseImportMetrics> _fetchImportMetricsImpl(
     where: 'scope = ? AND status = ?',
     params: ['local', 'failed'],
   );
+  final latestRows = await repo._store.executor.runSelect(
+    'SELECT raw_message, last_error, updated_at, status '
+    'FROM sms_import_queue '
+    'WHERE scope = ? '
+    'ORDER BY updated_at DESC LIMIT 1',
+    ['local'],
+  );
+
+  DateTime? lastImportAt;
+  String? lastMpesaCode;
+  String? lastError;
+  if (latestRows.isNotEmpty) {
+    final row = latestRows.first;
+    final updatedAt = repo._asInt(row['updated_at']);
+    lastImportAt = DateTime.fromMillisecondsSinceEpoch(updatedAt);
+    lastError = row['last_error'] as String?;
+    lastError = lastError?.trim().isEmpty ?? true ? null : lastError;
+    final rawMessage = '${row['raw_message'] ?? ''}';
+    lastMpesaCode = MpesaParserService.extractMpesaCode(rawMessage);
+  }
+
   return ExpenseImportMetrics(
     reviewQueueCount: review,
     quarantineCount: quarantine,
     retryQueueCount: retry,
     failedQueueCount: failed,
+    lastImportAt: lastImportAt,
+    lastMpesaCode: lastMpesaCode,
+    lastError: lastError,
   );
 }
 

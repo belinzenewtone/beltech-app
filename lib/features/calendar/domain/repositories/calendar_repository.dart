@@ -3,6 +3,7 @@ import 'package:beltech/features/calendar/domain/entities/calendar_event.dart';
 abstract class CalendarRepository {
   Stream<List<CalendarEvent>> watchEventsForDay(DateTime day);
   Stream<List<CalendarEvent>> watchEventsInRange(DateTime start, DateTime end);
+  Stream<List<CalendarEvent>> watchAllEvents();
 
   Future<void> addEvent({
     required String title,

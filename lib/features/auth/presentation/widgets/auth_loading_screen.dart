@@ -70,8 +70,9 @@ class _AuthLoadingScreenState extends State<AuthLoadingScreen>
 
   @override
   Widget build(BuildContext context) {
+    final brightness = Theme.of(context).brightness;
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: AppColors.backgroundFor(brightness),
       body: Center(
         child: FadeTransition(
           opacity: _fadeIn,

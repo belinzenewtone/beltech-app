@@ -12,8 +12,7 @@ Future<void> showEditProfileDialog(
   UserProfile profile,
 ) async {
   final nameCtrl = TextEditingController(text: profile.name);
-  final emailCtrl = TextEditingController(text: profile.email);
-  final phoneCtrl = TextEditingController(text: profile.phone);
+  final usernameCtrl = TextEditingController(text: profile.username);
   final formKey = GlobalKey<FormState>();
 
   await showModalBottomSheet<void>(
@@ -43,8 +42,9 @@ Future<void> showEditProfileDialog(
                       .read(profileWriteControllerProvider.notifier)
                       .updateProfile(
                         name: nameCtrl.text.trim(),
-                        email: emailCtrl.text.trim(),
-                        phone: phoneCtrl.text.trim(),
+                        username: usernameCtrl.text.trim(),
+                        email: profile.email,
+                        phone: profile.phone,
                       );
                   final writeState = ref.read(profileWriteControllerProvider);
                   if (context.mounted && !writeState.hasError) {
@@ -62,8 +62,25 @@ Future<void> showEditProfileDialog(
             children: [
               TextFormField(
                 controller: nameCtrl,
+                maxLength: 50,
+                decoration: const InputDecoration(
+                  hintText: 'Full Name',
+                  counterText: '',
+                ),
+                validator: (v) {
+                  final val = v?.trim() ?? '';
+                  if (val.isEmpty) return 'Full name is required';
+                  return null;
+                },
+              ),
+              const SizedBox(height: 14),
+              TextFormField(
+                controller: usernameCtrl,
                 maxLength: 10,
-                inputFormatters: [LengthLimitingTextInputFormatter(10)],
+                inputFormatters: [
+                  LengthLimitingTextInputFormatter(10),
+                  FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z0-9_]')),
+                ],
                 decoration: const InputDecoration(
                   hintText: 'Username',
                   counterText: '',
@@ -72,33 +89,8 @@ Future<void> showEditProfileDialog(
                   final val = v?.trim() ?? '';
                   if (val.isEmpty) return 'Username is required';
                   if (val.length > 10) return 'Max 10 characters';
-                  return null;
-                },
-              ),
-              const SizedBox(height: 14),
-              TextFormField(
-                controller: emailCtrl,
-                decoration: const InputDecoration(hintText: 'Email'),
-                validator: (v) => (v == null || !v.contains('@'))
-                    ? 'Valid email required'
-                    : null,
-              ),
-              const SizedBox(height: 14),
-              TextFormField(
-                controller: phoneCtrl,
-                keyboardType: TextInputType.phone,
-                inputFormatters: [
-                  FilteringTextInputFormatter.digitsOnly,
-                  LengthLimitingTextInputFormatter(10),
-                ],
-                decoration: const InputDecoration(hintText: 'Phone'),
-                validator: (v) {
-                  final phone = v?.trim() ?? '';
-                  if (phone.isEmpty) {
-                    return 'Phone is required';
-                  }
-                  if (!RegExp(r'^\d{10}$').hasMatch(phone)) {
-                    return 'Phone must be exactly 10 digits';
+                  if (!RegExp(r'^[a-zA-Z0-9_]+$').hasMatch(val)) {
+                    return 'Alphanumeric and underscore only';
                   }
                   return null;
                 },

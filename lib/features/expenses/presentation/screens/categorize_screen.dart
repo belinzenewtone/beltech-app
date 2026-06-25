@@ -8,6 +8,7 @@ import 'package:beltech/core/widgets/app_feedback.dart';
 import 'package:beltech/core/widgets/app_form_sheet.dart';
 import 'package:beltech/core/widgets/secondary_page_shell.dart';
 import 'package:beltech/features/expenses/domain/entities/expense_item.dart';
+import 'package:beltech/features/expenses/presentation/providers/expense_categories_provider.dart';
 import 'package:beltech/features/expenses/presentation/providers/expenses_providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -24,36 +25,15 @@ class _CategorizeScreenState extends ConsumerState<CategorizeScreen> {
   bool _showOnlyUncategorized = true;
   final Set<int> _saving = {};
 
-  static const _allCategories = [
-    'Food & Dining',
-    'Airtime',
-    'Transport',
-    'Utilities',
-    'Rent',
-    'Shopping',
-    'Healthcare',
-    'Entertainment',
-    'Education',
-    'Savings',
-    'Loans',
-    'Family',
-    'Other',
-  ];
-
-  static const _quickPickCategories = [
-    'Food & Dining',
-    'Transport',
-    'Utilities',
-    'Shopping',
-    'Airtime',
-  ];
-
   @override
   Widget build(BuildContext context) {
     final snapshot = ref.watch(expensesSnapshotProvider).valueOrNull;
     final transactions = snapshot?.transactions ?? const [];
+    final categoriesAsync = ref.watch(expenseCategoriesProvider);
+    final allCategories = categoriesAsync.valueOrNull ?? expenseCategoryDefaults;
+    final quickPickCategories = allCategories.take(5).toList();
     final uncategorized = transactions
-        .where((t) => t.category == 'Other')
+        .where((t) => !allCategories.contains(t.category))
         .toList();
     final visible = _showOnlyUncategorized ? uncategorized : transactions;
 
@@ -101,8 +81,8 @@ class _CategorizeScreenState extends ConsumerState<CategorizeScreen> {
                 itemBuilder: (context, i) => _CategorizeRow(
                   transaction: visible[i],
                   isSaving: _saving.contains(visible[i].id),
-                  quickPick: _quickPickCategories,
-                  allCategories: _allCategories,
+                  quickPick: quickPickCategories,
+                  allCategories: allCategories,
                   onCategorySelected: (cat) => _applyCategory(visible[i], cat),
                 ),
               ),

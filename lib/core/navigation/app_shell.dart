@@ -145,8 +145,10 @@ class _AppShellState extends ConsumerState<AppShell>
     final reduceMotion = AppMotion.reduceMotion(context);
     final keyboardVisible = MediaQuery.viewInsetsOf(context).bottom > 0;
 
+    final brightness = Theme.of(context).brightness;
+
     return Container(
-      color: AppColors.background,
+      color: AppColors.backgroundFor(brightness),
       child: Stack(
         children: [
           IgnorePointer(

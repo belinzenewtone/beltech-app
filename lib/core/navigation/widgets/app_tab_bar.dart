@@ -37,11 +37,14 @@ class AppTabBar extends StatelessWidget {
     final textScale = MediaQuery.textScalerOf(context).scale(1);
     final resolvedHeight = height + ((textScale - 1) * 12).clamp(0.0, 10.0);
 
+    final bgColor = AppColors.surfaceFor(brightness);
+    final borderColor = AppColors.borderFor(brightness);
+
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.surfaceElevated,
+        color: bgColor,
         borderRadius: BorderRadius.circular(AppRadius.xxl),
-        border: Border.all(color: AppColors.borderStrong),
+        border: Border.all(color: borderColor),
         boxShadow: const [
           BoxShadow(
             color: Color(0x33000000),

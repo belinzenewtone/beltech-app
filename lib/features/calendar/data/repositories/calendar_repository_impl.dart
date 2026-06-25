@@ -57,6 +57,28 @@ class CalendarRepositoryImpl implements CalendarRepository {
   }
 
   @override
+  Stream<List<CalendarEvent>> watchAllEvents() {
+    return _store.watchAllEvents().map(
+      (rows) => rows
+          .map(
+            (row) => CalendarEvent(
+              id: row.id,
+              title: row.title,
+              startAt: row.startAt,
+              completed: row.completed,
+              priority: _priorityFrom(row.priority),
+              type: calendarEventTypeFromRaw(row.eventType),
+              endAt: row.endAt,
+              note: row.note,
+              reminderEnabled: row.reminderEnabled,
+              reminderMinutesBefore: row.reminderMinutesBefore,
+            ),
+          )
+          .toList(),
+    );
+  }
+
+  @override
   Future<void> addEvent({
     required String title,
     required DateTime startAt,

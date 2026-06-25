@@ -27,7 +27,6 @@ class _TasksLayout extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               PageHeader(
-                eyebrow: 'FOCUS',
                 title: 'Tasks',
                 subtitle: countSubtitle,
                 action: Row(
@@ -72,7 +71,7 @@ class _TasksLayout extends StatelessWidget {
                 onChanged: (_) => state._refreshSearchResults(),
               ),
               const SizedBox(height: AppSpacing.sectionGap),
-              if (state._selectionMode) ...[
+              if (state._selectionMode && state._selectedTaskIds.length >= 2) ...[
                 TaskSelectionBar(
                   selectedCount: state._selectedTaskIds.length,
                   isLoading: writeState.isLoading,

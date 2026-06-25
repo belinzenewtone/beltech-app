@@ -6,7 +6,9 @@ import 'package:beltech/core/widgets/app_button.dart';
 import 'package:beltech/core/widgets/app_card.dart';
 import 'package:beltech/core/widgets/app_form_sheet.dart';
 import 'package:beltech/features/expenses/domain/entities/expense_item.dart';
+import 'package:beltech/features/expenses/presentation/providers/expense_categories_provider.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 class ManualExpenseInput {
   const ManualExpenseInput({
@@ -46,32 +48,16 @@ Future<ManualExpenseInput?> _showExpenseDialog(
   );
 }
 
-class _ExpenseFormSheet extends StatefulWidget {
+class _ExpenseFormSheet extends ConsumerStatefulWidget {
   const _ExpenseFormSheet({this.initialExpense});
 
   final ExpenseItem? initialExpense;
 
   @override
-  State<_ExpenseFormSheet> createState() => _ExpenseFormSheetState();
+  ConsumerState<_ExpenseFormSheet> createState() => _ExpenseFormSheetState();
 }
 
-class _ExpenseFormSheetState extends State<_ExpenseFormSheet> {
-  static const _categories = [
-    'Food & Dining',
-    'Airtime',
-    'Transport',
-    'Utilities',
-    'Rent',
-    'Shopping',
-    'Healthcare',
-    'Entertainment',
-    'Education',
-    'Savings',
-    'Loans',
-    'Family',
-    'Other',
-  ];
-
+class _ExpenseFormSheetState extends ConsumerState<_ExpenseFormSheet> {
   late final TextEditingController _titleController;
   late final TextEditingController _amountController;
   late DateTime _occurredAt;
@@ -90,11 +76,7 @@ class _ExpenseFormSheetState extends State<_ExpenseFormSheet> {
           : initialExpense.amountKes.toStringAsFixed(2),
     );
     _occurredAt = initialExpense?.occurredAt ?? DateTime.now();
-    _selectedCategory = initialExpense == null
-        ? _categories.first
-        : (_categories.contains(initialExpense.category)
-              ? initialExpense.category
-              : 'Other');
+    _selectedCategory = initialExpense?.category ?? expenseCategoryDefaults.first;
   }
 
   @override
@@ -106,6 +88,12 @@ class _ExpenseFormSheetState extends State<_ExpenseFormSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final categoriesAsync = ref.watch(expenseCategoriesProvider);
+    final categories = categoriesAsync.valueOrNull ?? expenseCategoryDefaults;
+    if (!categories.contains(_selectedCategory)) {
+      _selectedCategory = categories.first;
+    }
+
     return AppFormSheet(
       title: _isEdit ? 'Edit Transaction' : 'Add Transaction',
       onClose: () => Navigator.of(context).pop(),
@@ -120,7 +108,7 @@ class _ExpenseFormSheetState extends State<_ExpenseFormSheet> {
             child: AppButton(
               label: _isEdit ? 'Save' : 'Add',
               fullWidth: true,
-              onPressed: _submit,
+              onPressed: categoriesAsync.isLoading ? null : _submit,
             ),
           ),
         ],
@@ -142,19 +130,25 @@ class _ExpenseFormSheetState extends State<_ExpenseFormSheet> {
           const SizedBox(height: 18),
           Text('Category', style: AppTypography.sectionTitle(context)),
           const SizedBox(height: 10),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: _categories
-                .map(
-                  (category) => _ExpenseCategoryChip(
-                    category: category,
-                    selected: _selectedCategory == category,
-                    onTap: () => setState(() => _selectedCategory = category),
-                  ),
-                )
-                .toList(),
-          ),
+          if (categoriesAsync.isLoading)
+            const SizedBox(
+              height: 38,
+              child: Center(child: CircularProgressIndicator()),
+            )
+          else
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: categories
+                  .map(
+                    (category) => _ExpenseCategoryChip(
+                      category: category,
+                      selected: _selectedCategory == category,
+                      onTap: () => setState(() => _selectedCategory = category),
+                    ),
+                  )
+                  .toList(),
+            ),
           const SizedBox(height: 18),
           AppCard(
             tone: AppCardTone.muted,

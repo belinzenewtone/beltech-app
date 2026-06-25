@@ -109,7 +109,7 @@ Future<int> _replayImportQueueImpl(ExpensesRepositoryImpl repo) async {
   final nowMs = DateTime.now().millisecondsSinceEpoch;
   await repo._store.executor.runUpdate(
     'UPDATE sms_import_queue '
-    'SET status = ?, next_retry_at = NULL, updated_at = ?, last_error = NULL '
+    'SET status = ?, attempt = 0, next_retry_at = NULL, updated_at = ?, last_error = NULL '
     'WHERE scope = ? AND status IN (?, ?)',
     ['pending', nowMs, 'local', 'retry', 'failed'],
   );

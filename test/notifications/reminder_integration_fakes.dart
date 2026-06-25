@@ -168,6 +168,17 @@ class FakeCalendarRepository implements CalendarRepository {
   }
 
   @override
+  Stream<List<CalendarEvent>> watchAllEvents() {
+    return Stream<List<CalendarEvent>>.multi((controller) {
+      controller.add(List.unmodifiable(_events));
+      final sub = _changes.stream.listen((_) {
+        controller.add(List.unmodifiable(_events));
+      });
+      controller.onCancel = sub.cancel;
+    });
+  }
+
+  @override
   Future<void> addEvent({
     required String title,
     required DateTime startAt,

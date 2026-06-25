@@ -72,9 +72,12 @@ extension _NotificationInsightsServiceReview on NotificationInsightsService {
 
   Future<AnalyticsSnapshot?> _readAnalytics() async {
     try {
-      return await _analyticsRepository.watchSnapshot().first.timeout(
-        const Duration(seconds: 8),
-      );
+      return await _analyticsRepository
+          .watchSnapshot(AnalyticsPeriod.week)
+          .first
+          .timeout(
+            const Duration(seconds: 8),
+          );
     } catch (_) {
       return null;
     }

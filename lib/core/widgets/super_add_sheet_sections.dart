@@ -135,20 +135,26 @@ class SuperAddEventTypeSelector extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Wrap(
-      spacing: 8,
-      runSpacing: 8,
-      children: SuperEntryEventType.values.map((item) {
-        final selectedState = item == selected;
-        return AppButton(
-          label: item.name[0].toUpperCase() + item.name.substring(1),
-          size: AppButtonSize.sm,
-          variant: selectedState
-              ? AppButtonVariant.primary
-              : AppButtonVariant.secondary,
-          onPressed: () => onChanged(item),
-        );
-      }).toList(),
+    return SizedBox(
+      height: 38,
+      child: ListView(
+        scrollDirection: Axis.horizontal,
+        clipBehavior: Clip.none,
+        children: SuperEntryEventType.values.map((item) {
+          final selectedState = item == selected;
+          return Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: AppButton(
+              label: item.name[0].toUpperCase() + item.name.substring(1),
+              size: AppButtonSize.sm,
+              variant: selectedState
+                  ? AppButtonVariant.primary
+                  : AppButtonVariant.secondary,
+              onPressed: () => onChanged(item),
+            ),
+          );
+        }).toList(),
+      ),
     );
   }
 }

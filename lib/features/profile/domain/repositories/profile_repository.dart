@@ -6,6 +6,7 @@ abstract class ProfileRepository {
 
   Future<void> updateProfile({
     required String name,
+    required String username,
     required String email,
     required String phone,
   });

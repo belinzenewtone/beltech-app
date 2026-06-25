@@ -25,6 +25,7 @@ class ProfileRepositoryImpl implements ProfileRepository {
     return _store.watchProfile().map(
       (profile) => UserProfile(
         name: profile.name,
+        username: profile.username,
         email: profile.email,
         phone: profile.phone,
         memberSinceLabel: profile.memberSinceLabel,
@@ -37,10 +38,16 @@ class ProfileRepositoryImpl implements ProfileRepository {
   @override
   Future<void> updateProfile({
     required String name,
+    required String username,
     required String email,
     required String phone,
   }) async {
-    await _store.updateProfile(name: name, email: email, phone: phone);
+    await _store.updateProfile(
+      name: name,
+      username: username,
+      email: email,
+      phone: phone,
+    );
   }
 
   @override

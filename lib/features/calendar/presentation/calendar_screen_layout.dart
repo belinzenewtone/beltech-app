@@ -114,18 +114,17 @@ class _CalendarLayout extends StatelessWidget {
         Positioned(
           right: 20,
           bottom: AppSpacing.fabBottom(context),
-          child: FloatingActionButton.extended(
-            onPressed: writeState.isLoading
-                ? null
-                : () => _handleSuperAddFromCalendarImpl(
-                    state,
-                    context,
-                    selectedDay,
-                  ),
-            icon: const Icon(Icons.add),
-            label: const Text('Add'),
-            backgroundColor: AppColors.accent,
-            foregroundColor: Colors.white,
+          child: AppFab(
+            label: 'Add',
+            busy: writeState.isLoading,
+            onPressed: () => _handleSuperAddFromCalendarImpl(
+              state,
+              context,
+              selectedDay,
+              defaultKind: state._view == _CalendarView.tasks
+                  ? SuperEntryKind.task
+                  : SuperEntryKind.event,
+            ),
           ),
         ),
       ],
@@ -244,15 +243,14 @@ class _MonthBody extends StatelessWidget {
             children: [
               _CalendarDetailHeader(
                 dateLabel: dateLabel,
-                state: state,
-                writeState: writeState,
-                selectedDay: selectedDay,
                 showCompleted: state._view == _CalendarView.tasks
                     ? state._showCompletedTasks
                     : state._showCompletedEvents,
                 onToggleCompleted: state._view == _CalendarView.tasks
                     ? state._toggleCompletedTasksVisibility
                     : state._toggleCompletedEventsVisibility,
+                onSearchChanged: state._onSearchChanged,
+                searchController: state._searchController,
               ),
               const SizedBox(height: AppSpacing.md),
               if (state._view == _CalendarView.tasks)
@@ -489,19 +487,17 @@ class _CalendarViewTabs extends StatelessWidget {
 class _CalendarDetailHeader extends StatelessWidget {
   const _CalendarDetailHeader({
     required this.dateLabel,
-    required this.state,
-    required this.writeState,
-    required this.selectedDay,
     required this.showCompleted,
     required this.onToggleCompleted,
+    required this.onSearchChanged,
+    required this.searchController,
   });
 
   final String dateLabel;
-  final _CalendarScreenState state;
-  final AsyncValue<void> writeState;
-  final DateTime selectedDay;
   final bool showCompleted;
   final VoidCallback onToggleCompleted;
+  final ValueChanged<String> onSearchChanged;
+  final TextEditingController searchController;
 
   @override
   Widget build(BuildContext context) {
@@ -526,29 +522,10 @@ class _CalendarDetailHeader extends StatelessWidget {
           ],
         ),
         const SizedBox(height: AppSpacing.sm),
-        Row(
-          children: [
-            Expanded(
-              child: AppSearchBar(
-                controller: state._searchController,
-                hint: 'Search...',
-                onChanged: state._onSearchChanged,
-              ),
-            ),
-            const SizedBox(width: AppSpacing.sm),
-            AppButton(
-              label: 'Add',
-              icon: Icons.add,
-              size: AppButtonSize.sm,
-              onPressed: writeState.isLoading
-                  ? null
-                  : () => _handleSuperAddFromCalendarImpl(
-                      state,
-                      context,
-                      selectedDay,
-                    ),
-            ),
-          ],
+        AppSearchBar(
+          controller: searchController,
+          hint: 'Search...',
+          onChanged: onSearchChanged,
         ),
       ],
     );

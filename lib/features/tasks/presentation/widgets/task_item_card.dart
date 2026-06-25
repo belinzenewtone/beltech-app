@@ -108,12 +108,11 @@ class TaskItemCard extends ConsumerWidget {
                 },
           child: IntrinsicHeight(
             child: Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 if (!task.completed) ...[
                   Container(
                     width: 4,
-                    height: 40,
                     decoration: BoxDecoration(
                       color: priorityColor,
                       borderRadius: BorderRadius.circular(AppRadius.md),
@@ -145,9 +144,6 @@ class TaskItemCard extends ConsumerWidget {
                       Text(
                         task.title,
                         style: AppTypography.cardTitle(context).copyWith(
-                          decoration: task.completed
-                              ? TextDecoration.lineThrough
-                              : null,
                           color: task.completed
                               ? secondaryText
                               : AppColors.textPrimaryFor(brightness),
@@ -203,9 +199,6 @@ class TaskItemCard extends ConsumerWidget {
       final due = task.dueDate!;
       if (due.isBefore(now)) {
         return AppColors.danger;
-      }
-      if (due.difference(now).inDays == 0) {
-        return AppColors.warning;
       }
     }
     return AppColors.textSecondaryFor(Theme.of(context).brightness);

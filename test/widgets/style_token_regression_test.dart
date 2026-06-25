@@ -1,8 +1,7 @@
 import 'package:beltech/core/theme/app_colors.dart';
 import 'package:beltech/core/theme/app_radius.dart';
 import 'package:beltech/core/widgets/app_button.dart';
-import 'package:beltech/features/profile/domain/entities/user_profile.dart';
-import 'package:beltech/features/profile/presentation/widgets/profile_content_section.dart';
+import 'package:beltech/features/profile/presentation/widgets/profile_security_section.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -41,25 +40,12 @@ void main() {
     testWidgets('Profile security InkWell radii follow app card radius', (
       tester,
     ) async {
-      const profile = UserProfile(
-        name: 'Test User',
-        email: 'test@example.com',
-        phone: '+123456789',
-        memberSinceLabel: 'Jan 2024',
-        verified: true,
-      );
-
       await tester.pumpWidget(
         _wrapLightTheme(
-          const ProfileContentSection(
-            profile: profile,
-            onEdit: _noop,
-            onOpenSettings: _noop,
+          const ProfileSecuritySection(
             onChangePassword: _noop,
-            onAvatarCameraTap: _noop,
-            showSignOut: true,
-            signingOut: false,
             onSignOut: _noop,
+            signingOut: false,
           ),
         ),
       );

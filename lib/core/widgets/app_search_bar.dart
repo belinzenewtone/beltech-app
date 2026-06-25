@@ -22,9 +22,8 @@ class AppSearchBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final brightness = Theme.of(context).brightness;
-    final fillColor = brightness == Brightness.light
-        ? const Color(0xFFF0F5FF)
-        : AppColors.surfaceMuted.withValues(alpha: 0.72);
+    final fillColor = AppColors.surfaceMutedFor(brightness)
+        .withValues(alpha: brightness == Brightness.light ? 0.95 : 0.72);
     final borderColor = AppColors.borderFor(brightness).withValues(alpha: 0.5);
     final hintColor = AppColors.textMutedFor(brightness);
 

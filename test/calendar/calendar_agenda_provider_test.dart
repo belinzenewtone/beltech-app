@@ -122,4 +122,9 @@ class _FakeCalendarRepository implements CalendarRepository {
           .toList(),
     );
   }
+
+  @override
+  Stream<List<CalendarEvent>> watchAllEvents() {
+    return Stream.value(events);
+  }
 }

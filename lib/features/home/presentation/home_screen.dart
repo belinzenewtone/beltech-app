@@ -7,17 +7,15 @@ import 'package:beltech/core/widgets/app_empty_state.dart';
 import 'package:beltech/core/widgets/app_skeleton.dart';
 import 'package:beltech/core/widgets/page_shell.dart';
 import 'package:beltech/core/widgets/stagger_reveal.dart';
-import 'package:beltech/core/navigation/shell_providers.dart';
 import 'package:beltech/features/home/domain/entities/home_overview.dart';
 import 'package:beltech/features/home/presentation/providers/home_providers.dart';
 import 'package:beltech/features/home/presentation/widgets/home_spending_cards.dart';
 import 'package:beltech/features/home/presentation/widgets/home_hub_card.dart';
 import 'package:beltech/features/home/presentation/widgets/home_tools_row.dart';
-import 'package:beltech/features/home/presentation/widgets/home_week_review_ritual_card.dart';
-import 'package:beltech/features/auth/presentation/providers/account_providers.dart';
 import 'package:beltech/features/profile/presentation/providers/profile_providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
@@ -42,21 +40,21 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final overviewState = ref.watch(homeOverviewProvider);
     // select() — only rebuild HomeScreen when the first name or email changes,
     // not on every unrelated profile field update (avatar, bio, phone, etc.).
-    final (firstName, email) = ref.watch(
+    final displayName = ref.watch(
       profileProvider.select((s) {
         final p = s.valueOrNull;
-        // Extract first word and cap at 10 chars so the greeting fits on
-        // all screen sizes. Accounts created before the limit was added keep
-        // their full name in storage; we just display fewer characters here.
+        // Prefer username (capped at 10 chars). Fall back to first name.
+        final rawUsername = p?.username.trim() ?? '';
+        if (rawUsername.isNotEmpty) {
+          return rawUsername.length > 10
+              ? rawUsername.substring(0, 10)
+              : rawUsername;
+        }
         final raw = p?.name.trim().split(' ').first ?? '';
-        final capped = raw.length > 10 ? raw.substring(0, 10) : raw;
-        return (capped, p?.email ?? '');
+        return raw.length > 10 ? raw.substring(0, 10) : raw;
       }),
     );
-    final greeting = _greeting(firstName);
-    final initials = firstName.isNotEmpty
-        ? firstName[0].toUpperCase()
-        : (email.isNotEmpty ? email[0].toUpperCase() : 'B');
+    final greeting = _greeting(displayName);
 
     return PageShell(
       scrollable: true,
@@ -90,35 +88,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   ],
                 ),
               ),
-              GestureDetector(
-                onTap: () {
+              IconButton(
+                onPressed: () {
                   AppHaptics.lightImpact();
-                  _showProfileSheet(context, ref, firstName, email, initials);
+                  context.pushNamed('settings');
                 },
-                child: Container(
-                  width: AppSpacing.xl,
-                  height: AppSpacing.xl,
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).brightness == Brightness.light
-                        ? AppColors.surfaceFor(Theme.of(context).brightness)
-                        : AppColors.surfaceElevated,
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: AppColors.accent.withValues(alpha: 0.55),
-                      width: AppSpacing.xs / 2,
-                    ),
-                  ),
-                  alignment: Alignment.center,
-                  child: Text(
-                    initials,
-                    style: AppTypography.label(context).copyWith(
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.textPrimaryFor(
-                        Theme.of(context).brightness,
-                      ),
-                    ),
-                  ),
-                ),
+                icon: const Icon(Icons.settings_outlined),
+                tooltip: 'Settings',
               ),
             ],
           ),
@@ -165,33 +141,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     return '$weekday, $monthDay';
   }
 
-  void _showProfileSheet(
-    BuildContext context,
-    WidgetRef ref,
-    String firstName,
-    String email,
-    String initials,
-  ) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      isScrollControlled: true,
-      builder: (_) => _ProfileQuickSheet(
-        firstName: firstName,
-        email: email,
-        initials: initials,
-        onGoToProfile: () {
-          Navigator.of(context).pop();
-          ref.read(shellTabIndexProvider.notifier).state =
-              ShellTab.profile.index;
-        },
-        onSignOut: () async {
-          Navigator.of(context).pop();
-          await ref.read(accountAuthControllerProvider.notifier).signOut();
-        },
-      ),
-    );
-  }
 }
 
 // ── Dashboard overview section ────────────────────────────────────────────────
@@ -216,11 +165,6 @@ class _HomeOverviewSection extends StatelessWidget {
         ),
         const SizedBox(height: AppSpacing.sectionGap),
         const StaggerReveal(
-          delay: Duration(milliseconds: 80),
-          child: HomeWeekReviewRitualCard(),
-        ),
-        const SizedBox(height: AppSpacing.sectionGap),
-        const StaggerReveal(
           delay: Duration(milliseconds: 110),
           child: HomeToolsRow(),
         ),
@@ -231,105 +175,3 @@ class _HomeOverviewSection extends StatelessWidget {
   }
 }
 
-// ── Profile quick sheet ───────────────────────────────────────────────────────
-
-class _ProfileQuickSheet extends StatelessWidget {
-  const _ProfileQuickSheet({
-    required this.firstName,
-    required this.email,
-    required this.initials,
-    required this.onGoToProfile,
-    required this.onSignOut,
-  });
-
-  final String firstName;
-  final String email;
-  final String initials;
-  final VoidCallback onGoToProfile;
-  final VoidCallback onSignOut;
-
-  @override
-  Widget build(BuildContext context) {
-    final mediaQuery = MediaQuery.of(context);
-    final keyboardBottom = mediaQuery.viewInsets.bottom;
-    final safeBottom = mediaQuery.padding.bottom;
-
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: const BorderRadius.vertical(
-          top: Radius.circular(AppSpacing.lg),
-        ),
-        border: Border(
-          top: BorderSide(color: AppColors.border.withValues(alpha: 0.5)),
-        ),
-      ),
-      padding: EdgeInsets.only(
-        top: AppSpacing.sm + AppSpacing.xs,
-        left: AppSpacing.lg,
-        right: AppSpacing.lg,
-        bottom: keyboardBottom + safeBottom + AppSpacing.xl,
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // drag handle
-          Container(
-            width: AppSpacing.lg + AppSpacing.md,
-            height: AppSpacing.xs / 2,
-            margin: const EdgeInsets.only(bottom: AppSpacing.lg),
-            decoration: BoxDecoration(
-              color: AppColors.border,
-              borderRadius: BorderRadius.circular(AppSpacing.xs / 4),
-            ),
-          ),
-          // avatar + name + email
-          CircleAvatar(
-            radius: AppSpacing.lg,
-            backgroundColor: AppColors.accent.withValues(alpha: 0.18),
-            child: Text(
-              initials,
-              style: AppTypography.headlineMd(
-                context,
-              ).copyWith(color: AppColors.accent),
-            ),
-          ),
-          const SizedBox(height: AppSpacing.sm),
-          if (firstName.isNotEmpty)
-            Text(firstName, style: AppTypography.headlineSm(context)),
-          if (email.isNotEmpty) ...[
-            const SizedBox(height: AppSpacing.xs),
-            Text(
-              email,
-              style: AppTypography.bodySm(
-                context,
-              ).copyWith(color: AppColors.textSecondary),
-            ),
-          ],
-          const SizedBox(height: AppSpacing.lg + AppSpacing.xs),
-          // Go to Profile
-          SizedBox(
-            width: double.infinity,
-            child: AppButton(
-              label: 'Go to Profile',
-              icon: Icons.person_outline_rounded,
-              fullWidth: true,
-              onPressed: onGoToProfile,
-            ),
-          ),
-          const SizedBox(height: AppSpacing.sm),
-          SizedBox(
-            width: double.infinity,
-            child: AppButton(
-              label: 'Sign Out',
-              icon: Icons.logout_rounded,
-              variant: AppButtonVariant.danger,
-              fullWidth: true,
-              onPressed: onSignOut,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}

@@ -43,6 +43,7 @@ class AccountAuthController extends AutoDisposeAsyncNotifier<void> {
             .read(profileRepositoryProvider)
             .updateProfile(
               name: name.trim(),
+              username: '',
               email: email.trim(),
               phone: phone.trim(),
             );

@@ -1,9 +1,9 @@
-import 'package:beltech/core/theme/app_colors.dart';
 import 'package:beltech/core/theme/app_spacing.dart';
 import 'package:beltech/core/theme/app_typography.dart';
 import 'package:beltech/core/widgets/app_button.dart';
 import 'package:beltech/core/widgets/app_card.dart';
 import 'package:beltech/core/widgets/app_empty_state.dart';
+import 'package:beltech/core/widgets/app_fab.dart';
 import 'package:beltech/core/widgets/app_feedback.dart';
 import 'package:beltech/core/widgets/app_icon_pill_button.dart';
 import 'package:beltech/core/widgets/app_search_bar.dart';
@@ -22,6 +22,7 @@ import 'package:beltech/features/search/domain/entities/global_search_result.dar
 import 'package:beltech/features/search/presentation/providers/global_search_providers.dart';
 import 'package:beltech/features/tasks/domain/entities/task_item.dart';
 import 'package:beltech/features/tasks/presentation/providers/tasks_providers.dart';
+import 'package:beltech/features/tasks/presentation/widgets/task_item_card.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 

@@ -1,6 +1,7 @@
 class UserProfile {
   const UserProfile({
     required this.name,
+    required this.username,
     required this.email,
     required this.phone,
     required this.memberSinceLabel,
@@ -9,6 +10,7 @@ class UserProfile {
   });
 
   final String name;
+  final String username;
   final String email;
   final String phone;
   final String memberSinceLabel;
@@ -21,6 +23,7 @@ class UserProfile {
       other is UserProfile &&
           runtimeType == other.runtimeType &&
           name == other.name &&
+          username == other.username &&
           email == other.email &&
           phone == other.phone &&
           memberSinceLabel == other.memberSinceLabel &&
@@ -28,6 +31,13 @@ class UserProfile {
           avatarUrl == other.avatarUrl;
 
   @override
-  int get hashCode =>
-      Object.hash(name, email, phone, memberSinceLabel, verified, avatarUrl);
+  int get hashCode => Object.hash(
+    name,
+    username,
+    email,
+    phone,
+    memberSinceLabel,
+    verified,
+    avatarUrl,
+  );
 }

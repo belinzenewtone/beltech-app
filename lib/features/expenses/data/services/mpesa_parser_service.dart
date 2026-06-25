@@ -272,6 +272,11 @@ class MpesaParserService {
   String? _extractMpesaCode(String message) =>
       _codePattern.firstMatch(message)?.group(1);
 
+  /// Extracts the leading 10-character M-Pesa transaction code from a raw
+  /// message without doing a full parse. Returns `null` when no code is found.
+  static String? extractMpesaCode(String message) =>
+      _codePattern.firstMatch(normalizeParserText(message))?.group(1);
+
   double? _extractAmount(String message) {
     final value = _amountPattern.firstMatch(message)?.group(1);
     return value == null ? null : double.tryParse(value.replaceAll(',', ''));

@@ -1,6 +1,7 @@
 class DriftProfileRecord {
   const DriftProfileRecord({
     required this.name,
+    required this.username,
     required this.email,
     required this.phone,
     required this.memberSinceLabel,
@@ -9,6 +10,7 @@ class DriftProfileRecord {
   });
 
   final String name;
+  final String username;
   final String email;
   final String phone;
   final String memberSinceLabel;
