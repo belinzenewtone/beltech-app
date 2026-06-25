@@ -13,10 +13,14 @@ class ToastMessage {
     required this.id,
     required this.message,
     required this.type,
+    this.actionLabel,
+    this.onAction,
   });
   final int id;
   final String message;
   final ToastType type;
+  final String? actionLabel;
+  final VoidCallback? onAction;
 }
 
 // ── Provider ─────────────────────────────────────────────────────────────────
@@ -27,9 +31,23 @@ class ToastNotifier extends Notifier<List<ToastMessage>> {
   @override
   List<ToastMessage> build() => [];
 
-  void show(String message, {ToastType type = ToastType.info}) {
+  void show(
+    String message, {
+    ToastType type = ToastType.info,
+    String? actionLabel,
+    VoidCallback? onAction,
+  }) {
     final id = _nextId++;
-    state = [...state, ToastMessage(id: id, message: message, type: type)];
+    state = [
+      ...state,
+      ToastMessage(
+        id: id,
+        message: message,
+        type: type,
+        actionLabel: actionLabel,
+        onAction: onAction,
+      ),
+    ];
     // Auto-dismiss after 3 200ms (matches RN DURATION constant).
     Future.delayed(const Duration(milliseconds: 3200), () {
       dismiss(id);
@@ -40,6 +58,10 @@ class ToastNotifier extends Notifier<List<ToastMessage>> {
   void error(String message) => show(message, type: ToastType.error);
   void info(String message) => show(message, type: ToastType.info);
   void warning(String message) => show(message, type: ToastType.warning);
+
+  void showWithUndo(String message, {required VoidCallback onUndo}) {
+    show(message, type: ToastType.info, actionLabel: 'Undo', onAction: onUndo);
+  }
 
   void dismiss(int id) {
     state = state.where((t) => t.id != id).toList();
@@ -183,6 +205,26 @@ class _ToastItemState extends ConsumerState<_ToastItem>
                       ),
                     ),
                   ),
+                  if (widget.toast.actionLabel != null) ...[
+                    const SizedBox(width: 8),
+                    GestureDetector(
+                      onTap: () {
+                        widget.toast.onAction?.call();
+                        ref.read(toastProvider.notifier).dismiss(widget.toast.id);
+                      },
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                        child: Text(
+                          widget.toast.actionLabel!,
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
+                            color: accent,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                   GestureDetector(
                     onTap: () => ref
                         .read(toastProvider.notifier)

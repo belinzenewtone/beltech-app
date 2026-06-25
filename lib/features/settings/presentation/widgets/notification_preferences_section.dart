@@ -152,14 +152,6 @@ class _BudgetThresholdSlidersState extends State<_BudgetThresholdSliders> {
     _low = widget.low;
   }
 
-  @override
-  void didUpdateWidget(covariant _BudgetThresholdSliders oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.high != widget.high) _high = widget.high;
-    if (oldWidget.medium != widget.medium) _medium = widget.medium;
-    if (oldWidget.low != widget.low) _low = widget.low;
-  }
-
   void _update(double high, double medium, double low) {
     setState(() {
       _high = high;

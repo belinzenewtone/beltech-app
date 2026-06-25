@@ -1,7 +1,24 @@
-final List<RegExp> _fulizaNoticePatterns = [
-  RegExp(r'fuliza.*(?:limit|available)', caseSensitive: false),
+// Non-transactional Safaricom messages that should never be parsed as
+// transactions. Keep this list tight: only genuine marketing / USSD-prompt
+// messages with no financial value belong here.
+//
+// IMPORTANT: do NOT add patterns that could match real transactional SMS:
+//  • Fuliza repayments contain "available Fuliza … limit" → was incorrectly
+//    filtered before; that broad pattern has been removed.
+//  • Fuliza charge notices contain "Access Fee charged" → parsed as
+//    fulizaCharge (balance-update-only), not filtered out.
+final List<RegExp> _ignoreSmsPatterns = [
+  // Fuliza activation / approval / limit-change marketing messages
+  RegExp(
+    r'fuliza.*(?:activated|approved|eligible|limit.*(?:increased|updated|changed))',
+    caseSensitive: false,
+  ),
+  RegExp(
+    r'(?:activated|approved|eligible)\s+for\s+fuliza',
+    caseSensitive: false,
+  ),
+  // USSD-prompt / "dial *XXX#" service messages (no money moved)
   RegExp(r'dial\s*\*\d{2,4}#', caseSensitive: false),
-  RegExp(r'fuliza service', caseSensitive: false),
 ];
 
 final List<RegExp> _ambiguousSuccessPatterns = [
@@ -10,7 +27,7 @@ final List<RegExp> _ambiguousSuccessPatterns = [
 ];
 
 bool shouldIgnoreMpesaSms(String message) =>
-    _fulizaNoticePatterns.any((pattern) => pattern.hasMatch(message));
+    _ignoreSmsPatterns.any((pattern) => pattern.hasMatch(message));
 
 bool isAmbiguousSuccessReceipt(String message) =>
     _ambiguousSuccessPatterns.any((pattern) => pattern.hasMatch(message));

@@ -1,4 +1,5 @@
 import 'package:beltech/core/di/expenses_providers.dart';
+import 'package:beltech/core/widgets/app_toast.dart';
 import 'package:beltech/core/theme/app_spacing.dart';
 import 'package:beltech/core/theme/app_typography.dart';
 import 'package:beltech/core/widgets/app_button.dart';
@@ -32,25 +33,14 @@ class _QuarantineExportScreenState
   }
 
   Future<void> _exportData() async {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Exporting as $_selectedFormat...'),
-        duration: const Duration(seconds: 2),
-      ),
-    );
+    ref.read(toastProvider.notifier).info('Exporting as $_selectedFormat...');
 
     // Simulate export delay
     await Future.delayed(const Duration(milliseconds: 500));
 
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Quarantine history exported as $_selectedFormat\n'
-            'File: quarantine_export_${DateTime.now().millisecondsSinceEpoch}.$_selectedFormat',
-          ),
-          duration: const Duration(seconds: 3),
-        ),
+      ref.read(toastProvider.notifier).success(
+        'Exported as $_selectedFormat',
       );
     }
   }

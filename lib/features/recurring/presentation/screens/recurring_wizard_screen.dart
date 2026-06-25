@@ -1,6 +1,7 @@
 import 'package:beltech/core/theme/app_typography.dart';
 import 'package:beltech/core/widgets/app_card.dart';
 import 'package:beltech/core/widgets/secondary_page_shell.dart';
+import 'package:beltech/core/widgets/app_toast.dart';
 import 'package:beltech/features/recurring/domain/entities/recurring_rule.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -49,9 +50,7 @@ class _RecurringWizardScreenState extends ConsumerState<RecurringWizardScreen> {
 
   Future<void> _saveRule() async {
     if (_nameController.text.isEmpty || _amountController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please fill in all fields')),
-      );
+      ref.read(toastProvider.notifier).error('Please fill in all fields');
       return;
     }
 
@@ -64,19 +63,13 @@ class _RecurringWizardScreenState extends ConsumerState<RecurringWizardScreen> {
 
       if (mounted) {
         Navigator.pop(context, true);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              widget.existingRule != null ? 'Rule updated' : 'Rule created',
-            ),
-          ),
+        ref.read(toastProvider.notifier).success(
+          widget.existingRule != null ? 'Rule updated' : 'Rule created',
         );
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Error: $e')));
+        ref.read(toastProvider.notifier).error('Error: $e');
       }
     }
   }

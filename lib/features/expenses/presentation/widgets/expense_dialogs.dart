@@ -1,4 +1,5 @@
 import 'package:beltech/core/forms/form_schemas.dart';
+import 'package:beltech/core/widgets/app_toast.dart';
 import 'package:beltech/core/theme/app_colors.dart';
 import 'package:beltech/core/theme/app_typography.dart';
 import 'package:beltech/core/utils/category_visual.dart';
@@ -217,16 +218,7 @@ class _ExpenseFormSheetState extends ConsumerState<_ExpenseFormSheet> {
     });
     if (!result.isValid) {
       final firstError = result.errors.values.first;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            firstError,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-          ),
-          duration: const Duration(seconds: 2),
-        ),
-      );
+      ref.read(toastProvider.notifier).error(firstError);
       return;
     }
     final amount = double.tryParse(_amountController.text.trim())!;

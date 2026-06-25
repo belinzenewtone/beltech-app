@@ -7,6 +7,7 @@ import 'package:crypto/crypto.dart';
 
 class MpesaParserService {
   const MpesaParserService();
+
   static final RegExp _codePattern = RegExp(r'^([A-Z0-9]{10})\b');
   static final RegExp _amountPattern = RegExp(
     r'(?:ksh|kes)\s*([\d,]+(?:\.\d{1,2})?)',
@@ -34,6 +35,16 @@ class MpesaParserService {
   );
   static final RegExp _paidToPattern = RegExp(
     r'paid to\s+([a-z0-9 .,&-]{3,}?)(?=\s+on\b|[.]|$)',
+    caseSensitive: false,
+  );
+
+  // Fuliza-specific extraction patterns
+  static final RegExp _fulizaOutstandingPattern = RegExp(
+    r'total\s+fuliza[^.]*outstanding\s+amount\s+is\s+(?:ksh|kes)\s*([\d,]+(?:\.\d{1,2})?)',
+    caseSensitive: false,
+  );
+  static final RegExp _fulizaAvailableLimitPattern = RegExp(
+    r'available\s+fuliza[^.]*limit\s+is\s+(?:ksh|kes)\s*([\d,]+(?:\.\d{1,2})?)',
     caseSensitive: false,
   );
 
@@ -99,36 +110,56 @@ class MpesaParserService {
         isAmbiguousSuccessReceipt(cleaned)) {
       return null;
     }
-    final code = _extractMpesaCode(cleaned);
+
+    // Detect type early so fulizaCharge can skip the transaction-code
+    // requirement (charge notices carry no M-Pesa code).
+    final (type, confidence, reason) = _detect(cleaned);
+
+    String? code = _extractMpesaCode(cleaned);
     if (code == null) {
-      return _buildQuarantine(
-        cleaned,
-        reason: 'Missing MPESA code',
-        fallbackOccurredAt: fallbackOccurredAt,
-      );
+      if (type == MpesaTransactionType.fulizaCharge) {
+        // Derive a synthetic identifier from the message hash.
+        final hash = sourceHash(cleaned);
+        code = 'FCHG${hash.substring(0, 6).toUpperCase()}';
+      } else {
+        return _buildQuarantine(
+          cleaned,
+          reason: 'Missing MPESA code',
+          fallbackOccurredAt: fallbackOccurredAt,
+        );
+      }
     }
+
     final amount = _extractAmount(cleaned);
-    if (amount == null || amount <= 0) {
+    if (type != MpesaTransactionType.fulizaCharge &&
+        (amount == null || amount <= 0)) {
       return _buildQuarantine(
         cleaned,
         reason: 'Missing amount',
         fallbackOccurredAt: fallbackOccurredAt,
       );
     }
+    final effectiveAmount = amount ?? 0.0;
+
     final occurredAt =
         parseMpesaDateTime(cleaned, _dateTimePattern) ??
         fallbackOccurredAt ??
         DateTime.now();
     final balanceAfterKes = _extractBalanceAfter(cleaned);
-    final (type, confidence, reason) = _detect(cleaned);
+
+    final isReceivedReversal =
+        type == MpesaTransactionType.reversal &&
+        cleaned.toLowerCase().contains('received from');
+
     final counterparty = _extractCounterparty(cleaned, type);
     final title = _buildTitle(type, counterparty);
     final source = sourceHash(cleaned);
+
     return ParsedMpesaCandidate(
       mpesaCode: code,
       title: title,
-      category: _categoryFor(type, cleaned),
-      amountKes: amount,
+      category: _categoryFor(type, cleaned, isReceivedReversal: isReceivedReversal),
+      amountKes: effectiveAmount,
       occurredAt: occurredAt,
       rawMessage: cleaned,
       transactionType: type,
@@ -137,7 +168,7 @@ class MpesaParserService {
       sourceHash: source,
       semanticHash: semanticHash(
         type: type,
-        amountKes: amount,
+        amountKes: effectiveAmount,
         occurredAt: occurredAt,
         title: title,
       ),
@@ -145,6 +176,9 @@ class MpesaParserService {
       reason: reason,
       paybillAccount: _extractPaybillAccount(cleaned),
       balanceAfterKes: balanceAfterKes,
+      isReceivedReversal: isReceivedReversal,
+      fulizaOutstandingKes: _extractFulizaOutstanding(cleaned),
+      fulizaAvailableLimitKes: _extractFulizaAvailableLimit(cleaned),
     );
   }
 
@@ -189,9 +223,8 @@ class MpesaParserService {
     );
   }
 
-  (MpesaTransactionType, MpesaConfidence, String) _detect(String message) {
-    return detectMpesaTransaction(message);
-  }
+  (MpesaTransactionType, MpesaConfidence, String) _detect(String message) =>
+      detectMpesaTransaction(message);
 
   MpesaParseRoute _routeFor(MpesaConfidence confidence) => switch (confidence) {
     MpesaConfidence.high => MpesaParseRoute.directLedger,
@@ -199,29 +232,40 @@ class MpesaParserService {
     MpesaConfidence.low => MpesaParseRoute.quarantine,
   };
 
-  String _categoryFor(MpesaTransactionType type, String message) =>
-      switch (type) {
-        MpesaTransactionType.received => 'Income',
-        MpesaTransactionType.paybill => 'Bills',
-        MpesaTransactionType.buyGoods => 'Food',
-        MpesaTransactionType.withdrawal => 'Cash',
-        MpesaTransactionType.deposit => 'Cash',
-        MpesaTransactionType.airtime => 'Airtime',
-        MpesaTransactionType.reversal => _categoryForReversal(message),
-        MpesaTransactionType.fulizaDraw => 'Loan',
-        MpesaTransactionType.fulizaRepayment => 'Loan',
-        MpesaTransactionType.unknown =>
-          message.toLowerCase().contains('salary') ? 'Income' : 'Other',
-        _ => 'Other',
-      };
+  String _categoryFor(
+    MpesaTransactionType type,
+    String message, {
+    bool isReceivedReversal = false,
+  }) => switch (type) {
+    MpesaTransactionType.received => 'Income',
+    MpesaTransactionType.paybill => 'Bills',
+    MpesaTransactionType.buyGoods => 'Food',
+    MpesaTransactionType.withdrawal => 'Cash',
+    MpesaTransactionType.deposit => 'Cash',
+    MpesaTransactionType.airtime => 'Airtime',
+    MpesaTransactionType.reversal =>
+      _categoryForReversal(message, isReceivedReversal: isReceivedReversal),
+    MpesaTransactionType.fulizaDraw => 'Loan',
+    MpesaTransactionType.fulizaRepayment => 'Loan',
+    MpesaTransactionType.fulizaCharge => 'Loan',
+    MpesaTransactionType.unknown =>
+      message.toLowerCase().contains('salary') ? 'Income' : 'Other',
+    _ => 'Other',
+  };
 
-  String _categoryForReversal(String message) {
+  String _categoryForReversal(
+    String message, {
+    bool isReceivedReversal = false,
+  }) {
+    if (isReceivedReversal) {
+      // A received payment was reversed — net effect is an outgoing debit.
+      return 'Other';
+    }
     final normalized = message.toLowerCase();
     if (normalized.contains('sent to') || normalized.contains('paid to')) {
       // Reversal of an outgoing payment credits money back to the user.
       return 'Income';
     }
-    // Received-then-reversed should remain an outgoing/debit classification.
     return 'Other';
   }
 
@@ -254,6 +298,7 @@ class MpesaParserService {
       MpesaTransactionType.reversal => 'MPESA Reversal',
       MpesaTransactionType.fulizaDraw => 'Fuliza Draw',
       MpesaTransactionType.fulizaRepayment => 'Fuliza Repayment',
+      MpesaTransactionType.fulizaCharge => 'Fuliza Charge Notice',
       MpesaTransactionType.unknown => 'MPESA Transaction',
     };
   }
@@ -266,6 +311,18 @@ class MpesaParserService {
     if (value == null || value.trim().isEmpty) {
       return null;
     }
+    return double.tryParse(value.replaceAll(',', ''));
+  }
+
+  double? _extractFulizaOutstanding(String message) {
+    final value = _fulizaOutstandingPattern.firstMatch(message)?.group(1);
+    if (value == null) return null;
+    return double.tryParse(value.replaceAll(',', ''));
+  }
+
+  double? _extractFulizaAvailableLimit(String message) {
+    final value = _fulizaAvailableLimitPattern.firstMatch(message)?.group(1);
+    if (value == null) return null;
     return double.tryParse(value.replaceAll(',', ''));
   }
 

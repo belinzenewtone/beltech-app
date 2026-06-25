@@ -129,6 +129,7 @@ class SmsConfidenceScorer {
       MpesaTransactionType.reversal => 0.70,
       MpesaTransactionType.fulizaDraw => 0.75,
       MpesaTransactionType.fulizaRepayment => 0.75,
+      MpesaTransactionType.fulizaCharge => 0.80,
       MpesaTransactionType.unknown => 0.4,
     };
   }
