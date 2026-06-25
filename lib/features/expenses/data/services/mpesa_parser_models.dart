@@ -13,6 +13,10 @@ enum MpesaTransactionType {
   reversal,
   fulizaDraw,
   fulizaRepayment,
+  /// Balance-update notice from Safaricom ("Access Fee charged …").
+  /// Not imported as a ledger transaction — pipeline records it in
+  /// fuliza_lifecycle_events and updates the outstanding balance only.
+  fulizaCharge,
   unknown,
 }
 
@@ -33,6 +37,9 @@ class ParsedMpesaCandidate {
     this.reason,
     this.paybillAccount,
     this.balanceAfterKes,
+    this.isReceivedReversal = false,
+    this.fulizaOutstandingKes,
+    this.fulizaAvailableLimitKes,
   });
 
   final String mpesaCode;
@@ -50,6 +57,15 @@ class ParsedMpesaCandidate {
   final String? reason;
   final String? paybillAccount;
   final double? balanceAfterKes;
+
+  /// True when a *received* payment was reversed (net effect: outgoing debit).
+  final bool isReceivedReversal;
+
+  /// Total Fuliza outstanding balance extracted from the SMS (charge notices).
+  final double? fulizaOutstandingKes;
+
+  /// Available Fuliza limit extracted from the SMS (charge notices / repayments).
+  final double? fulizaAvailableLimitKes;
 
   double get confidenceScore => switch (confidence) {
     MpesaConfidence.high => 0.92,

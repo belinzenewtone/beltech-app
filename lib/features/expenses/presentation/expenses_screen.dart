@@ -1,6 +1,7 @@
 import 'package:beltech/core/theme/app_motion.dart';
 import 'package:beltech/core/theme/app_spacing.dart';
 import 'package:beltech/core/widgets/app_feedback.dart';
+import 'package:beltech/core/widgets/app_toast.dart';
 import 'package:beltech/core/widgets/app_icon_pill_button.dart';
 import 'package:beltech/core/widgets/app_search_bar.dart';
 import 'package:beltech/core/widgets/app_skeleton.dart';
@@ -86,42 +87,19 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
                   .deleteExpense(expense.id);
               if (!context.mounted) return;
               if (ref.read(expenseWriteControllerProvider).hasError) return;
-              // Undo snackbar
-              final messenger = ScaffoldMessenger.maybeOf(context);
-              if (messenger == null) return;
-              messenger.hideCurrentSnackBar();
-              final keyboardInset =
-                  MediaQuery.maybeOf(context)?.viewInsets.bottom ?? 0;
-              final closed = await messenger
-                  .showSnackBar(
-                    SnackBar(
-                      content: const Text(
-                        'Transaction deleted',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      action: SnackBarAction(label: 'Undo', onPressed: () {}),
-                      behavior: SnackBarBehavior.floating,
-                      margin: EdgeInsets.fromLTRB(
-                        16,
-                        0,
-                        16,
-                        88 + keyboardInset,
-                      ),
-                      duration: const Duration(seconds: 4),
-                    ),
-                  )
-                  .closed;
-              if (closed == SnackBarClosedReason.action && context.mounted) {
-                await ref
-                    .read(expenseWriteControllerProvider.notifier)
-                    .addExpense(
-                      title: expense.title,
-                      category: expense.category,
-                      amountKes: expense.amountKes,
-                      occurredAt: expense.occurredAt,
-                    );
-              }
+              ref.read(toastProvider.notifier).showWithUndo(
+                'Transaction deleted',
+                onUndo: () async {
+                  await ref
+                      .read(expenseWriteControllerProvider.notifier)
+                      .addExpense(
+                        title: expense.title,
+                        category: expense.category,
+                        amountKes: expense.amountKes,
+                        occurredAt: expense.occurredAt,
+                      );
+                },
+              );
             },
           ),
         );

@@ -432,7 +432,8 @@ Map<String, Object?> _auditPayloadForCandidate(ParsedMpesaCandidate candidate) {
     'has_paybill': candidate.paybillAccount?.isNotEmpty == true,
     'has_fuliza':
         candidate.transactionType == MpesaTransactionType.fulizaDraw ||
-        candidate.transactionType == MpesaTransactionType.fulizaRepayment,
+        candidate.transactionType == MpesaTransactionType.fulizaRepayment ||
+        candidate.transactionType == MpesaTransactionType.fulizaCharge,
   };
 }
 

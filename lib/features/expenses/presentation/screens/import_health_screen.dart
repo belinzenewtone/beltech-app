@@ -5,6 +5,7 @@ import 'package:beltech/core/theme/app_spacing.dart';
 import 'package:beltech/core/theme/app_typography.dart';
 import 'package:beltech/core/widgets/app_card.dart';
 import 'package:beltech/core/widgets/secondary_page_shell.dart';
+import 'package:beltech/core/widgets/app_toast.dart';
 import 'package:beltech/features/expenses/domain/entities/expense_import_review.dart';
 import 'package:beltech/features/expenses/presentation/providers/expenses_providers.dart';
 import 'package:beltech/features/expenses/presentation/widgets/import_health_widgets.dart';
@@ -86,13 +87,9 @@ class _ImportHealthScreenState extends ConsumerState<ImportHealthScreen> {
               .read(expenseWriteControllerProvider.notifier)
               .replayImportQueue();
           if (!mounted) return;
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Retried imports: $imported processed'),
-              behavior: SnackBarBehavior.floating,
-              duration: const Duration(seconds: 2),
-            ),
-          );
+          ref
+              .read(toastProvider.notifier)
+              .success('Retried: $imported processed');
         },
       ),
       loading: () => const AppCard(
@@ -209,13 +206,9 @@ class _ImportHealthScreenState extends ConsumerState<ImportHealthScreen> {
                                 .read(expenseWriteControllerProvider.notifier)
                                 .replayImportQueue();
                             if (!mounted) return;
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text('Retried imports: $imported processed'),
-                                behavior: SnackBarBehavior.floating,
-                                duration: const Duration(seconds: 2),
-                              ),
-                            );
+                            ref
+                                .read(toastProvider.notifier)
+                                .success('Retried: $imported processed');
                           },
                     icon: busy
                         ? const SizedBox(

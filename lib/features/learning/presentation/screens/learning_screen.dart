@@ -39,7 +39,9 @@ class LearningScreen extends ConsumerWidget {
       ),
       child: Column(
         children: [
-          Row(
+          IntrinsicHeight(
+            child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Expanded(
                 child: AppCard(
@@ -90,6 +92,7 @@ class LearningScreen extends ConsumerWidget {
                 ),
               ),
             ],
+          ),
           ),
           const SizedBox(height: AppSpacing.md),
           Expanded(

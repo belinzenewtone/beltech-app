@@ -168,48 +168,21 @@ class _TasksLayout extends StatelessWidget {
                               .hasError) {
                             return;
                           }
-                          final messenger = ScaffoldMessenger.maybeOf(context);
-                          if (messenger == null) {
-                            return;
-                          }
-                          messenger.hideCurrentSnackBar();
-                          final keyboardInset =
-                              MediaQuery.maybeOf(context)?.viewInsets.bottom ??
-                              0;
-                          final snackResult = await messenger
-                              .showSnackBar(
-                                SnackBar(
-                                  content: const Text(
-                                    'Task deleted',
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                  action: SnackBarAction(
-                                    label: 'Undo',
-                                    onPressed: () {},
-                                  ),
-                                  behavior: SnackBarBehavior.floating,
-                                  margin: EdgeInsets.fromLTRB(
-                                    16,
-                                    0,
-                                    16,
-                                    88 + keyboardInset,
-                                  ),
-                                  duration: const Duration(seconds: 4),
-                                ),
-                              )
-                              .closed;
-                          if (snackResult == SnackBarClosedReason.action &&
-                              context.mounted) {
-                            await state.ref
-                                .read(taskWriteControllerProvider.notifier)
-                                .addTask(
-                                  title: deletedTask.title,
-                                  description: deletedTask.description,
-                                  dueDate: deletedTask.dueDate,
-                                  priority: deletedTask.priority,
-                                );
-                          }
+                          state.ref
+                              .read(toastProvider.notifier)
+                              .showWithUndo(
+                                'Task deleted',
+                                onUndo: () async {
+                                  await state.ref
+                                      .read(taskWriteControllerProvider.notifier)
+                                      .addTask(
+                                        title: deletedTask.title,
+                                        description: deletedTask.description,
+                                        dueDate: deletedTask.dueDate,
+                                        priority: deletedTask.priority,
+                                      );
+                                },
+                              );
                         },
                       ),
                       separatorBuilder: (_, __) =>

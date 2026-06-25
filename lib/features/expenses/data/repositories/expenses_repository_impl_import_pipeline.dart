@@ -120,6 +120,22 @@ Future<void> _insertDirectImpl(
   ExpensesRepositoryImpl repo,
   ParsedMpesaCandidate candidate,
 ) async {
+  // Fuliza charge notices update the outstanding balance only — they are not
+  // ledger transactions.  Record them in fuliza_lifecycle_events and return.
+  if (candidate.transactionType == MpesaTransactionType.fulizaCharge) {
+    await _upsertPaybillAndFulizaImpl(repo, candidate);
+    await _logAuditImpl(
+      repo,
+      sourceHash: candidate.sourceHash,
+      semanticHash: candidate.semanticHash,
+      route: candidate.route.name,
+      confidence: candidate.confidenceScore,
+      decision: 'fuliza_balance_update',
+      status: 'done',
+      payload: _auditPayloadForCandidate(candidate),
+    );
+    return;
+  }
   final learnedCategory = await _resolveLearnedCategoryImpl(
     repo,
     merchantTitle: candidate.title,
@@ -241,7 +257,8 @@ Future<void> _upsertPaybillAndFulizaImpl(
   }
   final isFuliza =
       candidate.transactionType == MpesaTransactionType.fulizaDraw ||
-      candidate.transactionType == MpesaTransactionType.fulizaRepayment;
+      candidate.transactionType == MpesaTransactionType.fulizaRepayment ||
+      candidate.transactionType == MpesaTransactionType.fulizaCharge;
   if (!isFuliza) {
     return;
   }

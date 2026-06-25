@@ -1,4 +1,5 @@
 import 'package:beltech/core/forms/form_schemas.dart';
+import 'package:beltech/core/widgets/app_feedback.dart';
 import 'package:beltech/core/theme/app_colors.dart';
 import 'package:beltech/core/theme/app_typography.dart';
 import 'package:beltech/core/widgets/app_button.dart';
@@ -73,12 +74,7 @@ Future<NewTaskInput?> _showTaskDialog(
                     });
                     if (!result.isValid) {
                       final firstError = result.errors.values.first;
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(firstError),
-                          duration: const Duration(seconds: 2),
-                        ),
-                      );
+                      AppFeedback.error(context, firstError);
                       return;
                     }
                     Navigator.of(context).pop(
