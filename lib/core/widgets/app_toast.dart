@@ -27,6 +27,7 @@ class ToastMessage {
 
 class ToastNotifier extends Notifier<List<ToastMessage>> {
   int _nextId = 0;
+  final Map<int, Timer> _timers = {};
 
   @override
   List<ToastMessage> build() => [];
@@ -48,8 +49,8 @@ class ToastNotifier extends Notifier<List<ToastMessage>> {
         onAction: onAction,
       ),
     ];
-    // Auto-dismiss after 3 200ms (matches RN DURATION constant).
-    Future.delayed(const Duration(milliseconds: 3200), () {
+    _timers[id] = Timer(const Duration(milliseconds: 3200), () {
+      _timers.remove(id);
       dismiss(id);
     });
   }
@@ -64,6 +65,7 @@ class ToastNotifier extends Notifier<List<ToastMessage>> {
   }
 
   void dismiss(int id) {
+    _timers.remove(id)?.cancel();
     state = state.where((t) => t.id != id).toList();
   }
 }

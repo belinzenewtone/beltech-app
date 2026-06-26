@@ -62,6 +62,10 @@ final doNotDisturbHoursProvider = FutureProvider<(int, int)>(
   (ref) => ref.watch(localNotificationServiceProvider).getDoNotDisturbHours(),
 );
 
+final fulizaLimitProvider = FutureProvider<double>(
+  (ref) => ref.watch(localNotificationServiceProvider).getFulizaLimit(),
+);
+
 class NotificationPreferenceController extends AutoDisposeAsyncNotifier<void> {
   @override
   Future<void> build() async {}
@@ -163,6 +167,14 @@ class NotificationPreferenceController extends AutoDisposeAsyncNotifier<void> {
             attributes: {'high': high, 'medium': medium, 'low': low},
           );
       ref.invalidate(budgetAlertThresholdsProvider);
+    });
+  }
+
+  Future<void> setFulizaLimit(double limit) async {
+    state = const AsyncLoading();
+    state = await AsyncValue.guard(() async {
+      await ref.read(localNotificationServiceProvider).setFulizaLimit(limit);
+      ref.invalidate(fulizaLimitProvider);
     });
   }
 

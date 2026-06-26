@@ -49,6 +49,7 @@ class _CalendarEventsPane extends StatelessWidget {
               subtitle: sortedEvents.isEmpty
                   ? 'Tap the Add button to create one.'
                   : 'Try a different search or tap Show done.',
+              cardWrapped: false,
             );
           }
           return CalendarEventsCard(

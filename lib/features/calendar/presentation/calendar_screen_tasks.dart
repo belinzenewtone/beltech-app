@@ -57,6 +57,7 @@ class _CalendarTasksPane extends StatelessWidget {
             subtitle: dayTasks.isEmpty
                 ? 'Tap the Add button to create one.'
                 : 'Try a different search or tap Show done.',
+            cardWrapped: false,
           );
         }
 

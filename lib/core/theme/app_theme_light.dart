@@ -33,26 +33,61 @@ ThemeData buildLightTheme() {
           color: textPrimary,
           fontWeight: FontWeight.w700,
           fontSize: 32,
+          decoration: TextDecoration.none,
         ),
         titleLarge: TextStyle(
           color: textPrimary,
           fontWeight: FontWeight.w600,
           fontSize: 26,
+          decoration: TextDecoration.none,
         ),
         titleMedium: TextStyle(
           color: textPrimary,
           fontWeight: FontWeight.w600,
           fontSize: 20,
+          decoration: TextDecoration.none,
         ),
         bodyLarge: TextStyle(
           color: textPrimary,
           fontWeight: FontWeight.w500,
           fontSize: 16,
+          decoration: TextDecoration.none,
         ),
         bodyMedium: TextStyle(
           color: textSecondary,
           fontWeight: FontWeight.w400,
           fontSize: 15,
+          decoration: TextDecoration.none,
+        ),
+        bodySmall: TextStyle(
+          decoration: TextDecoration.none,
+        ),
+        labelSmall: TextStyle(
+          decoration: TextDecoration.none,
+        ),
+        labelMedium: TextStyle(
+          decoration: TextDecoration.none,
+        ),
+        labelLarge: TextStyle(
+          decoration: TextDecoration.none,
+        ),
+        displaySmall: TextStyle(
+          decoration: TextDecoration.none,
+        ),
+        displayMedium: TextStyle(
+          decoration: TextDecoration.none,
+        ),
+        displayLarge: TextStyle(
+          decoration: TextDecoration.none,
+        ),
+        headlineSmall: TextStyle(
+          decoration: TextDecoration.none,
+        ),
+        headlineLarge: TextStyle(
+          decoration: TextDecoration.none,
+        ),
+        titleSmall: TextStyle(
+          decoration: TextDecoration.none,
         ),
       ),
     ),

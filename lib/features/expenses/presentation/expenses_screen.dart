@@ -14,6 +14,7 @@ import 'package:beltech/features/expenses/presentation/providers/expenses_provid
 import 'package:beltech/features/expenses/presentation/expenses_screen_helpers.dart';
 import 'package:beltech/features/expenses/presentation/widgets/expense_dialogs.dart';
 import 'package:beltech/features/expenses/presentation/widgets/expenses_snapshot_content.dart';
+import 'package:beltech/features/expenses/presentation/widgets/fuliza_banner.dart';
 import 'package:beltech/features/expenses/presentation/widgets/import_health_banner.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -231,6 +232,7 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
             hint: 'Search transactions...',
           ),
           const SizedBox(height: AppSpacing.md),
+          const FulizaBanner(),
           Expanded(
             child: AnimatedSwitcher(
               duration: contentSwitchDuration,
