@@ -142,7 +142,7 @@ class FulizaSettingsCard extends ConsumerWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Enter your Fuliza M-Pesa limit to track how much of it you've used.',
+              "Enter your Fuliza M-Pesa limit to track how much of it you've used.",
               style: AppTypography.bodySm(ctx),
             ),
             const SizedBox(height: 16),
