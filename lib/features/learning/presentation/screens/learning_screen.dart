@@ -4,6 +4,7 @@ import 'package:beltech/core/theme/app_spacing.dart';
 import 'package:beltech/core/theme/app_typography.dart';
 import 'package:beltech/core/widgets/app_card.dart';
 import 'package:beltech/core/widgets/app_empty_state.dart';
+import 'package:beltech/core/widgets/app_skeleton.dart';
 import 'package:beltech/core/widgets/secondary_page_shell.dart';
 import 'package:beltech/features/learning/domain/entities/learning_session.dart';
 import 'package:beltech/features/learning/presentation/widgets/learning_form_sheet.dart';
@@ -32,6 +33,7 @@ class LearningScreen extends ConsumerWidget {
     final monthlyAsync = ref.watch(_learningMonthlyProvider);
     return SecondaryPageShell(
       title: 'Learning',
+      scrollable: false,
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _showForm(context, ref),
         icon: const Icon(Icons.add),
@@ -56,8 +58,8 @@ class LearningScreen extends ConsumerWidget {
                         child: Text(
                           streakAsync.when(
                             data: (v) => '$v-day streak',
-                            loading: () => '...',
-                            error: (_, __) => '0',
+                            loading: () => '— streak',
+                            error: (_, __) => '0-day streak',
                           ),
                           style: AppTypography.bodyMd(
                             context,
@@ -79,8 +81,8 @@ class LearningScreen extends ConsumerWidget {
                         child: Text(
                           monthlyAsync.when(
                             data: (v) => '$v min this month',
-                            loading: () => '...',
-                            error: (_, __) => '0',
+                            loading: () => '— min this month',
+                            error: (_, __) => '0 min this month',
                           ),
                           style: AppTypography.bodyMd(
                             context,
@@ -162,7 +164,12 @@ class LearningScreen extends ConsumerWidget {
                   },
                 );
               },
-              loading: () => const Center(child: CircularProgressIndicator()),
+              loading: () => Column(
+                children: List.generate(4, (_) => Padding(
+                  padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+                  child: AppSkeleton.card(context),
+                )),
+              ),
               error: (e, _) => Center(
                 child: Text(
                   'Error: $e',

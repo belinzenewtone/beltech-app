@@ -33,23 +33,21 @@ class AppTypography {
     fontWeight: FontWeight.w600,
     height: 32 / 26,
     color: AppColors.textPrimaryFor(Theme.of(context).brightness),
+    decoration: TextDecoration.none,
   );
 
   /// Alias of [pageTitle] for callers that prefer the semantic name.
   static TextStyle screenTitle(BuildContext context) => pageTitle(context);
 
   /// 11px w600 uppercase + letter-spacing — label above a title
-  static TextStyle eyebrow(BuildContext context) =>
-      GoogleFonts.inter(
-        fontSize: 11,
-        fontWeight: FontWeight.w600,
-        letterSpacing: 0.5,
-        height: 1.4,
-        color: AppColors.textSecondaryFor(Theme.of(context).brightness),
-      ).copyWith(
-        // uppercase via a workaround: use the text itself — callers should
-        // pass UPPER text, or wrap with .toUpperCase()
-      );
+  static TextStyle eyebrow(BuildContext context) => GoogleFonts.inter(
+    fontSize: 11,
+    fontWeight: FontWeight.w600,
+    letterSpacing: 0.5,
+    height: 1.4,
+    color: AppColors.textSecondaryFor(Theme.of(context).brightness),
+    decoration: TextDecoration.none,
+  );
 
   // ── Section-level ────────────────────────────────────────────────────────────
 
@@ -59,6 +57,7 @@ class AppTypography {
     fontWeight: FontWeight.w600,
     height: 24 / 17,
     color: AppColors.textPrimaryFor(Theme.of(context).brightness),
+    decoration: TextDecoration.none,
   );
 
   // ── Card-level ───────────────────────────────────────────────────────────────
@@ -69,6 +68,7 @@ class AppTypography {
     fontWeight: FontWeight.w600,
     height: 22 / 15,
     color: AppColors.textPrimaryFor(Theme.of(context).brightness),
+    decoration: TextDecoration.none,
   );
 
   /// 20px w600 — section/card title (alias for sectionTitle)
@@ -80,6 +80,7 @@ class AppTypography {
     fontWeight: FontWeight.w600,
     height: 28 / 20,
     color: AppColors.textPrimaryFor(Theme.of(context).brightness),
+    decoration: TextDecoration.none,
   );
 
   /// 24px w600 — medium headline
@@ -88,6 +89,7 @@ class AppTypography {
     fontWeight: FontWeight.w600,
     height: 32 / 24,
     color: AppColors.textPrimaryFor(Theme.of(context).brightness),
+    decoration: TextDecoration.none,
   );
 
   // ── Body ─────────────────────────────────────────────────────────────────────
@@ -98,6 +100,7 @@ class AppTypography {
     fontWeight: FontWeight.w400,
     height: 22 / 15,
     color: AppColors.textSecondaryFor(Theme.of(context).brightness),
+    decoration: TextDecoration.none,
   );
 
   /// alias of bodyMd
@@ -109,6 +112,7 @@ class AppTypography {
     fontWeight: FontWeight.w400,
     height: 20 / 13,
     color: AppColors.textMutedFor(Theme.of(context).brightness),
+    decoration: TextDecoration.none,
   );
 
   // ── Numeric / financial ──────────────────────────────────────────────────────
@@ -119,6 +123,7 @@ class AppTypography {
     fontWeight: FontWeight.w700,
     height: 28 / 22,
     color: AppColors.textPrimaryFor(Theme.of(context).brightness),
+    decoration: TextDecoration.none,
   );
 
   /// Alias of [amount] for dashboard / summary statistics.
@@ -130,6 +135,7 @@ class AppTypography {
     fontWeight: FontWeight.w700,
     height: 36 / 30,
     color: AppColors.textPrimaryFor(Theme.of(context).brightness),
+    decoration: TextDecoration.none,
   );
 
   // ── Meta / label ─────────────────────────────────────────────────────────
@@ -142,6 +148,7 @@ class AppTypography {
     fontWeight: FontWeight.w400,
     height: 18 / 12,
     color: AppColors.textMutedFor(Theme.of(context).brightness),
+    decoration: TextDecoration.none,
   );
 
   /// 12px w500 — small uppercase labels, form section headers
@@ -151,6 +158,7 @@ class AppTypography {
     height: 18 / 12,
     letterSpacing: 0.3,
     color: AppColors.textSecondaryFor(Theme.of(context).brightness),
+    decoration: TextDecoration.none,
   );
 
   // ── Utility ──────────────────────────────────────────────────────────────────

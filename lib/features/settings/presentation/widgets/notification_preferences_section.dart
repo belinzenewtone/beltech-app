@@ -72,11 +72,12 @@ class NotificationPreferencesSection extends ConsumerWidget {
           ),
           dividerAbove: true,
         ),
-        if (budgetAlertsEnabled && !childPreferencesReadOnly)
+        if (budgetAlertsEnabled && notificationsEnabled)
           _BudgetThresholdSliders(
             high: budgetHigh,
             medium: budgetMedium,
             low: budgetLow,
+            enabled: !childPreferencesReadOnly,
             onChanged: (high, medium, low) async {
               await ref
                   .read(notificationPreferenceControllerProvider.notifier)
@@ -127,11 +128,13 @@ class _BudgetThresholdSliders extends StatefulWidget {
     required this.medium,
     required this.low,
     required this.onChanged,
+    this.enabled = true,
   });
 
   final double high;
   final double medium;
   final double low;
+  final bool enabled;
   final void Function(double high, double medium, double low) onChanged;
 
   @override
@@ -143,6 +146,7 @@ class _BudgetThresholdSlidersState extends State<_BudgetThresholdSliders> {
   late double _high;
   late double _medium;
   late double _low;
+  bool _dragging = false;
 
   @override
   void initState() {
@@ -150,6 +154,17 @@ class _BudgetThresholdSlidersState extends State<_BudgetThresholdSliders> {
     _high = widget.high;
     _medium = widget.medium;
     _low = widget.low;
+  }
+
+  @override
+  void didUpdateWidget(_BudgetThresholdSliders old) {
+    super.didUpdateWidget(old);
+    // Only sync from parent when not actively dragging to avoid jumps.
+    if (!_dragging) {
+      _high = widget.high;
+      _medium = widget.medium;
+      _low = widget.low;
+    }
   }
 
   void _update(double high, double medium, double low) {
@@ -172,22 +187,43 @@ class _BudgetThresholdSlidersState extends State<_BudgetThresholdSliders> {
           _ThresholdSlider(
             label: 'Critical',
             value: _high,
-            onChanged: (value) => _update(value, _medium, _low),
-            onChangeEnd: (value) => widget.onChanged(value, _medium, _low),
+            enabled: widget.enabled,
+            onChanged: (value) {
+              _dragging = true;
+              _update(value, _medium, _low);
+            },
+            onChangeEnd: (value) {
+              _dragging = false;
+              widget.onChanged(value, _medium, _low);
+            },
           ),
           const SizedBox(height: 8),
           _ThresholdSlider(
             label: 'Warning',
             value: _medium,
-            onChanged: (value) => _update(_high, value, _low),
-            onChangeEnd: (value) => widget.onChanged(_high, value, _low),
+            enabled: widget.enabled,
+            onChanged: (value) {
+              _dragging = true;
+              _update(_high, value, _low);
+            },
+            onChangeEnd: (value) {
+              _dragging = false;
+              widget.onChanged(_high, value, _low);
+            },
           ),
           const SizedBox(height: 8),
           _ThresholdSlider(
             label: 'Info',
             value: _low,
-            onChanged: (value) => _update(_high, _medium, value),
-            onChangeEnd: (value) => widget.onChanged(_high, _medium, value),
+            enabled: widget.enabled,
+            onChanged: (value) {
+              _dragging = true;
+              _update(_high, _medium, value);
+            },
+            onChangeEnd: (value) {
+              _dragging = false;
+              widget.onChanged(_high, _medium, value);
+            },
           ),
         ],
       ),
@@ -201,12 +237,14 @@ class _ThresholdSlider extends StatelessWidget {
     required this.value,
     required this.onChanged,
     this.onChangeEnd,
+    this.enabled = true,
   });
 
   final String label;
   final double value;
   final ValueChanged<double> onChanged;
   final ValueChanged<double>? onChangeEnd;
+  final bool enabled;
 
   @override
   Widget build(BuildContext context) {
@@ -222,11 +260,11 @@ class _ThresholdSlider extends StatelessWidget {
             min: 10,
             max: 100,
             divisions: 9,
-            activeColor: AppColors.accent,
+            activeColor: enabled ? AppColors.accent : AppColors.border,
             inactiveColor: AppColors.border,
             label: '${value.toStringAsFixed(0)}%',
-            onChanged: onChanged,
-            onChangeEnd: onChangeEnd,
+            onChanged: enabled ? onChanged : null,
+            onChangeEnd: enabled ? onChangeEnd : null,
           ),
         ),
         SizedBox(

@@ -206,6 +206,16 @@ class LocalNotificationService {
     await prefs.setDouble('budget_alert_low_threshold', low);
   }
 
+  Future<double> getFulizaLimit() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getDouble('fuliza_limit') ?? 0.0;
+  }
+
+  Future<void> setFulizaLimit(double limit) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setDouble('fuliza_limit', limit);
+  }
+
   Future<(int, int)> getDoNotDisturbHours() async {
     final prefs = await SharedPreferences.getInstance();
     final startHour = prefs.getInt('dnd_start_hour') ?? 22;

@@ -1,6 +1,7 @@
 import 'package:beltech/core/di/repository_providers.dart';
 import 'package:beltech/core/theme/app_colors.dart';
 import 'package:beltech/core/theme/app_spacing.dart';
+import 'package:beltech/core/widgets/app_skeleton.dart';
 import 'package:beltech/core/theme/app_typography.dart';
 import 'package:beltech/core/utils/currency_formatter.dart';
 import 'package:beltech/core/widgets/app_card.dart';
@@ -29,6 +30,7 @@ class LoansScreen extends ConsumerWidget {
     final outstandingAsync = ref.watch(_loansTotalOutstandingProvider);
     return SecondaryPageShell(
       title: 'Loans',
+      scrollable: false,
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _showForm(context, ref),
         icon: const Icon(Icons.add),
@@ -95,7 +97,12 @@ class LoansScreen extends ConsumerWidget {
                   ),
                 );
               },
-              loading: () => const Center(child: CircularProgressIndicator()),
+              loading: () => Column(
+                children: List.generate(4, (_) => Padding(
+                  padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+                  child: AppSkeleton.card(context),
+                )),
+              ),
               error: (e, _) => Center(
                 child: Text(
                   'Error: $e',

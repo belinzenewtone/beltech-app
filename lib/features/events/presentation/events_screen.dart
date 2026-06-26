@@ -1,5 +1,6 @@
 import 'package:beltech/core/feedback/app_haptics.dart';
 import 'package:beltech/core/theme/app_spacing.dart';
+import 'package:beltech/core/widgets/app_toast.dart';
 import 'package:beltech/core/widgets/app_empty_state.dart';
 import 'package:beltech/core/widgets/app_fab.dart';
 import 'package:beltech/core/widgets/app_feedback.dart';
@@ -43,7 +44,7 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
       next,
     ) {
       if (next.hasError) {
-        AppFeedback.error(context, 'Event action failed. Please try again.');
+        AppFeedback.error(context, 'Event action failed. Please try again.', ref: ref);
       }
     });
 
@@ -152,7 +153,24 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
                             !ref
                                 .read(calendarWriteControllerProvider)
                                 .hasError) {
-                          AppFeedback.success(context, 'Event deleted', ref: ref);
+                          ref.read(toastProvider.notifier).showWithUndo(
+                            'Event deleted',
+                            onUndo: () async {
+                              await ref
+                                  .read(calendarWriteControllerProvider.notifier)
+                                  .addEvent(
+                                    title: event.title,
+                                    startAt: event.startAt,
+                                    priority: event.priority,
+                                    type: event.type,
+                                    endAt: event.endAt,
+                                    note: event.note,
+                                    reminderEnabled: event.reminderEnabled,
+                                    reminderMinutesBefore:
+                                        event.reminderMinutesBefore,
+                                  );
+                            },
+                          );
                         }
                       },
                     );

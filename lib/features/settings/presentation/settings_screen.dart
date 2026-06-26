@@ -10,6 +10,7 @@ import 'package:beltech/core/widgets/secondary_page_shell.dart';
 import 'package:beltech/features/auth/domain/entities/auth_state.dart';
 import 'package:beltech/features/settings/presentation/widgets/settings_row.dart';
 import 'package:beltech/features/auth/presentation/providers/auth_providers.dart';
+import 'package:beltech/features/settings/presentation/widgets/fuliza_settings_card.dart';
 import 'package:beltech/features/settings/presentation/widgets/notification_preferences_section.dart';
 import 'package:beltech/features/settings/presentation/widgets/settings_about_card.dart';
 import 'package:beltech/features/settings/presentation/widgets/settings_appearance_card.dart';
@@ -26,17 +27,15 @@ class SettingsScreen extends ConsumerWidget {
 
     ref.listen<AsyncValue<AuthState>>(authProvider, (previous, next) {
       if (next.hasError) {
-        AppFeedback.error(context, '${next.error}');
+        AppFeedback.error(context, '${next.error}', ref: ref);
       }
     });
     ref.listen<AsyncValue<void>>(notificationPreferenceControllerProvider, (
       previous,
       next,
     ) {
-      if (previous is AsyncLoading && next is AsyncData<void>) {
-        AppFeedback.success(context, 'Notification preference updated.');
-      } else if (next.hasError) {
-        AppFeedback.error(context, 'Unable to update notification settings.');
+      if (next.hasError) {
+        AppFeedback.error(context, 'Unable to update notification settings.', ref: ref);
       }
     });
 
@@ -99,6 +98,10 @@ class SettingsScreen extends ConsumerWidget {
               ),
             ),
           ),
+          const SizedBox(height: AppSpacing.sectionGap),
+
+          // Fuliza M-Pesa
+          const FulizaSettingsCard(),
           const SizedBox(height: AppSpacing.sectionGap),
 
           // Notifications

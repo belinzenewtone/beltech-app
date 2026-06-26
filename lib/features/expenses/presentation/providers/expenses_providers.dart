@@ -70,6 +70,24 @@ final expenseFulizaLifecycleProvider =
           .fetchFulizaLifecycle(limit: 8);
     });
 
+/// Computes the current outstanding Fuliza balance from all recorded events.
+/// Positive = money owed; 0 = fully repaid or no activity.
+final fulizaOutstandingBalanceProvider = FutureProvider<double>((ref) async {
+  ref.watch(expensesSnapshotProvider);
+  final events = await ref
+      .watch(expensesRepositoryProvider)
+      .fetchFulizaLifecycle(limit: 500);
+  double balance = 0;
+  for (final e in events) {
+    if (e.kind == FulizaLifecycleKind.draw) {
+      balance += e.amountKes;
+    } else if (e.kind == FulizaLifecycleKind.repayment) {
+      balance -= e.amountKes;
+    }
+  }
+  return balance.clamp(0, double.infinity);
+});
+
 class ExpenseWriteController extends AutoDisposeAsyncNotifier<void> {
   @override
   FutureOr<void> build() {}
