@@ -105,11 +105,14 @@ class _TasksLayout extends StatelessWidget {
                 child: tasksState.when(
                   data: (tasks) {
                     if (tasks.isEmpty) {
-                      return const AppEmptyState(
-                        icon: Icons.task_alt_rounded,
-                        title: 'No open tasks',
-                        subtitle:
-                            'Create a task to start your daily focus list.',
+                      return const SizedBox(
+                        width: double.infinity,
+                        child: AppEmptyState(
+                          icon: Icons.task_alt_rounded,
+                          title: 'No open tasks',
+                          subtitle:
+                              'Create a task to start your daily focus list.',
+                        ),
                       );
                     }
                     return ListView.separated(

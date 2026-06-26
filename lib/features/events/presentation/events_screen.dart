@@ -93,10 +93,13 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
                 child: eventsState.when(
                   data: (events) {
                     if (events.isEmpty) {
-                      return const AppEmptyState(
-                        icon: Icons.event_outlined,
-                        title: 'No events',
-                        subtitle: 'Tap the Add button to create one.',
+                      return const SizedBox(
+                        width: double.infinity,
+                        child: AppEmptyState(
+                          icon: Icons.event_outlined,
+                          title: 'No events',
+                          subtitle: 'Tap the Add button to create one.',
+                        ),
                       );
                     }
                     return CalendarEventsCard(

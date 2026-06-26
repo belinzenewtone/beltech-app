@@ -33,15 +33,15 @@ class AppSearchBar extends StatelessWidget {
       onChanged: onChanged,
       onSubmitted: onSubmitted,
       style: TextStyle(
-        fontSize: 15,
+        fontSize: 14,
         color: AppColors.textPrimaryFor(brightness),
       ),
       decoration: InputDecoration(
         hintText: hint,
-        hintStyle: TextStyle(color: hintColor, fontSize: 15),
+        hintStyle: TextStyle(color: hintColor, fontSize: 14),
         filled: true,
         fillColor: fillColor,
-        prefixIcon: Icon(Icons.search_rounded, color: hintColor, size: 20),
+        prefixIcon: Icon(Icons.search_rounded, color: hintColor, size: 18),
         suffixIcon: ValueListenableBuilder<TextEditingValue>(
           valueListenable: controller,
           builder: (_, value, __) => value.text.isEmpty
@@ -55,8 +55,8 @@ class AppSearchBar extends StatelessWidget {
                 ),
         ),
         contentPadding: const EdgeInsets.symmetric(
-          horizontal: 16,
-          vertical: 13,
+          horizontal: 14,
+          vertical: 6,
         ),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppRadius.xl),

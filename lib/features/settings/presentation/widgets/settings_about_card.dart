@@ -43,9 +43,9 @@ class _SettingsAboutCardState extends ConsumerState<SettingsAboutCard> {
       next,
     ) {
       if (previous is AsyncLoading && next is AsyncData<void>) {
-        AppFeedback.success(context, 'All local data cleared.');
+        AppFeedback.success(context, 'All local data cleared.', ref: ref);
       } else if (next.hasError) {
-        AppFeedback.error(context, 'Unable to clear local data.');
+        AppFeedback.error(context, 'Unable to clear local data.', ref: ref);
       }
     });
 

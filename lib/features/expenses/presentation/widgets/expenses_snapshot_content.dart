@@ -5,6 +5,7 @@ import 'package:beltech/core/utils/currency_formatter.dart';
 import 'package:beltech/core/widgets/app_capsule.dart';
 import 'package:beltech/core/widgets/app_empty_state.dart';
 import 'package:beltech/core/widgets/app_card.dart';
+import 'package:beltech/core/widgets/app_search_bar.dart';
 import 'package:beltech/features/budget/domain/entities/budget_snapshot.dart';
 import 'package:beltech/features/expenses/domain/entities/expense_item.dart';
 import 'package:beltech/features/expenses/presentation/providers/expenses_providers.dart';
@@ -28,6 +29,8 @@ class ExpensesSnapshotContent extends StatefulWidget {
     required this.onEditExpense,
     required this.onDeleteExpense,
     required this.onMerchantTap,
+    this.headerItems = const [],
+    this.searchController,
   });
 
   final ExpensesSnapshot snapshot;
@@ -39,6 +42,8 @@ class ExpensesSnapshotContent extends StatefulWidget {
   final ValueChanged<ExpenseItem> onEditExpense;
   final ValueChanged<ExpenseItem> onDeleteExpense;
   final ValueChanged<ExpenseItem> onMerchantTap;
+  final List<Widget> headerItems;
+  final TextEditingController? searchController;
 
   @override
   State<ExpensesSnapshotContent> createState() =>
@@ -97,6 +102,8 @@ class _ExpensesSnapshotContentState extends State<ExpensesSnapshotContent> {
     return ListView(
       padding: const EdgeInsets.only(bottom: AppSpacing.contentBottomSafe),
       children: [
+        // ── Injected header (title, pills, etc.) ─────────────────────────────
+        ...widget.headerItems,
         // ── Summary ───────────────────────────────────────────────────────────
         SizedBox(
           height: 96,
@@ -186,7 +193,14 @@ class _ExpensesSnapshotContentState extends State<ExpensesSnapshotContent> {
             }).toList(),
           ),
         ),
-        const SizedBox(height: AppSpacing.md),
+        if (widget.searchController != null) ...[
+          AppSearchBar(
+            controller: widget.searchController!,
+            hint: 'Search transactions...',
+          ),
+          const SizedBox(height: AppSpacing.md),
+        ] else
+          const SizedBox(height: AppSpacing.md),
         Row(
           children: [
             Expanded(
