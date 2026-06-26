@@ -75,7 +75,6 @@ class _AssistantScreenState extends ConsumerState<AssistantScreen> {
         children: [
           PageHeader(
             title: 'Assistant',
-            subtitle: 'Ask about spending, tasks, or schedule.',
             action: AssistantPillButton(
               icon: Icons.add_rounded,
               label: 'New chat',

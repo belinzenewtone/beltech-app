@@ -262,7 +262,6 @@ class _ThresholdSlider extends StatelessWidget {
             divisions: 9,
             activeColor: enabled ? AppColors.accent : AppColors.border,
             inactiveColor: AppColors.border,
-            label: '${value.toStringAsFixed(0)}%',
             onChanged: enabled ? onChanged : null,
             onChangeEnd: enabled ? onChangeEnd : null,
           ),

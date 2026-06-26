@@ -6,9 +6,10 @@ import 'package:beltech/features/loans/domain/entities/loan_item.dart';
 import 'package:flutter/material.dart';
 
 class LoanItemCard extends StatelessWidget {
-  const LoanItemCard({required this.loan, this.onTap, super.key});
+  const LoanItemCard({required this.loan, this.onTap, this.onDelete, super.key});
   final LoanItem loan;
   final VoidCallback? onTap;
+  final VoidCallback? onDelete;
 
   @override
   Widget build(BuildContext context) {
@@ -81,11 +82,23 @@ class LoanItemCard extends StatelessWidget {
             ],
           ),
           const SizedBox(width: 4),
-          const Icon(
-            Icons.chevron_right_rounded,
-            color: AppColors.textMuted,
-            size: 18,
-          ),
+          if (onDelete != null)
+            IconButton(
+              icon: const Icon(
+                Icons.delete_outline,
+                size: 18,
+                color: AppColors.textMuted,
+              ),
+              onPressed: onDelete,
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(),
+            )
+          else
+            const Icon(
+              Icons.chevron_right_rounded,
+              color: AppColors.textMuted,
+              size: 18,
+            ),
         ],
       ),
     );

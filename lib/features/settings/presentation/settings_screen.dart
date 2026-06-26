@@ -44,26 +44,6 @@ class SettingsScreen extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Profile
-          AppCard(
-            tone: AppCardTone.muted,
-            padding: EdgeInsets.zero,
-            child: SettingsRow(
-              icon: Icons.person_outline_rounded,
-              title: 'Profile',
-              subtitle: 'Edit name, username and photo',
-              isFirst: true,
-              isLast: true,
-              trailing: const Icon(
-                Icons.chevron_right_rounded,
-                color: AppColors.textMuted,
-                size: 20,
-              ),
-              onTap: () => context.pushNamed('profile'),
-            ),
-          ),
-          const SizedBox(height: AppSpacing.sectionGap),
-
           // Appearance
           const SettingsAppearanceCard(),
           const SizedBox(height: AppSpacing.sectionGap),

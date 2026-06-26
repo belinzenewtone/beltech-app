@@ -131,12 +131,6 @@ class AssistantEmptyState extends StatelessWidget {
             style: AppTypography.headlineSm(context),
             textAlign: TextAlign.center,
           ),
-          const SizedBox(height: 6),
-          Text(
-            'Ask about spending, tasks, or schedule.',
-            style: AppTypography.bodySm(context),
-            textAlign: TextAlign.center,
-          ),
         ],
       ),
     );

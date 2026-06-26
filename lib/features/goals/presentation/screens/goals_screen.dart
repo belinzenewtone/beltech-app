@@ -32,21 +32,59 @@ class GoalsScreen extends ConsumerWidget {
           Expanded(child: goalsAsync.when(
         data: (goals) {
           if (goals.isEmpty) {
-            return const SizedBox(
-              width: double.infinity,
-              child: AppEmptyState(
-                icon: Icons.flag_outlined,
-                title: 'No goals yet',
-                subtitle: 'Add your first goal',
-              ),
+            return ListView(
+              children: const [
+                SizedBox(
+                  width: double.infinity,
+                  child: AppEmptyState(
+                    icon: Icons.flag_outlined,
+                    title: 'No goals yet',
+                    subtitle: 'Add your first goal',
+                  ),
+                ),
+              ],
             );
           }
           return ListView.builder(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.only(bottom: 80),
             itemCount: goals.length,
-            itemBuilder: (context, i) => GoalItemCard(
-              goal: goals[i],
-              onTap: () => _showForm(context, ref, goals[i]),
+            itemBuilder: (context, i) => Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: GoalItemCard(
+                goal: goals[i],
+                onTap: () => _showForm(context, ref, goals[i]),
+                onDelete: () async {
+                  final confirmed = await showDialog<bool>(
+                    context: context,
+                    builder: (ctx) => AlertDialog(
+                      title: const Text('Delete goal?'),
+                      content: Text(
+                        'Remove "${goals[i].title}"?',
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(ctx, false),
+                          child: const Text('Cancel'),
+                        ),
+                        TextButton(
+                          onPressed: () => Navigator.pop(ctx, true),
+                          child: const Text(
+                            'Delete',
+                            style: TextStyle(color: Color(0xFFF87171)),
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                  if (confirmed == true) {
+                    await ref
+                        .read(goalsRepositoryProvider)
+                        .deleteGoal(goals[i].id);
+                  }
+                },
+              ),
             ),
           );
         },

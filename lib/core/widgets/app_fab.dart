@@ -41,9 +41,6 @@ class AppFab extends StatelessWidget {
           decoration: BoxDecoration(
             color: AppColors.accent,
             borderRadius: BorderRadius.circular(999),
-            border: Border.all(
-              color: AppColors.accentLight.withValues(alpha: 0.45),
-            ),
             boxShadow: [
               BoxShadow(
                 color: AppColors.accent.withValues(alpha: 0.30),

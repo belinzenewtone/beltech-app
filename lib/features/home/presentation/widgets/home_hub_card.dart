@@ -128,8 +128,10 @@ class _HubRow extends StatelessWidget {
             Container(
               width: 36,
               height: 36,
-              decoration: const BoxDecoration(
-                color: AppColors.surfaceMuted,
+              decoration: BoxDecoration(
+                color: AppColors.surfaceMutedFor(
+                  Theme.of(context).brightness,
+                ),
                 shape: BoxShape.circle,
               ),
               alignment: Alignment.center,
@@ -143,7 +145,9 @@ class _HubRow extends StatelessWidget {
               Text(
                 trailingText,
                 style: AppTypography.bodySm(context).copyWith(
-                  color: AppColors.textSecondary,
+                  color: AppColors.textSecondaryFor(
+                    Theme.of(context).brightness,
+                  ),
                   fontWeight: FontWeight.w500,
                 ),
               ),
