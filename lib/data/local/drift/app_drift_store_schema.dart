@@ -342,6 +342,4 @@ class _AppDriftSchema {
     store._initialized = true;
   }
 
-  static Future<void> seedDataIfEmpty(AppDriftStore store) =>
-      _AppDriftSchemaMigrations.seedDataIfEmpty(store);
 }

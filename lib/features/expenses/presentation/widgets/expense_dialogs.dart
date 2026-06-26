@@ -1,4 +1,5 @@
 import 'package:beltech/core/forms/form_schemas.dart';
+import 'package:beltech/core/theme/app_colors.dart';
 import 'package:beltech/core/widgets/app_toast.dart';
 import 'package:beltech/core/theme/app_typography.dart';
 import 'package:beltech/core/utils/category_visual.dart';
@@ -129,7 +130,7 @@ class _ExpenseFormSheetState extends ConsumerState<_ExpenseFormSheet> {
           ),
           const SizedBox(height: 14),
           DropdownButtonFormField<String>(
-            value: _selectedCategory,
+            initialValue: _selectedCategory,
             decoration: const InputDecoration(labelText: 'Category'),
             items: categories.map((c) {
               final visual = categoryVisual(c);
