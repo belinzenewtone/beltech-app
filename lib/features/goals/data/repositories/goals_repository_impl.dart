@@ -8,8 +8,11 @@ class GoalsRepositoryImpl implements GoalsRepository {
   final AppDriftStore _store;
 
   @override
-  Stream<List<GoalItem>> watchGoals() {
-    return _store.watchChangeStream().asyncMap((_) => loadGoals());
+  Stream<List<GoalItem>> watchGoals() async* {
+    yield await loadGoals();
+    await for (final _ in _store.watchChangeStream()) {
+      yield await loadGoals();
+    }
   }
 
   @override

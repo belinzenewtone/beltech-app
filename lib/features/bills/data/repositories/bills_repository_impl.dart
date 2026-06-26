@@ -8,8 +8,11 @@ class BillsRepositoryImpl implements BillsRepository {
   final AppDriftStore _store;
 
   @override
-  Stream<List<BillItem>> watchBills() {
-    return _store.watchChangeStream().asyncMap((_) => loadBills());
+  Stream<List<BillItem>> watchBills() async* {
+    yield await loadBills();
+    await for (final _ in _store.watchChangeStream()) {
+      yield await loadBills();
+    }
   }
 
   @override

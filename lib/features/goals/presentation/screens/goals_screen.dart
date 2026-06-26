@@ -32,7 +32,8 @@ class GoalsScreen extends ConsumerWidget {
           Expanded(child: goalsAsync.when(
         data: (goals) {
           if (goals.isEmpty) {
-            return const Center(
+            return const SizedBox(
+              width: double.infinity,
               child: AppEmptyState(
                 icon: Icons.flag_outlined,
                 title: 'No goals yet',

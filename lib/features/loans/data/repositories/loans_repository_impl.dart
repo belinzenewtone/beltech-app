@@ -8,8 +8,11 @@ class LoansRepositoryImpl implements LoansRepository {
   final AppDriftStore _store;
 
   @override
-  Stream<List<LoanItem>> watchLoans() {
-    return _store.watchChangeStream().asyncMap((_) => loadLoans());
+  Stream<List<LoanItem>> watchLoans() async* {
+    yield await loadLoans();
+    await for (final _ in _store.watchChangeStream()) {
+      yield await loadLoans();
+    }
   }
 
   @override
