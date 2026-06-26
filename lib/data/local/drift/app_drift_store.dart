@@ -55,7 +55,6 @@ class AppDriftStore {
     for (final table in tables) {
       await _db.runDelete('DELETE FROM $table', const []);
     }
-    await _AppDriftSchema.seedDataIfEmpty(this);
     _emitChange();
   }
 

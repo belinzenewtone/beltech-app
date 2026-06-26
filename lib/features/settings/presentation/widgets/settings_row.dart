@@ -124,12 +124,15 @@ class SettingsSegmentedPill<T> extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final brightness = Theme.of(context).brightness;
     return Container(
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
-        color: AppColors.surfaceSubtle,
+        color: AppColors.surfaceSubtleFor(brightness),
         borderRadius: BorderRadius.circular(AppRadius.full),
-        border: Border.all(color: AppColors.border.withValues(alpha: 0.5)),
+        border: Border.all(
+          color: AppColors.borderFor(brightness).withValues(alpha: 0.5),
+        ),
       ),
       child: Row(
         children: options.map((option) {
