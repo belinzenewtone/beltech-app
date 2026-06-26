@@ -339,7 +339,6 @@ class _AppDriftSchema {
     );
 
     await _AppDriftSchemaMigrations.removeLegacySeedIncome(store);
-    await _AppDriftSchemaMigrations.seedDataIfEmpty(store);
     store._initialized = true;
   }
 
