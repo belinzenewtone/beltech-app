@@ -53,13 +53,18 @@ class BillsScreen extends ConsumerWidget {
             child: billsState.when(
               data: (bills) {
                 if (bills.isEmpty) {
-                  return const SizedBox(
-                    width: double.infinity,
-                    child: AppEmptyState(
-                      icon: Icons.receipt_long_rounded,
-                      title: 'No bills yet',
-                      subtitle: 'Add your first bill to start tracking payments.',
-                    ),
+                  return ListView(
+                    children: const [
+                      SizedBox(
+                        width: double.infinity,
+                        child: AppEmptyState(
+                          icon: Icons.receipt_long_rounded,
+                          title: 'No bills yet',
+                          subtitle:
+                              'Add your first bill to start tracking payments.',
+                        ),
+                      ),
+                    ],
                   );
                 }
                 final unpaid = bills.where((b) => !b.paid).toList();

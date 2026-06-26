@@ -6,9 +6,10 @@ import 'package:beltech/features/goals/domain/entities/goal_item.dart';
 import 'package:flutter/material.dart';
 
 class GoalItemCard extends StatelessWidget {
-  const GoalItemCard({required this.goal, this.onTap, super.key});
+  const GoalItemCard({required this.goal, this.onTap, this.onDelete, super.key});
   final GoalItem goal;
   final VoidCallback? onTap;
+  final VoidCallback? onDelete;
 
   @override
   Widget build(BuildContext context) {
@@ -23,7 +24,6 @@ class GoalItemCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Expanded(
                 child: Text(
@@ -53,6 +53,19 @@ class GoalItemCard extends StatelessWidget {
                     ),
                   ),
                 ),
+              if (onDelete != null) ...[
+                const SizedBox(width: 4),
+                IconButton(
+                  icon: const Icon(
+                    Icons.delete_outline,
+                    size: 18,
+                    color: AppColors.textMuted,
+                  ),
+                  onPressed: onDelete,
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                ),
+              ],
             ],
           ),
           const SizedBox(height: 8),

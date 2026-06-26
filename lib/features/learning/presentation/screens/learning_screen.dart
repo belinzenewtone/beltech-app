@@ -101,13 +101,17 @@ class LearningScreen extends ConsumerWidget {
             child: sessionsAsync.when(
               data: (sessions) {
                 if (sessions.isEmpty) {
-                  return const SizedBox(
-                    width: double.infinity,
-                    child: AppEmptyState(
-                      icon: Icons.school_outlined,
-                      title: 'No sessions yet',
-                      subtitle: 'Add your first learning session',
-                    ),
+                  return ListView(
+                    children: const [
+                      SizedBox(
+                        width: double.infinity,
+                        child: AppEmptyState(
+                          icon: Icons.school_outlined,
+                          title: 'No sessions yet',
+                          subtitle: 'Add your first learning session',
+                        ),
+                      ),
+                    ],
                   );
                 }
                 return ListView.builder(
@@ -156,9 +160,41 @@ class LearningScreen extends ConsumerWidget {
                                 size: 18,
                                 color: AppColors.textMuted,
                               ),
-                              onPressed: () => ref
-                                  .read(learningRepositoryProvider)
-                                  .deleteSession(s.id),
+                              onPressed: () async {
+                                final confirmed = await showDialog<bool>(
+                                  context: context,
+                                  builder: (ctx) => AlertDialog(
+                                    title: const Text('Delete session?'),
+                                    content: Text(
+                                      'Remove "${s.topic}"?',
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    actions: [
+                                      TextButton(
+                                        onPressed: () =>
+                                            Navigator.pop(ctx, false),
+                                        child: const Text('Cancel'),
+                                      ),
+                                      TextButton(
+                                        onPressed: () =>
+                                            Navigator.pop(ctx, true),
+                                        child: const Text(
+                                          'Delete',
+                                          style: TextStyle(
+                                            color: AppColors.danger,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                                if (confirmed == true) {
+                                  await ref
+                                      .read(learningRepositoryProvider)
+                                      .deleteSession(s.id);
+                                }
+                              },
                             ),
                           ],
                         ),

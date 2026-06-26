@@ -70,25 +70,58 @@ class LoansScreen extends ConsumerWidget {
             child: loansAsync.when(
               data: (loans) {
                 if (loans.isEmpty) {
-                  return const SizedBox(
-                    width: double.infinity,
-                    child: AppEmptyState(
-                      icon: Icons.account_balance_wallet_outlined,
-                      title: 'No loans yet',
-                      subtitle: 'Add your first loan',
-                    ),
+                  return ListView(
+                    children: const [
+                      SizedBox(
+                        width: double.infinity,
+                        child: AppEmptyState(
+                          icon: Icons.account_balance_wallet_outlined,
+                          title: 'No loans yet',
+                          subtitle: 'Add your first loan',
+                        ),
+                      ),
+                    ],
                   );
                 }
                 return ListView.builder(
-                  padding: EdgeInsets.zero,
+                  padding: const EdgeInsets.only(bottom: 80),
                   itemCount: loans.length,
                   itemBuilder: (context, i) => Padding(
-                    padding: EdgeInsets.only(
-                      bottom: i < loans.length - 1 ? AppSpacing.sm : 0,
-                    ),
+                    padding: const EdgeInsets.only(bottom: 12),
                     child: LoanItemCard(
                       loan: loans[i],
                       onTap: () => _showForm(context, ref, loans[i]),
+                      onDelete: () async {
+                        final confirmed = await showDialog<bool>(
+                          context: context,
+                          builder: (ctx) => AlertDialog(
+                            title: const Text('Delete loan?'),
+                            content: Text(
+                              'Remove "${loans[i].name}"?',
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.pop(ctx, false),
+                                child: const Text('Cancel'),
+                              ),
+                              TextButton(
+                                onPressed: () => Navigator.pop(ctx, true),
+                                child: const Text(
+                                  'Delete',
+                                  style: TextStyle(color: Color(0xFFF87171)),
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                        if (confirmed == true) {
+                          await ref
+                              .read(loansRepositoryProvider)
+                              .deleteLoan(loans[i].id);
+                        }
+                      },
                     ),
                   ),
                 );

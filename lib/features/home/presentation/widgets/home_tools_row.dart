@@ -106,9 +106,7 @@ class _ToolPill extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
-          color: brightness == Brightness.light
-              ? AppColors.background
-              : AppColors.surfaceElevated,
+          color: AppColors.surfaceFor(brightness),
           border: Border.all(
             color: brightness == Brightness.light
                 ? AppColors.borderFor(brightness)

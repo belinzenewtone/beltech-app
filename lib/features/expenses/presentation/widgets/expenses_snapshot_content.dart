@@ -2,7 +2,6 @@ import 'package:beltech/core/theme/app_colors.dart';
 import 'package:beltech/core/theme/app_spacing.dart';
 import 'package:beltech/core/theme/app_typography.dart';
 import 'package:beltech/core/utils/currency_formatter.dart';
-import 'package:beltech/core/widgets/app_capsule.dart';
 import 'package:beltech/core/widgets/app_empty_state.dart';
 import 'package:beltech/core/widgets/app_card.dart';
 import 'package:beltech/core/widgets/app_search_bar.dart';
@@ -167,32 +166,62 @@ class _ExpensesSnapshotContentState extends State<ExpensesSnapshotContent> {
           ),
         ),
         const SizedBox(height: AppSpacing.md),
-        // ── Filter chips ──────────────────────────────────────────────────────
-        SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          clipBehavior: Clip.none,
-          child: Row(
-            children: ExpenseFilter.values.map((filter) {
-              final selected = widget.selectedFilter == filter;
-              return Padding(
-                padding: const EdgeInsets.only(right: AppSpacing.sm),
-                child: AppCapsule(
-                  label: switch (filter) {
+        // ── Filter pills (segmented bar) ──────────────────────────────────────
+        Builder(
+          builder: (ctx) {
+            final brightness = Theme.of(ctx).brightness;
+            return Container(
+              padding: const EdgeInsets.all(3),
+              decoration: BoxDecoration(
+                color: AppColors.surfaceSubtleFor(brightness),
+                borderRadius: BorderRadius.circular(999),
+                border: Border.all(
+                  color: AppColors.borderFor(brightness).withValues(alpha: 0.5),
+                ),
+              ),
+              child: Row(
+                children: ExpenseFilter.values.map((filter) {
+                  final selected = widget.selectedFilter == filter;
+                  final label = switch (filter) {
                     ExpenseFilter.all => 'All',
                     ExpenseFilter.today => 'Today',
-                    ExpenseFilter.week => 'This Week',
-                    ExpenseFilter.month => 'This Month',
-                  },
-                  color: AppColors.accent,
-                  variant: selected
-                      ? AppCapsuleVariant.solid
-                      : AppCapsuleVariant.outline,
-                  onTap: () => widget.onFilterChanged(filter),
-                ),
-              );
-            }).toList(),
-          ),
+                    ExpenseFilter.week => 'Week',
+                    ExpenseFilter.month => 'Month',
+                  };
+                  return Expanded(
+                    child: GestureDetector(
+                      onTap: () => widget.onFilterChanged(filter),
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 150),
+                        curve: Curves.easeOut,
+                        padding: const EdgeInsets.symmetric(vertical: 8),
+                        decoration: BoxDecoration(
+                          color: selected
+                              ? AppColors.accent
+                              : Colors.transparent,
+                          borderRadius: BorderRadius.circular(999),
+                        ),
+                        child: Center(
+                          child: Text(
+                            label,
+                            style: AppTypography.body(ctx).copyWith(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              color: selected
+                                  ? Colors.white
+                                  : AppColors.textSecondaryFor(brightness),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  );
+                }).toList(),
+              ),
+            );
+          },
         ),
+        const SizedBox(height: AppSpacing.sm),
         if (widget.searchController != null) ...[
           AppSearchBar(
             controller: widget.searchController!,
