@@ -101,10 +101,13 @@ class LearningScreen extends ConsumerWidget {
             child: sessionsAsync.when(
               data: (sessions) {
                 if (sessions.isEmpty) {
-                  return const AppEmptyState(
-                    icon: Icons.school_outlined,
-                    title: 'No sessions yet',
-                    subtitle: 'Add your first learning session',
+                  return const SizedBox(
+                    width: double.infinity,
+                    child: AppEmptyState(
+                      icon: Icons.school_outlined,
+                      title: 'No sessions yet',
+                      subtitle: 'Add your first learning session',
+                    ),
                   );
                 }
                 return ListView.builder(

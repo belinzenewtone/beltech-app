@@ -70,16 +70,12 @@ class LoansScreen extends ConsumerWidget {
             child: loansAsync.when(
               data: (loans) {
                 if (loans.isEmpty) {
-                  return const Center(
-                    child: Padding(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: AppSpacing.screenHorizontal,
-                      ),
-                      child: AppEmptyState(
-                        icon: Icons.account_balance_wallet_outlined,
-                        title: 'No loans yet',
-                        subtitle: 'Add your first loan',
-                      ),
+                  return const SizedBox(
+                    width: double.infinity,
+                    child: AppEmptyState(
+                      icon: Icons.account_balance_wallet_outlined,
+                      title: 'No loans yet',
+                      subtitle: 'Add your first loan',
                     ),
                   );
                 }

@@ -8,8 +8,11 @@ class LearningRepositoryImpl implements LearningRepository {
   final AppDriftStore _store;
 
   @override
-  Stream<List<LearningSession>> watchSessions() {
-    return _store.watchChangeStream().asyncMap((_) => loadSessions());
+  Stream<List<LearningSession>> watchSessions() async* {
+    yield await loadSessions();
+    await for (final _ in _store.watchChangeStream()) {
+      yield await loadSessions();
+    }
   }
 
   @override
