@@ -151,8 +151,8 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
             onEditExpense: (expense) async {
               await editExpenseEntry(context, ref, expense);
             },
-            onMerchantTap: (expense) {
-              context.pushNamed('merchant-detail', extra: expense.title);
+            onMerchantTap: (expense) async {
+              await editExpenseEntry(context, ref, expense);
             },
             onDeleteExpense: (expense) async {
               await ref
