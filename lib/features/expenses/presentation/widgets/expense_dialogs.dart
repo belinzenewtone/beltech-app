@@ -1,6 +1,5 @@
 import 'package:beltech/core/forms/form_schemas.dart';
 import 'package:beltech/core/widgets/app_toast.dart';
-import 'package:beltech/core/theme/app_colors.dart';
 import 'package:beltech/core/theme/app_typography.dart';
 import 'package:beltech/core/utils/category_visual.dart';
 import 'package:beltech/core/widgets/app_button.dart';
@@ -128,28 +127,27 @@ class _ExpenseFormSheetState extends ConsumerState<_ExpenseFormSheet> {
             keyboardType: const TextInputType.numberWithOptions(decimal: true),
             decoration: const InputDecoration(hintText: 'Amount (KES)'),
           ),
-          const SizedBox(height: 18),
-          Text('Category', style: AppTypography.sectionTitle(context)),
-          const SizedBox(height: 10),
-          if (categoriesAsync.isLoading)
-            const SizedBox(
-              height: 38,
-              child: Center(child: CircularProgressIndicator()),
-            )
-          else
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: categories
-                  .map(
-                    (category) => _ExpenseCategoryChip(
-                      category: category,
-                      selected: _selectedCategory == category,
-                      onTap: () => setState(() => _selectedCategory = category),
-                    ),
-                  )
-                  .toList(),
-            ),
+          const SizedBox(height: 14),
+          DropdownButtonFormField<String>(
+            value: _selectedCategory,
+            decoration: const InputDecoration(labelText: 'Category'),
+            items: categories.map((c) {
+              final visual = categoryVisual(c);
+              return DropdownMenuItem<String>(
+                value: c,
+                child: Row(
+                  children: [
+                    Icon(visual.icon, size: 16, color: visual.foreground),
+                    const SizedBox(width: 10),
+                    Text(c),
+                  ],
+                ),
+              );
+            }).toList(),
+            onChanged: categoriesAsync.isLoading
+                ? null
+                : (v) { if (v != null) setState(() => _selectedCategory = v); },
+          ),
           const SizedBox(height: 18),
           AppCard(
             tone: AppCardTone.muted,
@@ -241,64 +239,3 @@ class _ExpenseFormSheetState extends ConsumerState<_ExpenseFormSheet> {
   }
 }
 
-class _ExpenseCategoryChip extends StatelessWidget {
-  const _ExpenseCategoryChip({
-    required this.category,
-    required this.selected,
-    required this.onTap,
-  });
-
-  final String category;
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final visual = categoryVisual(category);
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(999),
-        onTap: onTap,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 180),
-          curve: Curves.easeOutCubic,
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
-          decoration: BoxDecoration(
-            color: selected
-                ? visual.foreground.withValues(alpha: 0.88)
-                : visual.background.withValues(alpha: 0.78),
-            borderRadius: BorderRadius.circular(999),
-            border: Border.all(
-              color: selected
-                  ? visual.foreground
-                  : visual.foreground.withValues(alpha: 0.28),
-              width: selected ? 1.5 : 1,
-            ),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                visual.icon,
-                size: 15,
-                color: selected ? Colors.white : visual.foreground,
-              ),
-              const SizedBox(width: 6),
-              Text(
-                category,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  color: selected ? Colors.white : AppColors.textPrimary,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}

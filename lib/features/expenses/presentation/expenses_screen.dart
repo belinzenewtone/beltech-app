@@ -1,12 +1,11 @@
 import 'package:beltech/core/theme/app_motion.dart';
 import 'package:beltech/core/theme/app_spacing.dart';
+import 'package:beltech/core/theme/app_typography.dart';
 import 'package:beltech/core/widgets/app_feedback.dart';
 import 'package:beltech/core/widgets/app_toast.dart';
 import 'package:beltech/core/widgets/app_icon_pill_button.dart';
-import 'package:beltech/core/widgets/app_search_bar.dart';
 import 'package:beltech/core/widgets/app_skeleton.dart';
 import 'package:beltech/core/widgets/error_message.dart';
-import 'package:beltech/core/widgets/page_header.dart';
 import 'package:beltech/core/widgets/page_shell.dart';
 import 'package:beltech/features/budget/presentation/providers/budget_providers.dart';
 import 'package:beltech/features/expenses/domain/entities/expense_import_review.dart';
@@ -62,6 +61,77 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
       reducedMs: 0,
     );
 
+    // Header items scroll with content inside ExpensesSnapshotContent's ListView.
+    final headerItems = <Widget>[
+      const SizedBox(height: AppSpacing.screenTop),
+      SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        clipBehavior: Clip.none,
+        child: Row(
+          children: [
+            AppIconPillButton(
+              icon: Icons.add_rounded,
+              label: 'Add',
+              tone: AppIconPillTone.accent,
+              onPressed: writeBusy
+                  ? null
+                  : () async {
+                      final input = await showAddExpenseDialog(context);
+                      if (input == null) return;
+                      await ref
+                          .read(expenseWriteControllerProvider.notifier)
+                          .addExpense(
+                            title: input.title,
+                            category: input.category,
+                            amountKes: input.amountKes,
+                            occurredAt: input.occurredAt,
+                          );
+                      if (context.mounted &&
+                          !ref
+                              .read(expenseWriteControllerProvider)
+                              .hasError) {
+                        AppFeedback.success(
+                          context,
+                          'Transaction added',
+                          ref: ref,
+                        );
+                      }
+                    },
+            ),
+            const SizedBox(width: 8),
+            AppIconPillButton(
+              icon: Icons.hub_outlined,
+              label: 'Hub',
+              tone: AppIconPillTone.subtle,
+              onPressed: () => context.pushNamed('import-health'),
+            ),
+            const SizedBox(width: 8),
+            AppIconPillButton(
+              icon: Icons.sms_outlined,
+              label: 'Import SMS',
+              tone: AppIconPillTone.subtle,
+              onPressed: writeBusy
+                  ? null
+                  : () => handleExpenseSmsImport(context, ref),
+            ),
+            const SizedBox(width: 8),
+            AppIconPillButton(
+              icon: Icons.upload_file_outlined,
+              label: 'Import CSV',
+              tone: AppIconPillTone.subtle,
+              onPressed: writeBusy
+                  ? null
+                  : () => context.pushNamed('csv-import'),
+            ),
+          ],
+        ),
+      ),
+      const SizedBox(height: AppSpacing.md),
+      Text('Finance', style: AppTypography.pageTitle(context)),
+      const SizedBox(height: AppSpacing.md),
+      const FulizaBanner(),
+    ];
+
     final snapshotChild = snapshotState.when(
       data: (snapshot) {
         consumeExpenseSearchTarget(context, ref, snapshot);
@@ -73,6 +143,8 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
             busy: writeBusy,
             searchQuery: _searchQuery,
             budgetSnapshot: budgetSnapshotState.valueOrNull,
+            headerItems: headerItems,
+            searchController: _searchController,
             onFilterChanged: (filter) {
               ref.read(expenseFilterProvider.notifier).state = filter;
             },
@@ -143,11 +215,11 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
 
     return PageShell(
       scrollable: false,
-      topPadding: 0, // banner sits above the page title
+      topPadding: 0,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ── Import Health Banner (compact full-width top strip) ───────────────
+          // Fixed import health banner above the scrollable content.
           Container(
             margin: const EdgeInsets.symmetric(
               horizontal: -AppSpacing.screenHorizontal,
@@ -157,82 +229,6 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
               onTap: () => context.pushNamed('import-health'),
             ),
           ),
-          const SizedBox(height: AppSpacing.screenTop),
-          // ── Action pills ──────────────────────────────────────────────────────
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            clipBehavior: Clip.none,
-            child: Row(
-              children: [
-                AppIconPillButton(
-                  icon: Icons.add_rounded,
-                  label: 'Add',
-                  tone: AppIconPillTone.accent,
-                  onPressed: writeBusy
-                      ? null
-                      : () async {
-                          final input = await showAddExpenseDialog(context);
-                          if (input == null) return;
-                          await ref
-                              .read(expenseWriteControllerProvider.notifier)
-                              .addExpense(
-                                title: input.title,
-                                category: input.category,
-                                amountKes: input.amountKes,
-                                occurredAt: input.occurredAt,
-                              );
-                          if (context.mounted &&
-                              !ref
-                                  .read(expenseWriteControllerProvider)
-                                  .hasError) {
-                            AppFeedback.success(
-                              context,
-                              'Transaction added',
-                              ref: ref,
-                            );
-                          }
-                        },
-                ),
-                const SizedBox(width: 8),
-                AppIconPillButton(
-                  icon: Icons.hub_outlined,
-                  label: 'Hub',
-                  tone: AppIconPillTone.subtle,
-                  onPressed: () => context.pushNamed('import-health'),
-                ),
-                const SizedBox(width: 8),
-                AppIconPillButton(
-                  icon: Icons.sms_outlined,
-                  label: 'Import SMS',
-                  tone: AppIconPillTone.subtle,
-                  onPressed: writeBusy
-                      ? null
-                      : () => handleExpenseSmsImport(context, ref),
-                ),
-                const SizedBox(width: 8),
-                AppIconPillButton(
-                  icon: Icons.upload_file_outlined,
-                  label: 'Import CSV',
-                  tone: AppIconPillTone.subtle,
-                  onPressed: writeBusy
-                      ? null
-                      : () => context.pushNamed('csv-import'),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: AppSpacing.md),
-          const PageHeader(
-            title: 'Finance',
-            subtitle: 'Track spending and imports',
-          ),
-          const SizedBox(height: AppSpacing.md),
-          AppSearchBar(
-            controller: _searchController,
-            hint: 'Search transactions...',
-          ),
-          const SizedBox(height: AppSpacing.md),
-          const FulizaBanner(),
           Expanded(
             child: AnimatedSwitcher(
               duration: contentSwitchDuration,
