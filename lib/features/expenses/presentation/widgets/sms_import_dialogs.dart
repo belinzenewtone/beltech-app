@@ -18,110 +18,85 @@ enum SmsImportMethod { deviceInbox, pasteMessages }
 
 Future<SmsImportInput?> showSmsImportDialog(BuildContext context) async {
   final controller = TextEditingController();
-  var selectedWindow = ExpenseImportWindow.last30Days;
+  const selectedWindow = ExpenseImportWindow.last30Days;
 
   return showModalBottomSheet<SmsImportInput>(
     context: context,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
-    builder: (context) => StatefulBuilder(
-      builder: (context, setState) {
-        return AppFormSheet(
-          title: 'Import MPESA SMS',
-          onClose: () => Navigator.of(context).pop(),
-          footer: Row(
-            children: [
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(),
-                child: const Text('Cancel'),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: AppButton(
-                  label: 'Import',
-                  fullWidth: true,
-                  onPressed: () => Navigator.of(context).pop(
-                    SmsImportInput(
-                      payload: controller.text.trim(),
-                      window: selectedWindow,
-                    ),
-                  ),
+    builder: (context) => AppFormSheet(
+      title: 'Import MPESA SMS',
+      onClose: () => Navigator.of(context).pop(),
+      footer: Row(
+        children: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancel'),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: AppButton(
+              label: 'Import',
+              fullWidth: true,
+              onPressed: () => Navigator.of(context).pop(
+                SmsImportInput(
+                  payload: controller.text.trim(),
+                  window: selectedWindow,
                 ),
               ),
-            ],
+            ),
           ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('Import period', style: AppTypography.sectionTitle(context)),
-              const SizedBox(height: 10),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children:
-                    const [
-                      ExpenseImportWindow.last24Hours,
-                      ExpenseImportWindow.last7Days,
-                      ExpenseImportWindow.last30Days,
-                      ExpenseImportWindow.last90Days,
-                    ].map((window) {
-                      final selected = selectedWindow == window;
-                      return AppButton(
-                        label: importWindowLabel(window),
-                        size: AppButtonSize.sm,
-                        variant: selected
-                            ? AppButtonVariant.primary
-                            : AppButtonVariant.secondary,
-                        onPressed: () =>
-                            setState(() => selectedWindow = window),
-                      );
-                    }).toList(),
-              ),
-              const SizedBox(height: 14),
-              TextField(
-                controller: controller,
-                minLines: 6,
-                maxLines: 12,
-                decoration: const InputDecoration(
-                  hintText: 'Paste MPESA messages here',
-                ),
-              ),
-            ],
+        ],
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          TextField(
+            controller: controller,
+            minLines: 6,
+            maxLines: 12,
+            decoration: const InputDecoration(
+              hintText: 'Paste MPESA messages here',
+            ),
           ),
-        );
-      },
+        ],
+      ),
     ),
   );
 }
 
 Future<ExpenseImportWindow?> showSmsWindowDialog(BuildContext context) async {
+  const windows = [
+    ExpenseImportWindow.last24Hours,
+    ExpenseImportWindow.last7Days,
+    ExpenseImportWindow.last30Days,
+    ExpenseImportWindow.last90Days,
+  ];
+
   return showAppDialog<ExpenseImportWindow>(
     context: context,
     builder: (context) => AlertDialog(
       title: Text('Import period', style: AppTypography.sectionTitle(context)),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children:
-            const [
-                  ExpenseImportWindow.last24Hours,
-                  ExpenseImportWindow.last7Days,
-                  ExpenseImportWindow.last30Days,
-                  ExpenseImportWindow.last90Days,
-                ]
-                .map(
-                  (window) => Padding(
-                    padding: const EdgeInsets.only(bottom: 8),
-                    child: AppButton(
-                      label: importWindowLabel(window),
-                      fullWidth: true,
-                      variant: AppButtonVariant.secondary,
-                      onPressed: () => Navigator.of(context).pop(window),
-                    ),
-                  ),
-                )
-                .toList(),
+      contentPadding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+      content: Wrap(
+        spacing: 8,
+        runSpacing: 8,
+        alignment: WrapAlignment.center,
+        children: windows
+            .map(
+              (window) => SizedBox(
+                width: (MediaQuery.of(context).size.width - 96) / 2,
+                child: AppButton(
+                  label: importWindowLabel(window),
+                  size: AppButtonSize.sm,
+                  variant: AppButtonVariant.secondary,
+                  fullWidth: true,
+                  onPressed: () => Navigator.of(context).pop(window),
+                ),
+              ),
+            )
+            .toList(),
       ),
       actions: [
         TextButton(

@@ -7,6 +7,7 @@ import 'package:beltech/core/widgets/app_card.dart';
 import 'package:beltech/core/widgets/app_form_fields.dart';
 import 'package:beltech/core/widgets/app_form_sheet.dart';
 import 'package:beltech/features/tasks/domain/entities/task_item.dart';
+import 'package:beltech/features/tasks/presentation/widgets/task_item_visuals.dart';
 import 'package:flutter/material.dart';
 
 class NewTaskInput {
@@ -105,6 +106,7 @@ Future<NewTaskInput?> _showTaskDialog(
               Row(
                 children: TaskPriority.values.map((priority) {
                   final selected = selectedPriority == priority;
+                  final color = taskPriorityColor(priority);
                   return Expanded(
                     child: Padding(
                       padding: EdgeInsets.only(
@@ -113,9 +115,11 @@ Future<NewTaskInput?> _showTaskDialog(
                       child: AppButton(
                         label: _priorityLabel(priority),
                         size: AppButtonSize.sm,
-                        variant: selected
-                            ? AppButtonVariant.primary
-                            : AppButtonVariant.secondary,
+                        variant: AppButtonVariant.secondary,
+                        backgroundColor:
+                            selected ? color : color.withValues(alpha: 0.12),
+                        foregroundColor:
+                            selected ? AppColors.textPrimary : color,
                         fullWidth: true,
                         onPressed: () =>
                             setState(() => selectedPriority = priority),

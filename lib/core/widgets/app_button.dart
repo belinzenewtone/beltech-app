@@ -16,6 +16,8 @@ class AppButton extends StatelessWidget {
     this.icon,
     this.loading = false,
     this.fullWidth = false,
+    this.backgroundColor,
+    this.foregroundColor,
   });
 
   final String label;
@@ -25,6 +27,8 @@ class AppButton extends StatelessWidget {
   final IconData? icon;
   final bool loading;
   final bool fullWidth;
+  final Color? backgroundColor;
+  final Color? foregroundColor;
 
   @override
   Widget build(BuildContext context) {
@@ -37,7 +41,7 @@ class AppButton extends StatelessWidget {
       AppButtonSize.lg => (54.0, 32.0, 17.0),
     };
 
-    final (bgColor, fgColor, borderColor) = switch (variant) {
+    final (variantBg, variantFg, variantBorder) = switch (variant) {
       AppButtonVariant.primary => (
         isEnabled ? AppColors.accent : AppColors.accent.withValues(alpha: 0.5),
         AppColors.textPrimary,
@@ -59,6 +63,24 @@ class AppButton extends StatelessWidget {
         AppColors.danger.withValues(alpha: 0.33),
       ),
     };
+
+    final baseBg = backgroundColor ?? variantBg;
+    final baseFg = foregroundColor ?? variantFg;
+    final baseBorder = backgroundColor ?? variantBorder;
+
+    final bgColor = isEnabled
+        ? baseBg
+        : baseBg.withValues(alpha: (baseBg.a * 0.5).clamp(0.0, 1.0));
+    final fgColor = isEnabled
+        ? baseFg
+        : baseFg.withValues(alpha: (baseFg.a * 0.5).clamp(0.0, 1.0));
+    final borderColor = baseBorder == Colors.transparent
+        ? Colors.transparent
+        : isEnabled
+            ? baseBorder
+            : baseBorder.withValues(
+                alpha: (baseBorder.a * 0.35).clamp(0.0, 1.0),
+              );
 
     final content = loading
         ? SizedBox(

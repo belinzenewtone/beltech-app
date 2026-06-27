@@ -1,3 +1,4 @@
+import 'package:beltech/core/theme/app_colors.dart';
 import 'package:beltech/core/widgets/app_button.dart';
 import 'package:beltech/features/calendar/domain/entities/calendar_event.dart';
 import 'package:beltech/features/calendar/presentation/widgets/event_dialog_helpers.dart';
@@ -27,9 +28,10 @@ class EventPrioritySelector extends StatelessWidget {
             child: AppButton(
               label: option.label,
               size: AppButtonSize.sm,
-              variant: isSelected
-                  ? AppButtonVariant.primary
-                  : AppButtonVariant.secondary,
+              variant: AppButtonVariant.secondary,
+              backgroundColor:
+                  isSelected ? option.color : option.color.withValues(alpha: 0.12),
+              foregroundColor: isSelected ? AppColors.textPrimary : option.color,
               fullWidth: true,
               onPressed: () => onChanged(priority),
             ),
