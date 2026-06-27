@@ -4,64 +4,35 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// Centralised user feedback helper.
 ///
-/// Prefer [AppFeedback.success/error/info/warning] which route through the
-/// Riverpod toast queue. The legacy snackbar path is kept as fallback when a
-/// WidgetRef is not available.
+/// All messages route through the top-positioned Riverpod toast queue so
+/// notifications always appear at the top of the screen.
 class AppFeedback {
   const AppFeedback._();
 
-  // ── Toast (preferred) ────────────────────────────────────────────────────────
-
   static void success(BuildContext context, String message, {WidgetRef? ref}) {
-    if (ref != null) {
-      ref.read(toastProvider.notifier).success(message);
-    } else {
-      _snackbar(context, message);
-    }
+    _showToast(context, ref, (notifier) => notifier.success(message));
   }
 
   static void error(BuildContext context, String message, {WidgetRef? ref}) {
-    if (ref != null) {
-      ref.read(toastProvider.notifier).error(message);
-    } else {
-      _snackbar(context, message);
-    }
+    _showToast(context, ref, (notifier) => notifier.error(message));
   }
 
   static void info(BuildContext context, String message, {WidgetRef? ref}) {
-    if (ref != null) {
-      ref.read(toastProvider.notifier).info(message);
-    } else {
-      _snackbar(context, message);
-    }
+    _showToast(context, ref, (notifier) => notifier.info(message));
   }
 
   static void warning(BuildContext context, String message, {WidgetRef? ref}) {
-    if (ref != null) {
-      ref.read(toastProvider.notifier).warning(message);
-    } else {
-      _snackbar(context, message);
-    }
+    _showToast(context, ref, (notifier) => notifier.warning(message));
   }
 
-  // ── Snackbar fallback ────────────────────────────────────────────────────────
-
-  static void _snackbar(BuildContext context, String message) {
-    final messenger = ScaffoldMessenger.maybeOf(context);
-    if (messenger == null || message.trim().isEmpty) return;
-    messenger.hideCurrentSnackBar();
-    final keyboardInset = MediaQuery.maybeOf(context)?.viewInsets.bottom ?? 0;
-    messenger.showSnackBar(
-      SnackBar(
-        content: Text(
-          message.trim(),
-          maxLines: 3,
-          overflow: TextOverflow.ellipsis,
-        ),
-        behavior: SnackBarBehavior.floating,
-        margin: EdgeInsets.fromLTRB(16, 0, 16, 88 + keyboardInset),
-        duration: const Duration(seconds: 3),
-      ),
-    );
+  static void _showToast(
+    BuildContext context,
+    WidgetRef? ref,
+    void Function(ToastNotifier notifier) emit,
+  ) {
+    final notifier = ref != null
+        ? ref.read(toastProvider.notifier)
+        : ProviderScope.containerOf(context).read(toastProvider.notifier);
+    emit(notifier);
   }
 }

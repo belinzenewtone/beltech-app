@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 
 import 'package:beltech/core/logger/app_logger.dart';
 import 'package:beltech/core/theme/app_colors.dart';
+import 'package:beltech/core/widgets/app_toast.dart';
 import 'package:beltech/core/theme/app_radius.dart';
 import 'package:beltech/core/theme/app_spacing.dart';
 import 'package:beltech/core/theme/app_typography.dart';
@@ -317,9 +318,7 @@ class _CalendarAddScreenState extends ConsumerState<CalendarAddScreen>
   }
 
   void _showError(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message)),
-    );
+    ProviderScope.containerOf(context).read(toastProvider.notifier).error(message);
   }
 
   // ── Sub-page navigation ────────────────────────────────────────────────────

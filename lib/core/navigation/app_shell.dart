@@ -81,8 +81,6 @@ class _AppShellState extends ConsumerState<AppShell>
   bool _biometricRelockEnabled = true;
   bool _appLocked = false;
   bool _biometricUnlockInProgress = false;
-  String? _biometricLockMessage;
-  String? _pinError;
   DateTime? _lastPausedAt;
 
   @override
@@ -194,15 +192,13 @@ class _AppShellState extends ConsumerState<AppShell>
             ),
           ),
           const Positioned(top: 0, left: 0, right: 0, child: OfflineBanner()),
-          const AppToastOverlay(),
           if (_appLocked)
             BiometricLockOverlay(
               busy: _biometricUnlockInProgress,
-              message: _biometricLockMessage,
               onUnlock: _unlockWithBiometrics,
-              pinError: _pinError,
               onPinSubmit: _unlockWithPin,
             ),
+          const AppToastOverlay(),
         ],
       ),
     );
@@ -261,7 +257,6 @@ class _AppShellState extends ConsumerState<AppShell>
       _lockConfigured = configured;
       if (!configured) {
         _appLocked = false;
-        _biometricLockMessage = null;
         return;
       }
       if (lockNow) _appLocked = true;
@@ -270,21 +265,17 @@ class _AppShellState extends ConsumerState<AppShell>
 
   Future<void> _unlockWithBiometrics() async {
     if (_biometricUnlockInProgress || !_lockConfigured) return;
-    setState(() {
-      _biometricUnlockInProgress = true;
-      _biometricLockMessage = null;
-      _pinError = null;
-    });
+    setState(() => _biometricUnlockInProgress = true);
     final authenticated = await ref.read(authRepositoryProvider).authenticate();
     if (!mounted) return;
     setState(() {
       _biometricUnlockInProgress = false;
       _appLocked = !authenticated;
-      _biometricLockMessage = authenticated
-          ? null
-          : 'Authentication was not completed.';
       if (authenticated) _lastPausedAt = null;
     });
+    if (!authenticated && mounted) {
+      ref.read(toastProvider.notifier).error('Authentication was not completed.');
+    }
   }
 
   Future<void> _unlockWithPin(String pin) async {
@@ -292,24 +283,20 @@ class _AppShellState extends ConsumerState<AppShell>
     final pinSet = await repository.isPinSet();
     if (!pinSet) {
       if (!mounted) return;
-      setState(() {
-        _pinError = 'No PIN has been set. Use fingerprint instead.';
-      });
+      ref.read(toastProvider.notifier).error(
+        'No PIN has been set. Use fingerprint instead.',
+      );
       return;
     }
     final valid = await repository.verifyPin(pin);
     if (!valid) {
       if (!mounted) return;
-      setState(() {
-        _pinError = 'Incorrect PIN. Please try again.';
-      });
+      ref.read(toastProvider.notifier).error('Incorrect PIN. Please try again.');
       return;
     }
     if (!mounted) return;
     setState(() {
-      _pinError = null;
       _appLocked = false;
-      _biometricLockMessage = null;
       _lastPausedAt = null;
     });
   }

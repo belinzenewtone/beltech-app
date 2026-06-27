@@ -6,18 +6,14 @@ class BiometricLockOverlay extends StatefulWidget {
   const BiometricLockOverlay({
     super.key,
     required this.busy,
-    required this.message,
     required this.onUnlock,
     this.showPinFallback = true,
-    this.pinError,
     this.onPinSubmit,
   });
 
   final bool busy;
-  final String? message;
   final Future<void> Function() onUnlock;
   final bool showPinFallback;
-  final String? pinError;
   final Future<void> Function(String pin)? onPinSubmit;
 
   @override
@@ -28,7 +24,6 @@ class _BiometricLockOverlayState extends State<BiometricLockOverlay> {
   final _pinCtrl = TextEditingController();
   bool _showPinField = false;
   bool _pinBusy = false;
-  String? _localPinError;
 
   @override
   void dispose() {
@@ -36,29 +31,14 @@ class _BiometricLockOverlayState extends State<BiometricLockOverlay> {
     super.dispose();
   }
 
-  @override
-  void didUpdateWidget(covariant BiometricLockOverlay oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (widget.pinError != oldWidget.pinError) {
-      setState(() {
-        _localPinError = widget.pinError;
-      });
-    }
-  }
-
   Future<void> _onPinSubmit(String pin) async {
     if (pin.trim().isEmpty || _pinBusy) return;
-    setState(() {
-      _pinBusy = true;
-      _localPinError = null;
-    });
+    setState(() => _pinBusy = true);
     try {
       await widget.onPinSubmit?.call(pin.trim());
     } finally {
       if (mounted) {
-        setState(() {
-          _pinBusy = false;
-        });
+        setState(() => _pinBusy = false);
       }
     }
   }
@@ -94,16 +74,6 @@ class _BiometricLockOverlayState extends State<BiometricLockOverlay> {
                       textAlign: TextAlign.center,
                       style: Theme.of(context).textTheme.bodyMedium,
                     ),
-                    if (widget.message != null && !_showPinField) ...[
-                      const SizedBox(height: 10),
-                      Text(
-                        widget.message!,
-                        textAlign: TextAlign.center,
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: AppColors.warning,
-                        ),
-                      ),
-                    ],
                     const SizedBox(height: 16),
                     if (_showPinField)
                       Padding(
@@ -114,10 +84,9 @@ class _BiometricLockOverlayState extends State<BiometricLockOverlay> {
                           keyboardType: TextInputType.number,
                           maxLength: 6,
                           enabled: !_pinBusy,
-                          decoration: InputDecoration(
+                          decoration: const InputDecoration(
                             labelText: 'Enter PIN',
-                            errorText: _localPinError,
-                            prefixIcon: const Icon(Icons.lock_outline),
+                            prefixIcon: Icon(Icons.lock_outline),
                           ),
                           onSubmitted: _onPinSubmit,
                         ),
@@ -175,16 +144,12 @@ class _BiometricLockOverlayState extends State<BiometricLockOverlay> {
                               : () => setState(() {
                                   _showPinField = false;
                                   _pinCtrl.clear();
-                                  _localPinError = null;
                                 }),
                           child: const Text('Use fingerprint instead'),
                         )
                       else
                         TextButton(
-                          onPressed: () => setState(() {
-                            _showPinField = true;
-                            _localPinError = null;
-                          }),
+                          onPressed: () => setState(() => _showPinField = true),
                           child: const Text('Use PIN instead'),
                         ),
                     ],
