@@ -1131,9 +1131,7 @@ class _EventFormContent extends StatelessWidget {
             ),
           ),
           const _SectionLabel('Guests'),
-          _FormCard(
-            child: _GuestInput(controller: guestsController),
-          ),
+          _GuestInput(controller: guestsController),
           const _SectionLabel('Category'),
           _CategorySelector(
             selected: type,
