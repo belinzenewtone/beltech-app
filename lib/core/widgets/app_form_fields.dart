@@ -1,7 +1,7 @@
 import 'package:beltech/core/theme/app_colors.dart';
+import 'package:beltech/core/theme/app_radius.dart';
 import 'package:beltech/core/theme/app_spacing.dart';
 import 'package:beltech/core/theme/app_typography.dart';
-import 'package:beltech/core/widgets/app_card.dart';
 import 'package:flutter/material.dart';
 
 /// Consistent title field used across task/event/countdown/birthday forms.
@@ -99,10 +99,13 @@ class _FieldCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return AppCard(
-      tone: AppCardTone.muted,
+    final brightness = Theme.of(context).brightness;
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.surfaceMutedFor(brightness),
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+      ),
       padding: const EdgeInsets.all(AppSpacing.md),
-      borderRadius: AppSpacing.md,
       child: child,
     );
   }
