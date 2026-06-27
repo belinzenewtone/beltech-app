@@ -1,7 +1,6 @@
 import 'package:beltech/data/local/drift/app_drift_store.dart';
 import 'package:beltech/features/expenses/data/repositories/expenses_repository_impl.dart';
 import 'package:beltech/features/expenses/data/services/mpesa_parser_service.dart';
-import 'package:beltech/features/expenses/domain/entities/merchant_registry_entry.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 

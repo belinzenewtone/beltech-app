@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:beltech/core/di/repository_providers.dart';
 import 'package:beltech/features/expenses/presentation/providers/expenses_providers.dart';
-import 'package:beltech/features/recurring/data/services/recurring_suggestion_service.dart';
+import 'package:beltech/features/recurring/domain/services/recurring_suggestion_service.dart';
 import 'package:beltech/features/recurring/domain/entities/recurring_template.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 

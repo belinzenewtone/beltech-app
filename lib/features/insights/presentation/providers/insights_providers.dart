@@ -1,7 +1,7 @@
 import 'package:beltech/features/budget/domain/entities/budget_snapshot.dart';
 import 'package:beltech/features/budget/presentation/providers/budget_providers.dart';
 import 'package:beltech/features/expenses/domain/entities/expense_item.dart';
-import 'package:beltech/features/expenses/data/services/balance_reconciliation_service.dart';
+import 'package:beltech/features/expenses/domain/services/balance_reconciliation_service.dart';
 import 'package:beltech/features/expenses/domain/entities/merchant_registry_entry.dart';
 import 'package:beltech/features/expenses/presentation/providers/expenses_providers.dart';
 import 'package:beltech/features/income/domain/entities/income_item.dart';

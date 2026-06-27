@@ -1,7 +1,7 @@
 import 'dart:async';
 
 import 'package:beltech/core/di/database_providers.dart';
-import 'package:beltech/features/expenses/data/services/csv_import_service.dart';
+import 'package:beltech/features/expenses/domain/services/csv_import_service.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 final csvImportServiceProvider = Provider<CsvImportService>(
