@@ -60,7 +60,7 @@ class _AuthGateState extends ConsumerState<AuthGate> {
         return const AppShell();
       },
       loading: () => const AuthLoadingScreen(),
-      error: (_, __) => const AuthLoadingScreen(),
+      error: (_, _) => const AuthLoadingScreen(),
     );
   }
 }

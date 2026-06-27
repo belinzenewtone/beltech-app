@@ -37,7 +37,7 @@ class _CategoryManagerSheetState extends ConsumerState<_CategoryManagerSheet> {
   @override
   Widget build(BuildContext context) {
     final categoriesAsync = ref.watch(expenseCategoriesProvider);
-    final categories = categoriesAsync.valueOrNull ?? const <String>[];
+    final categories = categoriesAsync.value ?? const <String>[];
 
     return AppFormSheet(
       title: 'Manage categories',

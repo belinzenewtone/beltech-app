@@ -18,7 +18,7 @@ final assistantSuggestionsProvider = Provider<List<AssistantSuggestion>>(
   (ref) => ref.watch(assistantRepositoryProvider).suggestions(),
 );
 
-class AssistantWriteController extends AutoDisposeAsyncNotifier<void> {
+class AssistantWriteController extends AsyncNotifier<void> {
   @override
   FutureOr<void> build() {}
 
@@ -31,11 +31,11 @@ class AssistantWriteController extends AutoDisposeAsyncNotifier<void> {
 }
 
 final assistantWriteControllerProvider =
-    AutoDisposeAsyncNotifierProvider<AssistantWriteController, void>(
+    AsyncNotifierProvider<AssistantWriteController, void>(
       AssistantWriteController.new,
     );
 
-class AssistantConversationController extends AutoDisposeAsyncNotifier<void> {
+class AssistantConversationController extends AsyncNotifier<void> {
   @override
   FutureOr<void> build() {}
 
@@ -48,7 +48,7 @@ class AssistantConversationController extends AutoDisposeAsyncNotifier<void> {
 }
 
 final assistantConversationControllerProvider =
-    AutoDisposeAsyncNotifierProvider<AssistantConversationController, void>(
+    AsyncNotifierProvider<AssistantConversationController, void>(
       AssistantConversationController.new,
     );
 

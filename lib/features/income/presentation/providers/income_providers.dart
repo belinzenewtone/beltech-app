@@ -40,14 +40,14 @@ final incomeOverviewProvider = Provider<AsyncValue<IncomeOverview>>((ref) {
 
   return AsyncData(
     ref.read(buildIncomeOverviewUseCaseProvider)(
-      incomes: incomesState.valueOrNull ?? const [],
+      incomes: incomesState.value ?? const [],
       expenseTransactions:
-          expensesState.valueOrNull?.transactions ?? const <ExpenseItem>[],
+          expensesState.value?.transactions ?? const <ExpenseItem>[],
     ),
   );
 });
 
-class IncomeWriteController extends AutoDisposeAsyncNotifier<void> {
+class IncomeWriteController extends AsyncNotifier<void> {
   @override
   FutureOr<void> build() {}
 
@@ -96,6 +96,6 @@ class IncomeWriteController extends AutoDisposeAsyncNotifier<void> {
 }
 
 final incomeWriteControllerProvider =
-    AutoDisposeAsyncNotifierProvider<IncomeWriteController, void>(
+    AsyncNotifierProvider<IncomeWriteController, void>(
       IncomeWriteController.new,
     );

@@ -44,7 +44,7 @@ class _TasksScreenState extends ConsumerState<TasksScreen> {
   @override
   Widget build(BuildContext context) {
     final tasksState = ref.watch(tasksProvider);
-    final allTasks = tasksState.valueOrNull ?? const <TaskItem>[];
+    final allTasks = tasksState.value ?? const <TaskItem>[];
     if (tasksState.hasValue) {
       _consumeSearchTarget(context, allTasks);
     }
@@ -76,7 +76,7 @@ class _TasksScreenState extends ConsumerState<TasksScreen> {
   }
 
   String _buildCountSubtitle(AsyncValue<List<TaskItem>> tasksState) {
-    final tasks = tasksState.valueOrNull;
+    final tasks = tasksState.value;
     if (tasks == null) {
       return 'Loading tasks...';
     }

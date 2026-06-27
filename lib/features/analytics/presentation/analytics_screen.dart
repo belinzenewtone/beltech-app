@@ -37,7 +37,7 @@ class AnalyticsScreen extends ConsumerWidget {
             data: (snapshot) =>
                 _AnalyticsContent(snapshot: snapshot, period: period),
             loading: () => _LoadingAnalytics(),
-            error: (_, __) => AppCard(
+            error: (_, _) => AppCard(
               tone: AppCardTone.muted,
               child: Column(
                 children: [
@@ -213,7 +213,7 @@ class _AnalyticsContentState extends ConsumerState<_AnalyticsContent> {
         AnalyticsCategoryBreakdown(
           categories: widget.snapshot.categoryBreakdown,
           totalKes: widget.snapshot.totalSpentThisMonthKes,
-          registry: ref.watch(expenseCategoriesProvider).valueOrNull ??
+          registry: ref.watch(expenseCategoriesProvider).value ??
               expenseCategoryDefaults,
         ),
         const SizedBox(height: AppSpacing.sectionGap),

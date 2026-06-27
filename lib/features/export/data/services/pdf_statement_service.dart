@@ -123,7 +123,7 @@ class PdfStatementService {
             children: [
               pw.Text(
                 'BELTECH',
-                style: pw.TextStyle(
+                style: const pw.TextStyle(
                   fontSize: 22,
                   fontWeight: pw.FontWeight.bold,
                   color: PdfColors.teal,
@@ -167,7 +167,7 @@ class PdfStatementService {
       ),
       child: pw.Text(
         'Period: $range',
-        style: pw.TextStyle(
+        style: const pw.TextStyle(
           fontSize: 11,
           color: PdfColors.teal,
           fontWeight: pw.FontWeight.bold,
@@ -183,7 +183,7 @@ class PdfStatementService {
     int count,
     NumberFormat amountFmt,
   ) {
-    final headerStyle = pw.TextStyle(
+    const headerStyle = pw.TextStyle(
       fontSize: 10,
       fontWeight: pw.FontWeight.bold,
       color: PdfColors.white,
@@ -248,7 +248,7 @@ class PdfStatementService {
           padding: const pw.EdgeInsets.all(5),
           child: pw.Text(
             label,
-            style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold),
+            style: const pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold),
           ),
         ),
         pw.Padding(
@@ -270,12 +270,12 @@ class PdfStatementService {
     List<_CategorySummary> categories,
     NumberFormat amountFmt,
   ) {
-    final headerStyle = pw.TextStyle(
+    const headerStyle = pw.TextStyle(
       fontSize: 9,
       fontWeight: pw.FontWeight.bold,
       color: PdfColors.white,
     );
-    final cellStyle = const pw.TextStyle(fontSize: 9);
+    const cellStyle = pw.TextStyle(fontSize: 9);
 
     return pw.TableHelper.fromTextArray(
       headerStyle: headerStyle,
@@ -304,7 +304,7 @@ class PdfStatementService {
         padding: const pw.EdgeInsets.all(12),
         child: pw.Text(
           'No transactions for the selected period.',
-          style: pw.TextStyle(
+          style: const pw.TextStyle(
             fontSize: 10,
             fontStyle: pw.FontStyle.italic,
             color: PdfColors.grey500,
@@ -313,12 +313,12 @@ class PdfStatementService {
       );
     }
 
-    final headerStyle = pw.TextStyle(
+    const headerStyle = pw.TextStyle(
       fontSize: 9,
       fontWeight: pw.FontWeight.bold,
       color: PdfColors.white,
     );
-    final cellStyle = const pw.TextStyle(fontSize: 9);
+    const cellStyle = pw.TextStyle(fontSize: 9);
 
     return pw.TableHelper.fromTextArray(
       headerStyle: headerStyle,

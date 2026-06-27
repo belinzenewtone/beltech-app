@@ -303,7 +303,7 @@ class _CsvImportScreenState extends ConsumerState<CsvImportScreen> {
   }
 
   Widget _buildDoneCard() {
-    final importCount = ref.watch(csvImportControllerProvider).valueOrNull ?? 0;
+    final importCount = ref.watch(csvImportControllerProvider).value ?? 0;
     return AppCard(
       tone: AppCardTone.accent,
       accentColor: AppColors.success,

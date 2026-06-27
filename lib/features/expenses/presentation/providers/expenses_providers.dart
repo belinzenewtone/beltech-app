@@ -11,6 +11,7 @@ import 'package:beltech/features/expenses/domain/entities/merchant_registry_entr
 import 'package:beltech/features/expenses/domain/usecases/import_expenses_use_case.dart';
 import 'package:beltech/features/expenses/domain/usecases/manage_expense_import_review_use_case.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/legacy.dart';
 
 enum ExpenseFilter { all, today, week, month }
 
@@ -117,7 +118,7 @@ final fulizaOutstandingBalanceProvider = FutureProvider<double>((ref) async {
   return balance.clamp(0, double.infinity);
 });
 
-class ExpenseWriteController extends AutoDisposeAsyncNotifier<void> {
+class ExpenseWriteController extends AsyncNotifier<void> {
   @override
   FutureOr<void> build() {}
 
@@ -206,7 +207,7 @@ class ExpenseWriteController extends AutoDisposeAsyncNotifier<void> {
     }
     state = const AsyncData(null);
     _invalidateImportReviewCaches();
-    return result.valueOrNull ?? 0;
+    return result.value ?? 0;
   }
 
   Future<int> importFromDevice({required ExpenseImportWindow window}) async {
@@ -225,7 +226,7 @@ class ExpenseWriteController extends AutoDisposeAsyncNotifier<void> {
     }
     state = const AsyncData(null);
     _invalidateImportReviewCaches();
-    return result.valueOrNull ?? 0;
+    return result.value ?? 0;
   }
 
   Future<void> approveReviewItem(int reviewId) async {
@@ -272,7 +273,7 @@ class ExpenseWriteController extends AutoDisposeAsyncNotifier<void> {
     }
     state = const AsyncData(null);
     _invalidateImportReviewCaches();
-    return result.valueOrNull ?? 0;
+    return result.value ?? 0;
   }
 
   void _invalidateImportReviewCaches() {
@@ -295,6 +296,6 @@ DateTime fromWindow(ExpenseImportWindow window) {
 }
 
 final expenseWriteControllerProvider =
-    AutoDisposeAsyncNotifierProvider<ExpenseWriteController, void>(
+    AsyncNotifierProvider<ExpenseWriteController, void>(
       ExpenseWriteController.new,
     );

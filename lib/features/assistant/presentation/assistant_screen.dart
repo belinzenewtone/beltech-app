@@ -62,7 +62,7 @@ class _AssistantScreenState extends ConsumerState<AssistantScreen> {
       }
     });
 
-    final hasMessages = messagesState.valueOrNull?.isNotEmpty ?? false;
+    final hasMessages = messagesState.value?.isNotEmpty ?? false;
 
     // bottomPadding: 0 lets the composer sit flush just above the tab bar.
     // PageShell's non-scrollable branch will add safeBottom automatically.
@@ -103,7 +103,7 @@ class _AssistantScreenState extends ConsumerState<AssistantScreen> {
                       ? const AssistantEmptyState()
                       : AssistantConversationList(messages: messages),
                   loading: () => const Center(child: LoadingIndicator()),
-                  error: (_, __) => ErrorMessage(
+                  error: (_, _) => ErrorMessage(
                     label: 'Unable to load assistant',
                     onRetry: () => ref.invalidate(assistantMessagesProvider),
                   ),

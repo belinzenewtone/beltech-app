@@ -25,9 +25,13 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Home'), findsOneWidget);
+    expect(find.text('Finance'), findsOneWidget);
+    expect(find.text('Calendar'), findsOneWidget);
+    expect(find.text('AI'), findsOneWidget);
+    expect(find.text('Profile'), findsOneWidget);
+    expect(find.byIcon(Icons.grid_view_rounded), findsOneWidget);
     expect(find.byIcon(Icons.calendar_today_outlined), findsOneWidget);
     expect(find.byIcon(Icons.account_balance_wallet_outlined), findsOneWidget);
-    expect(find.byIcon(Icons.task_alt_outlined), findsOneWidget);
     expect(find.byIcon(Icons.auto_awesome_outlined), findsOneWidget);
     expect(find.byIcon(Icons.person_outline_rounded), findsOneWidget);
   });

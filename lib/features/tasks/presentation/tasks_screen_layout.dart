@@ -74,7 +74,7 @@ class _TasksLayout extends StatelessWidget {
                         )
                         .toList(),
                   ),
-                  error: (_, __) => ErrorMessage(
+                  error: (_, _) => ErrorMessage(
                     label: 'Unable to load tasks',
                     onRetry: () => state.ref.invalidate(filteredTasksProvider),
                   ),

@@ -43,7 +43,7 @@ void main() {
 
       final state = notifier.state;
       expect(state.hasValue, isTrue);
-      final items = state.valueOrNull!;
+      final items = state.value!;
       expect(items, hasLength(1));
       expect(items.first.quarantineId, 42);
       expect(items.first.candidate.title, 'Sky Cafe');
@@ -57,7 +57,7 @@ void main() {
 
       await notifier.load();
 
-      expect(notifier.state.valueOrNull, isEmpty);
+      expect(notifier.state.value, isEmpty);
     });
 
     test('approve uses quarantine id and removes item from state', () async {
@@ -76,11 +76,11 @@ void main() {
           .thenAnswer((_) async {});
 
       await notifier.load();
-      final item = notifier.state.valueOrNull!.first;
+      final item = notifier.state.value!.first;
       await notifier.approve(item);
 
       verify(() => repository.approveQuarantineItem(42)).called(1);
-      expect(notifier.state.valueOrNull, isEmpty);
+      expect(notifier.state.value, isEmpty);
     });
 
     test('reject uses quarantine id and removes item from state', () async {
@@ -98,11 +98,11 @@ void main() {
       when(() => repository.rejectQuarantineItem(7)).thenAnswer((_) async {});
 
       await notifier.load();
-      final item = notifier.state.valueOrNull!.first;
+      final item = notifier.state.value!.first;
       await notifier.reject(item);
 
       verify(() => repository.rejectQuarantineItem(7)).called(1);
-      expect(notifier.state.valueOrNull, isEmpty);
+      expect(notifier.state.value, isEmpty);
     });
 
     test('approveWithEdits uses quarantine id and removes item from state',
@@ -128,7 +128,7 @@ void main() {
       ).thenAnswer((_) async {});
 
       await notifier.load();
-      final item = notifier.state.valueOrNull!.first;
+      final item = notifier.state.value!.first;
       await notifier.approveWithEdits(
         item,
         'Sky Cafe Dinner',
@@ -144,7 +144,7 @@ void main() {
           category: 'Food & Dining',
         ),
       ).called(1);
-      expect(notifier.state.valueOrNull, isEmpty);
+      expect(notifier.state.value, isEmpty);
     });
 
     test('load surfaces errors as AsyncError', () async {

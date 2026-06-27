@@ -5,6 +5,7 @@ import 'package:beltech/features/expenses/data/services/sms_confidence_scorer.da
 import 'package:beltech/features/expenses/domain/entities/expense_import_review.dart';
 import 'package:beltech/features/expenses/domain/repositories/expenses_repository.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/legacy.dart';
 
 /// State for a single quarantined transaction with its analysis.
 class QuarantineItem {

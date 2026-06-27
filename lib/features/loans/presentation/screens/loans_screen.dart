@@ -61,7 +61,7 @@ class LoansScreen extends ConsumerWidget {
                   outstandingAsync.when(
                     data: (v) => CurrencyFormatter.formatKes(v),
                     loading: () => '...',
-                    error: (_, __) => '—',
+                    error: (_, _) => '—',
                   ),
                   style: AppTypography.amount(
                     context,

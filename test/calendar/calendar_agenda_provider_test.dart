@@ -49,6 +49,10 @@ void main() {
 
     container.read(visibleMonthProvider.notifier).state = DateTime(2026, 4, 1);
 
+    // Keep the StreamProvider alive so Riverpod 3 does not dispose it while
+    // the async future is still resolving.
+    container.listen(monthEventTypesProvider, (_, _) {});
+
     final dayTypes = await container.read(monthEventTypesProvider.future);
 
     expect(dayTypes[3], CalendarEventType.work);

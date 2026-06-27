@@ -190,7 +190,7 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
                     );
                   },
                   loading: () => const Center(child: LoadingIndicator()),
-                  error: (_, __) => ErrorMessage(
+                  error: (_, _) => ErrorMessage(
                     label: 'Unable to load events',
                     onRetry: () => ref.invalidate(allEventsProvider),
                   ),

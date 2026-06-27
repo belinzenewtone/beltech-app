@@ -6,6 +6,7 @@ import 'package:beltech/core/di/repository_providers.dart';
 import 'package:beltech/features/calendar/domain/entities/calendar_event.dart';
 import 'package:beltech/features/calendar/domain/repositories/calendar_repository.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/legacy.dart';
 
 final visibleMonthProvider = StateProvider<DateTime>((_) {
   final now = DateTime.now();
@@ -40,7 +41,7 @@ final monthEventTypesProvider = StreamProvider<Map<int, CalendarEventType>>((
       });
 });
 
-class CalendarWriteController extends AutoDisposeAsyncNotifier<void> {
+class CalendarWriteController extends AsyncNotifier<void> {
   @override
   FutureOr<void> build() {}
 
@@ -228,7 +229,7 @@ class CalendarWriteController extends AutoDisposeAsyncNotifier<void> {
 }
 
 final calendarWriteControllerProvider =
-    AutoDisposeAsyncNotifierProvider<CalendarWriteController, void>(
+    AsyncNotifierProvider<CalendarWriteController, void>(
       CalendarWriteController.new,
     );
 

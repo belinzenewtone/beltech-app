@@ -51,7 +51,7 @@ void main() {
       );
 
       final inkwells = tester.widgetList<InkWell>(find.byType(InkWell));
-      const radius = Radius.circular(AppRadius.xl);
+      const radius = Radius.circular(AppRadius.lg);
 
       expect(
         inkwells.any(

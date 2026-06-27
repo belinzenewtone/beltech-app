@@ -172,7 +172,7 @@ class RecurringScreen extends ConsumerWidget {
             ),
           ),
         ),
-        error: (_, __) => AppEmptyState(
+        error: (_, _) => AppEmptyState(
           icon: Icons.error_outline,
           title: 'Unable to load templates',
           subtitle: 'Please try again',

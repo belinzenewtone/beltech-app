@@ -4,6 +4,7 @@ import 'package:beltech/core/di/notification_providers.dart';
 import 'package:beltech/core/di/repository_providers.dart';
 import 'package:beltech/features/tasks/domain/entities/task_item.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/legacy.dart';
 
 enum TaskFilter { all, pending, completed }
 
@@ -25,7 +26,7 @@ final filteredTasksProvider = Provider<AsyncValue<List<TaskItem>>>((ref) {
   });
 });
 
-class TaskWriteController extends AutoDisposeAsyncNotifier<void> {
+class TaskWriteController extends AsyncNotifier<void> {
   @override
   FutureOr<void> build() {}
 
@@ -282,6 +283,6 @@ class TaskWriteController extends AutoDisposeAsyncNotifier<void> {
 }
 
 final taskWriteControllerProvider =
-    AutoDisposeAsyncNotifierProvider<TaskWriteController, void>(
+    AsyncNotifierProvider<TaskWriteController, void>(
       TaskWriteController.new,
     );

@@ -35,7 +35,7 @@ enum ExportDateWindow { allTime, last7Days, last30Days, thisMonth, custom }
   }
 }
 
-class ExportController extends AutoDisposeAsyncNotifier<ExportResult?> {
+class ExportController extends AsyncNotifier<ExportResult?> {
   @override
   FutureOr<ExportResult?> build() => null;
 
@@ -101,13 +101,13 @@ class ExportController extends AutoDisposeAsyncNotifier<ExportResult?> {
     if (result.hasError) {
       throw result.error!;
     }
-    return result.valueOrNull!;
+    return result.value!;
   }
 
 }
 
 final exportControllerProvider =
-    AutoDisposeAsyncNotifierProvider<ExportController, ExportResult?>(
+    AsyncNotifierProvider<ExportController, ExportResult?>(
       ExportController.new,
     );
 

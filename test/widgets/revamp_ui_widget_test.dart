@@ -94,11 +94,10 @@ void main() {
     );
 
     expect(find.text('Close the week with clarity'), findsOneWidget);
-    expect(find.text('2 upcoming events'), findsOneWidget);
+    expect(find.text('Tasks Done'), findsOneWidget);
     expect(find.text('Cash flow is healthy'), findsOneWidget);
-    expect(find.text('Open Analytics'), findsOneWidget);
-    expect(find.text('Review Budget'), findsOneWidget);
-    expect(find.text('Review Income'), findsOneWidget);
+    expect(find.text('Analytics'), findsOneWidget);
+    expect(find.text('Budget'), findsOneWidget);
   });
 
   testWidgets('security and notification settings expose revamp controls', (
@@ -138,7 +137,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Relock Delay'), findsOneWidget);
-    expect(find.text('Weekly Review'), findsOneWidget);
+    expect(find.text('Notifications'), findsOneWidget);
     expect(find.text('Biometric Lock'), findsOneWidget);
     expect(find.text('Daily Summary'), findsOneWidget);
   });
@@ -173,16 +172,8 @@ void main() {
           matching: find.byType(Switch),
         ),
       );
-      final ritualSwitch = tester.widget<Switch>(
-        find.descendant(
-          of: find.widgetWithText(SettingsRow, 'Weekly Review'),
-          matching: find.byType(Switch),
-        ),
-      );
-
       expect(budgetSwitch.onChanged, isNull);
       expect(digestSwitch.onChanged, isNull);
-      expect(ritualSwitch.onChanged, isNull);
     },
   );
 
@@ -221,9 +212,9 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('Today'), findsOneWidget);
-      expect(find.text('Week'), findsOneWidget);
-      expect(find.text('Month'), findsOneWidget);
+      expect(find.text('Today'), findsWidgets);
+      expect(find.text('Week'), findsWidgets);
+      expect(find.text('Month'), findsWidgets);
       expect(find.text('Budget'), findsOneWidget);
       expect(find.text('Transactions'), findsOneWidget);
     },

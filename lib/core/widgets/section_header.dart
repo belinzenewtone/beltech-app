@@ -31,7 +31,7 @@ class SectionHeader extends StatelessWidget {
           Expanded(
             child: Text(label, style: AppTypography.sectionTitle(context)),
           ),
-          if (action != null) action!,
+          ?action,
         ],
       ),
     );

@@ -88,7 +88,7 @@ class IncomeScreen extends ConsumerWidget {
               overviewState.when(
                 data: (overview) => IncomeOverviewCards(overview: overview),
                 loading: () => const Center(child: LoadingIndicator()),
-                error: (_, __) => const AppCard(
+                error: (_, _) => const AppCard(
                   child: Text('Unable to load cashflow insights right now.'),
                 ),
               ),
@@ -96,13 +96,13 @@ class IncomeScreen extends ConsumerWidget {
               overviewState.when(
                 data: (overview) => IncomeTrendChart(trend: overview.trend),
                 loading: () => const SizedBox.shrink(),
-                error: (_, __) => const SizedBox.shrink(),
+                error: (_, _) => const SizedBox.shrink(),
               ),
               const SizedBox(height: 12),
               Expanded(
                 child: ListView.separated(
                   itemCount: incomes.length,
-                  separatorBuilder: (_, __) => const SizedBox(height: 10),
+                  separatorBuilder: (_, _) => const SizedBox(height: 10),
                   itemBuilder: (context, index) {
                     final item = incomes[index];
                     return IncomeRow(
@@ -147,7 +147,7 @@ class IncomeScreen extends ConsumerWidget {
           );
         },
         loading: () => const Center(child: LoadingIndicator()),
-        error: (_, __) => ErrorMessage(
+        error: (_, _) => ErrorMessage(
           label: 'Unable to load incomes',
           onRetry: () => ref.invalidate(incomesProvider),
         ),

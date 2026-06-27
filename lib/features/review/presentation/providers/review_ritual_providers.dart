@@ -29,11 +29,11 @@ final weekReviewRitualProvider = Provider<AsyncValue<WeekReviewRitual?>>((ref) {
       reviewState.stackTrace ?? StackTrace.current,
     );
   }
-  if (!(enabledState.valueOrNull ?? false)) {
+  if (!(enabledState.value ?? false)) {
     return const AsyncData(null);
   }
 
-  final review = reviewState.valueOrNull;
+  final review = reviewState.value;
   if (review == null) {
     return const AsyncLoading();
   }

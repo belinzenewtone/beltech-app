@@ -12,7 +12,7 @@ final recurringTemplatesProvider = StreamProvider<List<RecurringTemplate>>(
 
 final recurringSuggestionsProvider = Provider<List<SuggestedRecurringTemplate>>(
   (ref) {
-    final transactions = ref.watch(expensesSnapshotProvider).valueOrNull;
+    final transactions = ref.watch(expensesSnapshotProvider).value;
     if (transactions == null || transactions.transactions.isEmpty) {
       return const [];
     }
@@ -22,7 +22,7 @@ final recurringSuggestionsProvider = Provider<List<SuggestedRecurringTemplate>>(
   },
 );
 
-class RecurringWriteController extends AutoDisposeAsyncNotifier<void> {
+class RecurringWriteController extends AsyncNotifier<void> {
   @override
   FutureOr<void> build() {}
 
@@ -119,11 +119,11 @@ class RecurringWriteController extends AutoDisposeAsyncNotifier<void> {
       throw result.error!;
     }
     state = const AsyncData(null);
-    return result.valueOrNull ?? 0;
+    return result.value ?? 0;
   }
 }
 
 final recurringWriteControllerProvider =
-    AutoDisposeAsyncNotifierProvider<RecurringWriteController, void>(
+    AsyncNotifierProvider<RecurringWriteController, void>(
       RecurringWriteController.new,
     );

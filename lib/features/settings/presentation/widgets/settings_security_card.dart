@@ -22,7 +22,7 @@ class SettingsSecurityCard extends ConsumerWidget {
     final sessionLockWriteState = ref.watch(
       sessionLockSettingsControllerProvider,
     );
-    final graceSeconds = sessionLockState.valueOrNull?.gracePeriodSeconds ?? 15;
+    final graceSeconds = sessionLockState.value?.gracePeriodSeconds ?? 15;
 
     return AppCard(
       tone: AppCardTone.muted,

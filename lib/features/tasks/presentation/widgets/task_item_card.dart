@@ -42,8 +42,8 @@ class TaskItemCard extends ConsumerWidget {
     final priorityColor = taskPriorityColor(task.priority);
 
     final activeEntryAsync = ref.watch(activeTimerProvider(task.id));
-    final tick = ref.watch(timerTickProvider).valueOrNull ?? DateTime.now();
-    final isTimerRunning = activeEntryAsync.valueOrNull?.isRunning ?? false;
+    final tick = ref.watch(timerTickProvider).value ?? DateTime.now();
+    final isTimerRunning = activeEntryAsync.value?.isRunning ?? false;
     final elapsed = isTimerRunning && activeEntryAsync.value != null
         ? tick.difference(activeEntryAsync.value!.startedAt!)
         : Duration.zero;

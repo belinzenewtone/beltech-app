@@ -27,10 +27,10 @@ class _CategorizeScreenState extends ConsumerState<CategorizeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final snapshot = ref.watch(expensesSnapshotProvider).valueOrNull;
+    final snapshot = ref.watch(expensesSnapshotProvider).value;
     final transactions = snapshot?.transactions ?? const [];
     final categoriesAsync = ref.watch(expenseCategoriesProvider);
-    final allCategories = categoriesAsync.valueOrNull ?? expenseCategoryDefaults;
+    final allCategories = categoriesAsync.value ?? expenseCategoryDefaults;
     final quickPickCategories = allCategories.take(5).toList();
     final uncategorized = transactions
         .where((t) => !allCategories.contains(t.category))
@@ -76,7 +76,7 @@ class _CategorizeScreenState extends ConsumerState<CategorizeScreen> {
                   AppSpacing.lg,
                 ),
                 itemCount: visible.length,
-                separatorBuilder: (_, __) =>
+                separatorBuilder: (_, _) =>
                     const SizedBox(height: AppSpacing.sm),
                 itemBuilder: (context, i) => _CategorizeRow(
                   transaction: visible[i],

@@ -43,7 +43,7 @@ class AnalyticsTrendChart extends StatelessWidget {
                     getTooltipColor: (_) => AppColors.tooltipBackground,
                     fitInsideHorizontally: true,
                     fitInsideVertically: true,
-                    tooltipRoundedRadius: 8,
+                    tooltipBorderRadius: BorderRadius.circular(8),
                     tooltipPadding: const EdgeInsets.symmetric(
                       horizontal: 10,
                       vertical: 6,

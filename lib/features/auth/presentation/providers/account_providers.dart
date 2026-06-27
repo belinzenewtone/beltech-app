@@ -8,7 +8,7 @@ final accountSessionProvider = StreamProvider<AccountSession>(
   (ref) => ref.watch(accountRepositoryProvider).watchSession(),
 );
 
-class AccountAuthController extends AutoDisposeAsyncNotifier<void> {
+class AccountAuthController extends AsyncNotifier<void> {
   @override
   FutureOr<void> build() {}
 
@@ -62,6 +62,6 @@ class AccountAuthController extends AutoDisposeAsyncNotifier<void> {
 }
 
 final accountAuthControllerProvider =
-    AutoDisposeAsyncNotifierProvider<AccountAuthController, void>(
+    AsyncNotifierProvider<AccountAuthController, void>(
       AccountAuthController.new,
     );

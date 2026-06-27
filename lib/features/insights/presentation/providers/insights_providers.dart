@@ -34,15 +34,15 @@ final insightsProvider = FutureProvider<List<InsightCard>>((ref) async {
   if (isLoading) return [];
 
   final transactions =
-      (expensesState.valueOrNull?.transactions ?? const []).toList()
+      (expensesState.value?.transactions ?? const []).toList()
         ..sort((a, b) => b.occurredAt.compareTo(a.occurredAt));
-  final categories = expensesState.valueOrNull?.categories ?? const [];
-  final budgetSnapshot = budgetState.valueOrNull;
-  final tasks = tasksState.valueOrNull ?? const [];
-  final incomes = incomesState.valueOrNull ?? const [];
-  final bills = billsState.valueOrNull ?? const [];
-  final topMerchants = topMerchantsState.valueOrNull ?? const [];
-  final reconciliations = reconciliationState.valueOrNull ?? const [];
+  final categories = expensesState.value?.categories ?? const [];
+  final budgetSnapshot = budgetState.value;
+  final tasks = tasksState.value ?? const [];
+  final incomes = incomesState.value ?? const [];
+  final bills = billsState.value ?? const [];
+  final topMerchants = topMerchantsState.value ?? const [];
+  final reconciliations = reconciliationState.value ?? const [];
 
   final cards = <InsightCard>[];
   final now = DateTime.now();

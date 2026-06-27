@@ -19,12 +19,15 @@ final timerTickProvider = StreamProvider<DateTime>((ref) {
   return Stream.periodic(const Duration(seconds: 1), (_) => DateTime.now());
 });
 
-class TimerController extends AutoDisposeFamilyAsyncNotifier<void, int> {
+class TimerController extends AsyncNotifier<void> {
+  TimerController(this.taskId);
+
+  final int taskId;
+
   @override
-  FutureOr<void> build(int arg) {}
+  FutureOr<void> build() async {}
 
   Future<void> toggleTimer() async {
-    final taskId = arg;
     final repo = ref.read(timeTrackingRepositoryProvider);
     final active = await repo.activeEntry(taskId);
     if (active != null && active.id != null) {
@@ -38,6 +41,6 @@ class TimerController extends AutoDisposeFamilyAsyncNotifier<void, int> {
 }
 
 final timerControllerProvider =
-    AutoDisposeAsyncNotifierProviderFamily<TimerController, void, int>(
-      TimerController.new,
+    AsyncNotifierProvider.family<TimerController, void, int>(
+      (taskId) => TimerController(taskId),
     );

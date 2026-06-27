@@ -82,7 +82,7 @@ class _WeekReviewScreenState extends ConsumerState<WeekReviewScreen> {
           streak: _streak,
         ),
         loading: () => const _LoadingReview(),
-        error: (_, __) => AppEmptyState(
+        error: (_, _) => AppEmptyState(
           icon: Icons.error_outline,
           title: 'Unable to load week review',
           subtitle: 'Please try again',
@@ -129,9 +129,9 @@ class _ReviewContent extends ConsumerWidget {
                   ),
                 ),
           loading: () => const SizedBox.shrink(),
-          error: (_, __) => const SizedBox.shrink(),
+          error: (_, _) => const SizedBox.shrink(),
         ),
-        if (ritualState.valueOrNull != null)
+        if (ritualState.value != null)
           const SizedBox(height: AppSpacing.sectionGap),
         _StatGrid(
           topLeft: (
@@ -381,7 +381,7 @@ class _WeekReviewActions extends ConsumerWidget {
                 : () async {
                     AppHaptics.mediumImpact();
                     final tasksState = ref.read(tasksProvider);
-                    final completedIds = (tasksState.valueOrNull ?? [])
+                    final completedIds = (tasksState.value ?? [])
                         .where((t) => t.completed)
                         .map((t) => t.id)
                         .toList();

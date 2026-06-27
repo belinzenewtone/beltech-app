@@ -450,7 +450,7 @@ class _TabPillSelector extends StatelessWidget {
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenHorizontal),
         itemCount: tabs.length,
-        separatorBuilder: (_, __) => const SizedBox(width: AppSpacing.sm),
+        separatorBuilder: (_, _) => const SizedBox(width: AppSpacing.sm),
         itemBuilder: (context, index) {
           final selected = index == selectedIndex;
           return AnimatedScale(
@@ -887,7 +887,7 @@ class _GuestInputState extends State<_GuestInput> {
               scrollDirection: Axis.horizontal,
               clipBehavior: Clip.none,
               itemCount: guests.length,
-              separatorBuilder: (_, __) => const SizedBox(width: 8),
+              separatorBuilder: (_, _) => const SizedBox(width: 8),
               itemBuilder: (context, index) {
                 final guest = guests[index];
                 return Chip(

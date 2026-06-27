@@ -24,9 +24,9 @@ final spendInsightsProvider = FutureProvider<List<SpendInsight>>((ref) async {
   final useCase = ref.watch(generateSpendInsightsUseCaseProvider);
 
   // Extract values from AsyncValues, returning empty if loading
-  final expenseItems = expensesSnapshot.valueOrNull?.transactions ?? [];
-  final budgetData = budgetSnapshot.valueOrNull;
-  final templates = recurringTemplates.valueOrNull ?? [];
+  final expenseItems = expensesSnapshot.value?.transactions ?? [];
+  final budgetData = budgetSnapshot.value;
+  final templates = recurringTemplates.value ?? [];
 
   // If any critical data is missing, return empty
   if (expenseItems.isEmpty) return [];
