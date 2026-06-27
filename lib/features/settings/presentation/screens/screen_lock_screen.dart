@@ -10,6 +10,7 @@ import 'package:beltech/core/widgets/secondary_page_shell.dart';
 import 'package:beltech/core/di/repository_providers.dart';
 import 'package:beltech/features/auth/domain/entities/auth_state.dart';
 import 'package:beltech/features/auth/presentation/providers/auth_providers.dart';
+import 'package:beltech/features/settings/presentation/widgets/pin_setup_dialog.dart';
 import 'package:beltech/features/settings/presentation/widgets/settings_row.dart';
 import 'package:beltech/features/settings/presentation/widgets/settings_security_card.dart';
 import 'package:flutter/material.dart';
@@ -108,6 +109,7 @@ class _PinTabState extends ConsumerState<_PinTab> {
   final _formKey = GlobalKey<FormState>();
   bool _pinSet = false;
   bool _isLoading = true;
+  bool _togglingPin = false;
 
   @override
   void initState() {
@@ -162,9 +164,49 @@ class _PinTabState extends ConsumerState<_PinTab> {
     );
   }
 
+  Future<void> _onPinToggle(bool value) async {
+    setState(() => _togglingPin = true);
+    try {
+      if (value) {
+        final repository = ref.read(authRepositoryProvider);
+        final hasPin = await repository.isPinSet();
+        if (!hasPin) {
+          if (!mounted) return;
+          final pin = await showDialog<String>(
+            context: context,
+            barrierDismissible: false,
+            builder: (_) => const PinSetupDialog(),
+          );
+          if (pin == null || !mounted) {
+            setState(() => _togglingPin = false);
+            return;
+          }
+          await ref.read(pinControllerProvider.notifier).setPin(pin);
+          if (!mounted) return;
+          final pinState = ref.read(pinControllerProvider);
+          if (pinState.hasError) {
+            AppFeedback.error(
+              context,
+              '${pinState.error}'.replaceFirst('Exception: ', ''),
+            );
+            setState(() => _togglingPin = false);
+            return;
+          }
+          _pinSet = true;
+        }
+        await ref.read(authProvider.notifier).setPinEnabled(true);
+      } else {
+        await ref.read(authProvider.notifier).setPinEnabled(false);
+      }
+    } finally {
+      if (mounted) setState(() => _togglingPin = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final pinState = ref.watch(pinControllerProvider);
+    final authStateAsync = ref.watch(authProvider);
 
     if (_isLoading) {
       return const AppCard(
@@ -181,6 +223,30 @@ class _PinTabState extends ConsumerState<_PinTab> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          AppCard(
+            tone: AppCardTone.muted,
+            padding: EdgeInsets.zero,
+            child: SettingsRow(
+              icon: Icons.pin_outlined,
+              title: 'PIN Lock',
+              subtitle: 'Use a 6-digit PIN to unlock',
+              trailing: authStateAsync.when(
+                data: (state) => Switch.adaptive(
+                  value: state.pinEnabled,
+                  onChanged: _togglingPin ? null : _onPinToggle,
+                ),
+                loading: () => const SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+                error: (_, _) => const SizedBox.shrink(),
+              ),
+              isFirst: true,
+              isLast: true,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.sectionGap),
           AppCard(
             tone: AppCardTone.muted,
             child: Column(

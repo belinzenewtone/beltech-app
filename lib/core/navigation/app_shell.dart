@@ -77,7 +77,7 @@ class _AppShellState extends ConsumerState<AppShell>
     with WidgetsBindingObserver {
   late BackgroundSyncCoordinator _backgroundSyncCoordinator;
   StreamSubscription<String>? _notificationTapSub;
-  bool _biometricConfigured = false;
+  bool _lockConfigured = false;
   bool _biometricRelockEnabled = true;
   bool _appLocked = false;
   bool _biometricUnlockInProgress = false;
@@ -252,12 +252,13 @@ class _AppShellState extends ConsumerState<AppShell>
 
   Future<void> _refreshBiometricConfiguration({required bool lockNow}) async {
     final authRepository = ref.read(authRepositoryProvider);
-    final enabled = await authRepository.isBiometricEnabled();
-    final supported = await authRepository.isBiometricSupported();
-    final configured = enabled && supported;
+    final biometricEnabled = await authRepository.isBiometricEnabled();
+    final biometricSupported = await authRepository.isBiometricSupported();
+    final pinEnabled = await authRepository.isPinEnabled();
+    final configured = (biometricEnabled && biometricSupported) || pinEnabled;
     if (!mounted) return;
     setState(() {
-      _biometricConfigured = configured;
+      _lockConfigured = configured;
       if (!configured) {
         _appLocked = false;
         _biometricLockMessage = null;
@@ -268,7 +269,7 @@ class _AppShellState extends ConsumerState<AppShell>
   }
 
   Future<void> _unlockWithBiometrics() async {
-    if (_biometricUnlockInProgress || !_biometricConfigured) return;
+    if (_biometricUnlockInProgress || !_lockConfigured) return;
     setState(() {
       _biometricUnlockInProgress = true;
       _biometricLockMessage = null;
@@ -287,17 +288,17 @@ class _AppShellState extends ConsumerState<AppShell>
   }
 
   Future<void> _unlockWithPin(String pin) async {
-    final store = ref.read(secureCredentialsStoreProvider);
-    final hasher = ref.read(passwordHasherProvider);
-    final hash = await store.readPasswordHash();
-    if (hash == null) {
+    final repository = ref.read(authRepositoryProvider);
+    final pinSet = await repository.isPinSet();
+    if (!pinSet) {
       if (!mounted) return;
       setState(() {
         _pinError = 'No PIN has been set. Use fingerprint instead.';
       });
       return;
     }
-    if (!hasher.verify(pin, hash)) {
+    final valid = await repository.verifyPin(pin);
+    if (!valid) {
       if (!mounted) return;
       setState(() {
         _pinError = 'Incorrect PIN. Please try again.';
