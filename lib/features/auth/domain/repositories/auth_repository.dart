@@ -6,4 +6,12 @@ abstract class AuthRepository {
   Future<void> setBiometricEnabled(bool enabled);
 
   Future<bool> authenticate();
+
+  Future<bool> isPinSet();
+
+  Future<bool> verifyPin(String pin);
+
+  Future<void> setPin(String pin);
+
+  Future<void> clearPin();
 }

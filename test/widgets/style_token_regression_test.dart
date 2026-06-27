@@ -37,13 +37,12 @@ void main() {
       expect(backgroundColor, AppColors.accent);
     });
 
-    testWidgets('Profile security InkWell radii follow app card radius', (
+    testWidgets('Profile security InkWell radius follows app card radius', (
       tester,
     ) async {
       await tester.pumpWidget(
         _wrapLightTheme(
           const ProfileSecuritySection(
-            onChangePassword: _noop,
             onSignOut: _noop,
             signingOut: false,
           ),
@@ -55,16 +54,7 @@ void main() {
 
       expect(
         inkwells.any(
-          (inkWell) =>
-              inkWell.borderRadius == const BorderRadius.vertical(top: radius),
-        ),
-        isTrue,
-      );
-      expect(
-        inkwells.any(
-          (inkWell) =>
-              inkWell.borderRadius ==
-              const BorderRadius.vertical(bottom: radius),
+          (inkWell) => inkWell.borderRadius == const BorderRadius.all(radius),
         ),
         isTrue,
       );

@@ -5,6 +5,7 @@ class SecureCredentialsStore {
 
   static const String passwordHashKey = 'user_password_hash';
   static const String biometricEnabledKey = 'biometric_enabled';
+  static const String pinKey = 'user_pin';
 
   final FlutterSecureStorage _storage;
 
@@ -23,5 +24,17 @@ class SecureCredentialsStore {
   Future<bool> readBiometricEnabled() async {
     final value = await _storage.read(key: biometricEnabledKey);
     return value == 'true';
+  }
+
+  Future<void> writePin(String pin) async {
+    await _storage.write(key: pinKey, value: pin);
+  }
+
+  Future<String?> readPin() async {
+    return _storage.read(key: pinKey);
+  }
+
+  Future<void> deletePin() async {
+    await _storage.delete(key: pinKey);
   }
 }

@@ -2,15 +2,27 @@ import 'package:beltech/core/di/notification_providers.dart';
 import 'package:beltech/core/theme/app_colors.dart';
 import 'package:beltech/core/theme/app_radius.dart';
 import 'package:beltech/core/theme/app_typography.dart';
+import 'package:beltech/core/widgets/app_card.dart';
+import 'package:beltech/core/widgets/app_feedback.dart';
+import 'package:beltech/core/widgets/secondary_page_shell.dart';
 import 'package:beltech/features/settings/presentation/widgets/settings_row.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class NotificationPreferencesSection extends ConsumerWidget {
-  const NotificationPreferencesSection({super.key});
+class NotificationSettingsScreen extends ConsumerWidget {
+  const NotificationSettingsScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    ref.listen<AsyncValue<void>>(notificationPreferenceControllerProvider, (
+      previous,
+      next,
+    ) {
+      if (next.hasError) {
+        AppFeedback.error(context, 'Unable to update notification settings.', ref: ref);
+      }
+    });
+
     final notificationsEnabledState = ref.watch(notificationsEnabledProvider);
     final budgetAlertsState = ref.watch(budgetAlertsEnabledProvider);
     final dailyDigestState = ref.watch(dailyDigestEnabledProvider);
@@ -37,87 +49,94 @@ class NotificationPreferencesSection extends ConsumerWidget {
         notificationWriteState.isLoading;
     final childPreferencesReadOnly = readOnly || !notificationsEnabled;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        SettingsRow(
-          icon: Icons.notifications_outlined,
-          title: 'Notifications',
-          subtitle: 'Task and event reminders',
-          trailing: Switch.adaptive(
-            value: notificationsEnabled,
-            onChanged: readOnly
-                ? null
-                : (value) async {
-                    await ref
-                        .read(notificationPreferenceControllerProvider.notifier)
-                        .setEnabled(value);
-                  },
-          ),
-          isFirst: true,
-        ),
-        SettingsRow(
-          icon: Icons.account_balance_wallet_outlined,
-          title: 'Budget Alerts',
-          subtitle: 'Notify when spending nears limits',
-          trailing: Switch.adaptive(
-            value: budgetAlertsEnabled,
-            onChanged: childPreferencesReadOnly
-                ? null
-                : (value) async {
-                    await ref
-                        .read(notificationPreferenceControllerProvider.notifier)
-                        .setBudgetAlertsEnabled(value);
-                  },
-          ),
-          dividerAbove: true,
-        ),
-        if (budgetAlertsEnabled && notificationsEnabled)
-          _BudgetThresholdSliders(
-            high: budgetHigh,
-            medium: budgetMedium,
-            low: budgetLow,
-            enabled: !childPreferencesReadOnly,
-            onChanged: (high, medium, low) async {
-              await ref
-                  .read(notificationPreferenceControllerProvider.notifier)
-                  .setBudgetAlertThresholds(high, medium, low);
-            },
-          ),
-        SettingsRow(
-          icon: Icons.today_outlined,
-          title: 'Daily Summary',
-          subtitle:
-              'One digest at ${digestHour.toString().padLeft(2, '0')}:${digestMinute.toString().padLeft(2, '0')}',
-          trailing: Switch.adaptive(
-            value: dailyDigestEnabled,
-            onChanged: childPreferencesReadOnly
-                ? null
-                : (value) async {
-                    await ref
-                        .read(notificationPreferenceControllerProvider.notifier)
-                        .setDailyDigestEnabled(value);
-                  },
-          ),
-          dividerAbove: true,
-        ),
-        if (dailyDigestEnabled && !childPreferencesReadOnly)
-          _DigestTimeRow(
-            hour: digestHour,
-            minute: digestMinute,
-            onTap: () async {
-              final picked = await showTimePicker(
-                context: context,
-                initialTime: TimeOfDay(hour: digestHour, minute: digestMinute),
-              );
-              if (picked != null) {
+    return SecondaryPageShell(
+      title: 'Notifications',
+      child: AppCard(
+        tone: AppCardTone.muted,
+        padding: EdgeInsets.zero,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            SettingsRow(
+              icon: Icons.notifications_outlined,
+              title: 'Notifications',
+              subtitle: 'Task and event reminders',
+              trailing: Switch.adaptive(
+                value: notificationsEnabled,
+                onChanged: readOnly
+                    ? null
+                    : (value) async {
+                        await ref
+                            .read(notificationPreferenceControllerProvider.notifier)
+                            .setEnabled(value);
+                      },
+              ),
+              isFirst: true,
+            ),
+            SettingsRow(
+              icon: Icons.account_balance_wallet_outlined,
+              title: 'Budget Alerts',
+              subtitle: 'Notify when spending nears limits',
+              trailing: Switch.adaptive(
+                value: budgetAlertsEnabled,
+                onChanged: childPreferencesReadOnly
+                    ? null
+                    : (value) async {
+                        await ref
+                            .read(notificationPreferenceControllerProvider.notifier)
+                            .setBudgetAlertsEnabled(value);
+                      },
+              ),
+              dividerAbove: true,
+            ),
+            _BudgetThresholdSliders(
+              high: budgetHigh,
+              medium: budgetMedium,
+              low: budgetLow,
+              enabled:
+                  !childPreferencesReadOnly && budgetAlertsEnabled,
+              onChanged: (high, medium, low) async {
                 await ref
                     .read(notificationPreferenceControllerProvider.notifier)
-                    .setDailyDigestScheduleTime(picked.hour, picked.minute);
-              }
-            },
-          ),
-      ],
+                    .setBudgetAlertThresholds(high, medium, low);
+              },
+            ),
+            SettingsRow(
+              icon: Icons.today_outlined,
+              title: 'Daily Summary',
+              subtitle:
+                  'One digest at ${digestHour.toString().padLeft(2, '0')}:${digestMinute.toString().padLeft(2, '0')}',
+              trailing: Switch.adaptive(
+                value: dailyDigestEnabled,
+                onChanged: childPreferencesReadOnly
+                    ? null
+                    : (value) async {
+                        await ref
+                            .read(notificationPreferenceControllerProvider.notifier)
+                            .setDailyDigestEnabled(value);
+                      },
+              ),
+              dividerAbove: true,
+            ),
+            _DigestTimeRow(
+              hour: digestHour,
+              minute: digestMinute,
+              enabled: !childPreferencesReadOnly && dailyDigestEnabled,
+              onTap: () async {
+                final picked = await showTimePicker(
+                  context: context,
+                  initialTime: TimeOfDay(hour: digestHour, minute: digestMinute),
+                );
+                if (picked != null) {
+                  await ref
+                      .read(notificationPreferenceControllerProvider.notifier)
+                      .setDailyDigestScheduleTime(picked.hour, picked.minute);
+                }
+              },
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -159,7 +178,6 @@ class _BudgetThresholdSlidersState extends State<_BudgetThresholdSliders> {
   @override
   void didUpdateWidget(_BudgetThresholdSliders old) {
     super.didUpdateWidget(old);
-    // Only sync from parent when not actively dragging to avoid jumps.
     if (!_dragging) {
       _high = widget.high;
       _medium = widget.medium;
@@ -182,7 +200,12 @@ class _BudgetThresholdSlidersState extends State<_BudgetThresholdSliders> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Alert thresholds', style: AppTypography.label(context)),
+          Text(
+            'Alert thresholds',
+            style: AppTypography.label(context).copyWith(
+              color: widget.enabled ? AppColors.textSecondary : AppColors.textMuted,
+            ),
+          ),
           const SizedBox(height: 12),
           _ThresholdSlider(
             label: 'Critical',
@@ -252,7 +275,12 @@ class _ThresholdSlider extends StatelessWidget {
       children: [
         SizedBox(
           width: 56,
-          child: Text(label, style: AppTypography.bodySm(context)),
+          child: Text(
+            label,
+            style: AppTypography.bodySm(context).copyWith(
+              color: enabled ? AppColors.textPrimary : AppColors.textMuted,
+            ),
+          ),
         ),
         Expanded(
           child: Slider(
@@ -270,7 +298,9 @@ class _ThresholdSlider extends StatelessWidget {
           width: 40,
           child: Text(
             '${value.toStringAsFixed(0)}%',
-            style: AppTypography.bodySm(context),
+            style: AppTypography.bodySm(context).copyWith(
+              color: enabled ? AppColors.textPrimary : AppColors.textMuted,
+            ),
             textAlign: TextAlign.end,
           ),
         ),
@@ -284,18 +314,20 @@ class _DigestTimeRow extends StatelessWidget {
     required this.hour,
     required this.minute,
     required this.onTap,
+    this.enabled = true,
   });
 
   final int hour;
   final int minute;
   final VoidCallback onTap;
+  final bool enabled;
 
   @override
   Widget build(BuildContext context) {
     final time =
         '${hour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')}';
     return InkWell(
-      onTap: onTap,
+      onTap: enabled ? onTap : null,
       borderRadius: BorderRadius.circular(AppRadius.lg),
       child: Padding(
         padding: const EdgeInsets.fromLTRB(56, 4, 16, 12),
@@ -309,16 +341,27 @@ class _DigestTimeRow extends StatelessWidget {
                     'Digest time',
                     style: AppTypography.body(
                       context,
-                    ).copyWith(color: AppColors.textSecondary),
+                    ).copyWith(
+                      color: enabled
+                          ? AppColors.textSecondary
+                          : AppColors.textMuted,
+                    ),
                   ),
                   const SizedBox(height: 2),
-                  Text(time, style: AppTypography.cardTitle(context)),
+                  Text(
+                    time,
+                    style: AppTypography.cardTitle(context).copyWith(
+                      color: enabled
+                          ? AppColors.textPrimary
+                          : AppColors.textMuted,
+                    ),
+                  ),
                 ],
               ),
             ),
-            const Icon(
+            Icon(
               Icons.access_time_rounded,
-              color: AppColors.textMuted,
+              color: enabled ? AppColors.textMuted : AppColors.border,
               size: 18,
             ),
           ],

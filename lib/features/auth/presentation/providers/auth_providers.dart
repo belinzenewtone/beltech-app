@@ -121,3 +121,55 @@ final sessionLockSettingsControllerProvider =
     AsyncNotifierProvider<SessionLockSettingsController, void>(
       SessionLockSettingsController.new,
     );
+
+class PinController extends AsyncNotifier<void> {
+  @override
+  Future<void> build() async {}
+
+  Future<void> changePin({
+    required String currentPin,
+    required String newPin,
+  }) async {
+    state = const AsyncLoading();
+    state = await AsyncValue.guard(() async {
+      final repository = ref.read(authRepositoryProvider);
+      final pinSet = await repository.isPinSet();
+      if (pinSet) {
+        final valid = await repository.verifyPin(currentPin);
+        if (!valid) {
+          throw Exception('Current PIN is incorrect.');
+        }
+      }
+      if (!RegExp(r'^\d{6}$').hasMatch(newPin)) {
+        throw Exception('PIN must be exactly 6 digits.');
+      }
+      await repository.setPin(newPin);
+      await ref
+          .read(revampTelemetryServiceProvider)
+          .track('pin_changed');
+    });
+  }
+
+  Future<void> setPin(String pin) async {
+    state = const AsyncLoading();
+    state = await AsyncValue.guard(() async {
+      if (!RegExp(r'^\d{6}$').hasMatch(pin)) {
+        throw Exception('PIN must be exactly 6 digits.');
+      }
+      final repository = ref.read(authRepositoryProvider);
+      await repository.setPin(pin);
+      await ref
+          .read(revampTelemetryServiceProvider)
+          .track('pin_set');
+    });
+  }
+
+  Future<bool> verifyPin(String pin) async {
+    final repository = ref.read(authRepositoryProvider);
+    return repository.verifyPin(pin);
+  }
+}
+
+final pinControllerProvider = AsyncNotifierProvider<PinController, void>(
+  PinController.new,
+);

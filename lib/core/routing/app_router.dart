@@ -23,6 +23,8 @@ import 'package:beltech/features/planner/presentation/screens/planner_screen.dar
 import 'package:beltech/features/recurring/presentation/recurring_screen.dart';
 import 'package:beltech/features/review/presentation/week_review_screen.dart';
 import 'package:beltech/features/search/presentation/global_search_screen.dart';
+import 'package:beltech/features/settings/presentation/screens/notification_settings_screen.dart';
+import 'package:beltech/features/settings/presentation/screens/screen_lock_screen.dart';
 import 'package:beltech/features/settings/presentation/settings_screen.dart';
 import 'package:beltech/features/tasks/presentation/tasks_screen.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -49,6 +51,16 @@ final appRouterProvider = Provider<GoRouter>(
         path: '/settings',
         name: 'settings',
         builder: (context, state) => const SettingsScreen(),
+      ),
+      GoRoute(
+        path: '/screen-lock',
+        name: 'screen-lock',
+        builder: (context, state) => const ScreenLockScreen(),
+      ),
+      GoRoute(
+        path: '/notification-settings',
+        name: 'notification-settings',
+        builder: (context, state) => const NotificationSettingsScreen(),
       ),
       GoRoute(
         path: '/budget',
