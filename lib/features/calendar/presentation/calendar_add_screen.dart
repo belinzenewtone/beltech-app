@@ -819,33 +819,40 @@ class _GuestInputState extends State<_GuestInput> {
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
-        TextField(
-          controller: _inputController,
-          focusNode: _focusNode,
-          textInputAction: TextInputAction.done,
-          style: AppTypography.bodyMd(context),
-          decoration: InputDecoration(
-            hintText: 'Add guest (press enter or comma)',
-            hintStyle: AppTypography.bodyMd(context).copyWith(
-              color: AppColors.textSecondaryFor(brightness).withValues(alpha: 0.55),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Expanded(
+              child: TextField(
+                controller: _inputController,
+                focusNode: _focusNode,
+                textInputAction: TextInputAction.done,
+                style: AppTypography.bodyMd(context),
+                decoration: InputDecoration(
+                  hintText: 'Add guest (press enter or comma)',
+                  hintStyle: AppTypography.bodyMd(context).copyWith(
+                    color: AppColors.textSecondaryFor(brightness).withValues(alpha: 0.55),
+                  ),
+                  border: InputBorder.none,
+                  contentPadding: EdgeInsets.zero,
+                  isDense: true,
+                ),
+                onSubmitted: (value) {
+                  _add(value);
+                  _focusNode.requestFocus();
+                },
+                onChanged: (value) {
+                  if (value.contains(',')) {
+                    _add(value);
+                  }
+                },
+              ),
             ),
-            border: InputBorder.none,
-            contentPadding: EdgeInsets.zero,
-            isDense: true,
-            suffixIcon: IconButton(
+            IconButton(
               icon: const Icon(Icons.add_rounded, size: 20),
               onPressed: () => _add(_inputController.text),
             ),
-          ),
-          onSubmitted: (value) {
-            _add(value);
-            _focusNode.requestFocus();
-          },
-          onChanged: (value) {
-            if (value.contains(',')) {
-              _add(value);
-            }
-          },
+          ],
         ),
         if (guests.isNotEmpty) ...[
           const SizedBox(height: 10),
