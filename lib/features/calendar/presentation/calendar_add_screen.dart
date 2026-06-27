@@ -9,6 +9,7 @@ import 'package:beltech/core/theme/app_spacing.dart';
 import 'package:beltech/core/theme/app_typography.dart';
 import 'package:beltech/core/widgets/app_button.dart';
 import 'package:beltech/core/widgets/app_card.dart';
+import 'package:beltech/core/widgets/app_form_fields.dart';
 import 'package:beltech/features/calendar/domain/entities/calendar_event.dart';
 import 'package:beltech/features/calendar/presentation/calendar_add_screen_models.dart';
 import 'package:beltech/features/calendar/presentation/providers/calendar_providers.dart';
@@ -532,70 +533,6 @@ class _FormCard extends StatelessWidget {
   }
 }
 
-class _TitleField extends StatelessWidget {
-  const _TitleField({required this.controller, required this.hint});
-
-  final TextEditingController controller;
-  final String hint;
-
-  @override
-  Widget build(BuildContext context) {
-    final brightness = Theme.of(context).brightness;
-    return _FormCard(
-      child: TextField(
-        controller: controller,
-        style: AppTypography.bodyMd(context).copyWith(
-          color: AppColors.textPrimaryFor(brightness),
-          fontWeight: FontWeight.w500,
-        ),
-        decoration: InputDecoration(
-          hintText: hint,
-          hintStyle: AppTypography.bodyMd(context).copyWith(
-            color: AppColors.textSecondaryFor(brightness).withValues(alpha: 0.55),
-          ),
-          border: InputBorder.none,
-          contentPadding: EdgeInsets.zero,
-          isDense: true,
-        ),
-        maxLines: null,
-        textCapitalization: TextCapitalization.sentences,
-      ),
-    );
-  }
-}
-
-class _NoteField extends StatelessWidget {
-  const _NoteField({required this.controller});
-
-  final TextEditingController controller;
-
-  @override
-  Widget build(BuildContext context) {
-    final brightness = Theme.of(context).brightness;
-    return _FormCard(
-      child: TextField(
-        controller: controller,
-        minLines: 2,
-        maxLines: 4,
-        style: AppTypography.bodyMd(context).copyWith(
-          color: AppColors.textPrimaryFor(brightness),
-          fontWeight: FontWeight.w400,
-        ),
-        decoration: InputDecoration(
-          hintText: 'Description (optional)',
-          hintStyle: AppTypography.bodyMd(context).copyWith(
-            color: AppColors.textSecondaryFor(brightness).withValues(alpha: 0.55),
-          ),
-          border: InputBorder.none,
-          contentPadding: EdgeInsets.zero,
-          isDense: true,
-        ),
-        textCapitalization: TextCapitalization.sentences,
-      ),
-    );
-  }
-}
-
 class _PickerRow extends StatelessWidget {
   const _PickerRow({
     required this.icon,
@@ -784,20 +721,158 @@ class _CategorySelector extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Wrap(
-      spacing: 8,
-      runSpacing: 8,
-      children: CalendarEventType.values.map((type) {
-        final option = eventTypeOption(type);
-        final isSelected = selected == type;
-        return AppButton(
-          label: option.label,
-          icon: option.icon,
-          size: AppButtonSize.sm,
-          variant: isSelected ? AppButtonVariant.primary : AppButtonVariant.secondary,
-          onPressed: () => onChanged(type),
-        );
-      }).toList(),
+    final brightness = Theme.of(context).brightness;
+    return _FormCard(
+      child: DropdownButtonFormField<CalendarEventType>(
+        initialValue: selected,
+        isExpanded: true,
+        icon: const Icon(Icons.keyboard_arrow_down_rounded),
+        decoration: const InputDecoration(
+          border: InputBorder.none,
+          contentPadding: EdgeInsets.zero,
+          isDense: true,
+        ),
+        dropdownColor: AppColors.surfaceFor(brightness),
+        style: AppTypography.bodyMd(context).copyWith(
+          color: AppColors.textPrimaryFor(brightness),
+          fontWeight: FontWeight.w500,
+        ),
+        items: CalendarEventType.values.map((type) {
+          final option = eventTypeOption(type);
+          return DropdownMenuItem<CalendarEventType>(
+            value: type,
+            child: Row(
+              children: [
+                Icon(option.icon, size: 18, color: option.color),
+                const SizedBox(width: 10),
+                Text(option.label),
+              ],
+            ),
+          );
+        }).toList(),
+        onChanged: (value) {
+          if (value != null) onChanged(value);
+        },
+      ),
+    );
+  }
+}
+
+class _GuestInput extends StatefulWidget {
+  const _GuestInput({required this.controller});
+
+  final TextEditingController controller;
+
+  @override
+  State<_GuestInput> createState() => _GuestInputState();
+}
+
+class _GuestInputState extends State<_GuestInput> {
+  late final TextEditingController _inputController;
+  final _focusNode = FocusNode();
+
+  List<String> get _guests => widget.controller.text
+      .split(',')
+      .map((s) => s.trim())
+      .where((s) => s.isNotEmpty)
+      .toList();
+
+  @override
+  void initState() {
+    super.initState();
+    _inputController = TextEditingController();
+  }
+
+  @override
+  void dispose() {
+    _inputController.dispose();
+    _focusNode.dispose();
+    super.dispose();
+  }
+
+  void _add(String raw) {
+    final value = raw.trim();
+    if (value.isEmpty) return;
+    final guests = _guests;
+    for (final part in value.split(',')) {
+      final trimmed = part.trim();
+      if (trimmed.isNotEmpty && !guests.contains(trimmed)) {
+        guests.add(trimmed);
+      }
+    }
+    widget.controller.text = guests.join(', ');
+    _inputController.clear();
+    setState(() {});
+  }
+
+  void _remove(String guest) {
+    final guests = _guests..remove(guest);
+    widget.controller.text = guests.join(', ');
+    setState(() {});
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final brightness = Theme.of(context).brightness;
+    final guests = _guests;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        TextField(
+          controller: _inputController,
+          focusNode: _focusNode,
+          textInputAction: TextInputAction.done,
+          style: AppTypography.bodyMd(context),
+          decoration: InputDecoration(
+            hintText: 'Add guest (press enter or comma)',
+            hintStyle: AppTypography.bodyMd(context).copyWith(
+              color: AppColors.textSecondaryFor(brightness).withValues(alpha: 0.55),
+            ),
+            border: InputBorder.none,
+            contentPadding: EdgeInsets.zero,
+            isDense: true,
+            suffixIcon: IconButton(
+              icon: const Icon(Icons.add_rounded, size: 20),
+              onPressed: () => _add(_inputController.text),
+            ),
+          ),
+          onSubmitted: (value) {
+            _add(value);
+            _focusNode.requestFocus();
+          },
+          onChanged: (value) {
+            if (value.contains(',')) {
+              _add(value);
+            }
+          },
+        ),
+        if (guests.isNotEmpty) ...[
+          const SizedBox(height: 10),
+          SizedBox(
+            height: 32,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              clipBehavior: Clip.none,
+              itemCount: guests.length,
+              separatorBuilder: (_, __) => const SizedBox(width: 8),
+              itemBuilder: (context, index) {
+                final guest = guests[index];
+                return Chip(
+                  visualDensity: VisualDensity.compact,
+                  padding: EdgeInsets.zero,
+                  labelStyle: AppTypography.bodySm(context),
+                  backgroundColor: AppColors.surfaceMutedFor(brightness),
+                  side: BorderSide(color: AppColors.borderFor(brightness)),
+                  label: Text(guest),
+                  deleteIcon: const Icon(Icons.close_rounded, size: 16),
+                  onDeleted: () => _remove(guest),
+                );
+              },
+            ),
+          ),
+        ],
+      ],
     );
   }
 }
@@ -836,9 +911,9 @@ class _TaskFormContent extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _TitleField(controller: titleController, hint: 'Task title'),
+          AppTitleField(controller: titleController, hint: 'Task title'),
           const SizedBox(height: AppSpacing.md),
-          _NoteField(controller: noteController),
+          AppNoteField(controller: noteController),
           const _SectionLabel('Priority'),
           _PrioritySelector(
             selected: priority,
@@ -945,9 +1020,9 @@ class _EventFormContent extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _TitleField(controller: titleController, hint: 'Event title'),
+          AppTitleField(controller: titleController, hint: 'Event title'),
           const SizedBox(height: AppSpacing.md),
-          _NoteField(controller: noteController),
+          AppNoteField(controller: noteController),
           const _SectionLabel('All day'),
           _FormCard(
             child: _ToggleRow(
@@ -1025,12 +1100,7 @@ class _EventFormContent extends StatelessWidget {
           ),
           const _SectionLabel('Guests'),
           _FormCard(
-            child: _PickerRow(
-              icon: Icons.people_outline,
-              label: 'Guests',
-              value: guestsController.text.isEmpty ? 'None' : guestsController.text,
-              onTap: () => _showGuestsDialog(context, guestsController),
-            ),
+            child: _GuestInput(controller: guestsController),
           ),
           const _SectionLabel('Category'),
           _CategorySelector(
@@ -1086,34 +1156,6 @@ class _EventFormContent extends StatelessWidget {
   }
 }
 
-Future<void> _showGuestsDialog(
-  BuildContext context,
-  TextEditingController controller,
-) async {
-  await showDialog<void>(
-    context: context,
-    builder: (ctx) {
-      return AlertDialog(
-        title: const Text('Guests'),
-        content: TextField(
-          controller: controller,
-          maxLines: null,
-          decoration: const InputDecoration(
-            hintText: 'Comma separated emails or names',
-            border: OutlineInputBorder(),
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('Done'),
-          ),
-        ],
-      );
-    },
-  );
-}
-
 // ── Birthday form ────────────────────────────────────────────────────────────
 
 class _BirthdayFormContent extends StatelessWidget {
@@ -1140,9 +1182,9 @@ class _BirthdayFormContent extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _TitleField(controller: titleController, hint: "Whose birthday?"),
+          AppTitleField(controller: titleController, hint: "Whose birthday?"),
           const SizedBox(height: AppSpacing.md),
-          _NoteField(controller: noteController),
+          AppNoteField(controller: noteController),
           const _SectionLabel('Birthday'),
           _FormCard(
             child: _PickerRow(
@@ -1199,9 +1241,9 @@ class _AnniversaryFormContent extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _TitleField(controller: titleController, hint: 'Anniversary title'),
+          AppTitleField(controller: titleController, hint: 'Anniversary title'),
           const SizedBox(height: AppSpacing.md),
-          _NoteField(controller: noteController),
+          AppNoteField(controller: noteController),
           const _SectionLabel('Anniversary'),
           _FormCard(
             child: _PickerRow(
@@ -1254,9 +1296,9 @@ class _CountdownFormContent extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _TitleField(controller: titleController, hint: 'Countdown title'),
+          AppTitleField(controller: titleController, hint: 'Countdown title'),
           const SizedBox(height: AppSpacing.md),
-          _NoteField(controller: noteController),
+          AppNoteField(controller: noteController),
           const _SectionLabel('Target date'),
           _FormCard(
             child: _PickerRow(
@@ -1509,8 +1551,22 @@ class _CustomReminderDialogState extends State<_CustomReminderDialog> {
   int _value = 15;
   int _unitIndex = 0; // 0 = minutes, 1 = hours, 2 = days
 
+  int get _maxValue => switch (_unitIndex) {
+        0 => 60, // minutes
+        1 => 24, // hours
+        _ => 30, // days
+      };
+
+  void _setUnit(int index) {
+    setState(() {
+      _unitIndex = index;
+      if (_value > _maxValue) _value = _maxValue;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
+    final maxValue = _maxValue;
     return AlertDialog(
       backgroundColor: AppColors.surface,
       title: Text('Custom reminder', style: AppTypography.sectionTitle(context)),
@@ -1526,7 +1582,7 @@ class _CustomReminderDialogState extends State<_CustomReminderDialog> {
                 onSelectedItemChanged: (i) => setState(() => _value = i + 1),
                 childDelegate: ListWheelChildBuilderDelegate(
                   builder: (context, index) {
-                    if (index < 0 || index >= 60) return null;
+                    if (index < 0 || index >= maxValue) return null;
                     return Center(
                       child: Text(
                         '${index + 1}',
@@ -1536,7 +1592,7 @@ class _CustomReminderDialogState extends State<_CustomReminderDialog> {
                       ),
                     );
                   },
-                  childCount: 60,
+                  childCount: maxValue,
                 ),
               ),
             ),
@@ -1545,7 +1601,7 @@ class _CustomReminderDialogState extends State<_CustomReminderDialog> {
                 itemExtent: 44,
                 magnification: 1.2,
                 useMagnifier: true,
-                onSelectedItemChanged: (i) => setState(() => _unitIndex = i),
+                onSelectedItemChanged: _setUnit,
                 childDelegate: ListWheelChildBuilderDelegate(
                   builder: (context, index) {
                     const units = ['minutes', 'hours', 'days'];

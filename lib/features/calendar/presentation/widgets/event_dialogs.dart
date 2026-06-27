@@ -2,6 +2,7 @@ import 'package:beltech/core/theme/app_colors.dart';
 import 'package:beltech/core/theme/app_typography.dart';
 import 'package:beltech/core/widgets/app_button.dart';
 import 'package:beltech/core/widgets/app_card.dart';
+import 'package:beltech/core/widgets/app_form_fields.dart';
 import 'package:beltech/core/widgets/app_form_sheet.dart';
 import 'package:beltech/features/calendar/domain/entities/calendar_event.dart';
 import 'package:beltech/features/calendar/presentation/widgets/event_dialog_helpers.dart';
@@ -114,17 +115,9 @@ Future<NewEventInput?> _showEventDialog(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              TextField(
-                controller: titleController,
-                decoration: const InputDecoration(hintText: 'Title'),
-              ),
+              AppTitleField(controller: titleController, hint: 'Title'),
               const SizedBox(height: 14),
-              TextField(
-                controller: noteController,
-                minLines: 2,
-                maxLines: 3,
-                decoration: const InputDecoration(hintText: 'Note (optional)'),
-              ),
+              AppNoteField(controller: noteController, hint: 'Note (optional)'),
               const SizedBox(height: 18),
               Text('Priority', style: AppTypography.sectionTitle(context)),
               const SizedBox(height: 10),

@@ -2,6 +2,7 @@ import 'package:beltech/core/theme/app_colors.dart';
 import 'package:beltech/core/theme/app_typography.dart';
 import 'package:beltech/core/widgets/app_button.dart';
 import 'package:beltech/core/widgets/app_card.dart';
+import 'package:beltech/core/widgets/app_form_fields.dart';
 import 'package:beltech/core/widgets/app_form_sheet.dart';
 import 'package:beltech/core/widgets/super_add_sheet_models.dart';
 import 'package:beltech/core/widgets/super_add_sheet_sections.dart';
@@ -212,17 +213,15 @@ Future<SuperEntryInput?> showSuperAddSheet(
               const SizedBox(height: 14),
 
               // ── Title ──
-              TextField(
+              AppTitleField(
                 controller: titleController,
+                hint: isBirthday
+                    ? 'Name'
+                    : isAnniversary
+                    ? 'Occasion'
+                    : 'Title',
+                errorText: titleError ? 'Title is required' : null,
                 onChanged: (_) => setState(() => titleError = false),
-                decoration: InputDecoration(
-                  hintText: isBirthday
-                      ? 'Name'
-                      : isAnniversary
-                      ? 'Occasion'
-                      : 'Title',
-                  errorText: titleError ? 'Title is required' : null,
-                ),
               ),
               const SizedBox(height: 14),
 
@@ -332,14 +331,7 @@ Future<SuperEntryInput?> showSuperAddSheet(
                     ),
                     if (showDetails) ...[
                       const SizedBox(height: 14),
-                      TextField(
-                        controller: descriptionController,
-                        minLines: 2,
-                        maxLines: 3,
-                        decoration: const InputDecoration(
-                          hintText: 'Description (optional)',
-                        ),
-                      ),
+                      AppNoteField(controller: descriptionController),
                       const SizedBox(height: 14),
 
                       // ── Priority (task + event only) ──
