@@ -27,8 +27,8 @@ Future<void> cleanupNotificationReminders(WidgetRef ref) async {
       .where(
         (task) =>
             !task.completed &&
-            task.dueDate != null &&
-            task.dueDate!.isAfter(DateTime.now()),
+            task.deadline != null &&
+            task.deadline!.isAfter(DateTime.now()),
       )
       .map((task) => task.id);
 

@@ -79,13 +79,16 @@ void main() {
       final source = DeviceSmsDataSource(
         isAndroid: () => true,
         requestPermission: () async => true,
-        queryRunner: (_) async => [
-          _sms(
-            body: 'AA11BB22CC Confirmed. Ksh120.00 sent to SKY CAFE sometime.',
-            sender: 'MPESA',
-            date: smsAt,
-          ),
-        ],
+        queryRunner: (q, {start = 0, count = 200}) async => start == 0
+            ? [
+                _sms(
+                  body:
+                      'AA11BB22CC Confirmed. Ksh120.00 sent to SKY CAFE sometime.',
+                  sender: 'MPESA',
+                  date: smsAt,
+                ),
+              ]
+            : const <SmsMessage>[]
       );
       final repoWithDevice = ExpensesRepositoryImpl(
         store,
@@ -177,6 +180,40 @@ void main() {
     );
     expect(txRows, isNotEmpty);
     expect('${txRows.first['category'] ?? ''}', 'Transport');
+  });
+
+  test('category inference overrides type-based fallback for known merchants', () async {
+    final imported = await repository.importSmsMessages([
+      'BB22CC33DD Confirmed. Ksh2,500.00 paid to SHELL KILIMANI on 7/3/26 at 9:00 AM.',
+    ]);
+    expect(imported, 1);
+
+    final txRows = await store.executor.runSelect(
+      'SELECT category FROM transactions WHERE source = ? AND LOWER(title) LIKE ?',
+      ['sms', '%shell%'],
+    );
+    expect(txRows, isNotEmpty);
+    expect('${txRows.first['category'] ?? ''}', 'Transport');
+  });
+
+  test('updateTransaction learns corrected category for future imports', () async {
+    await repository.addManualTransaction(
+      title: 'Java House',
+      category: 'Food & Dining',
+      amountKes: 800,
+    );
+
+    final imported = await repository.importSmsMessages([
+      'CC33DD44EE Confirmed. Ksh1,200.00 paid to JAVA HOUSE on 7/3/26 at 10:00 AM.',
+    ]);
+    expect(imported, 1);
+
+    final txRows = await store.executor.runSelect(
+      'SELECT category FROM transactions WHERE source = ? AND LOWER(title) = ?',
+      ['sms', 'java house'],
+    );
+    expect(txRows, isNotEmpty);
+    expect('${txRows.first['category'] ?? ''}', 'Food & Dining');
   });
 
   test('fuzzy dedupe skips same-day near-amount duplicate imports', () async {

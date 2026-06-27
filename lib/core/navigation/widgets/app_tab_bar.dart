@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 import 'package:beltech/core/feedback/app_haptics.dart';
 import 'package:beltech/core/theme/app_colors.dart';
 import 'package:beltech/core/theme/app_motion.dart';
@@ -37,42 +39,48 @@ class AppTabBar extends StatelessWidget {
     final textScale = MediaQuery.textScalerOf(context).scale(1);
     final resolvedHeight = height + ((textScale - 1) * 12).clamp(0.0, 10.0);
 
-    final bgColor = AppColors.surfaceFor(brightness);
-    final borderColor = AppColors.borderFor(brightness);
+    final bgColor = AppColors.surfaceFor(brightness).withValues(alpha: 0.78);
+    final borderColor = AppColors.borderFor(brightness).withValues(alpha: 0.55);
 
-    return Container(
-      decoration: BoxDecoration(
-        color: bgColor,
-        borderRadius: BorderRadius.circular(AppRadius.xxl),
-        border: Border.all(color: borderColor),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x33000000),
-            blurRadius: 20,
-            offset: Offset(0, 8),
-          ),
-        ],
-      ),
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-      child: SizedBox(
-        height: resolvedHeight,
-        child: Row(
-          children: List.generate(items.length, (index) {
-            final item = items[index];
-            return Expanded(
-              child: _AppTabBarItem(
-                item: item,
-                selected: index == selectedIndex,
-                accentLight: accentLight,
-                mutedColor: mutedColor,
-                duration: itemDuration,
-                onTap: () {
-                  AppHaptics.lightImpact();
-                  onTap(index);
-                },
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(AppRadius.xxl),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
+        child: Container(
+          decoration: BoxDecoration(
+            color: bgColor,
+            borderRadius: BorderRadius.circular(AppRadius.xxl),
+            border: Border.all(color: borderColor),
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x33000000),
+                blurRadius: 20,
+                offset: Offset(0, 8),
               ),
-            );
-          }),
+            ],
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+          child: SizedBox(
+            height: resolvedHeight,
+            child: Row(
+              children: List.generate(items.length, (index) {
+                final item = items[index];
+                return Expanded(
+                  child: _AppTabBarItem(
+                    item: item,
+                    selected: index == selectedIndex,
+                    accentLight: accentLight,
+                    mutedColor: mutedColor,
+                    duration: itemDuration,
+                    onTap: () {
+                      AppHaptics.lightImpact();
+                      onTap(index);
+                    },
+                  ),
+                );
+              }),
+            ),
+          ),
         ),
       ),
     );

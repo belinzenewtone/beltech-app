@@ -24,10 +24,12 @@ class ImportHealthWorker {
         : (quarantineQueueDepth / totalImportsToday) * 100;
 
     final isHealthy = quarantinePercent < 20 && avgConfidence > 0.70;
-    final alert = _generateAlert(
-      quarantinePercent,
-      avgConfidence,
-      quarantineQueueDepth,
+    final alerts = _generateAlerts(
+      quarantinePercent: quarantinePercent,
+      avgConfidence: avgConfidence,
+      queueDepth: quarantineQueueDepth,
+      highConfidenceCount: highConfidence,
+      totalImportsToday: totalImportsToday,
     );
 
     return ImportHealthReport(
@@ -38,26 +40,38 @@ class ImportHealthWorker {
       highConfidenceCount: highConfidence,
       mediumConfidenceCount: mediumConfidence,
       lowConfidenceCount: lowConfidence,
-      alert: alert,
+      alert: alerts.isNotEmpty ? alerts.first : null,
+      alerts: alerts,
     );
   }
 
-  /// Generate health alert message if needed.
-  String? _generateAlert(
-    double quarantinePercent,
-    double avgConfidence,
-    int queueDepth,
-  ) {
+  /// Generate health alert messages if needed.
+  List<String> _generateAlerts({
+    required double quarantinePercent,
+    required double avgConfidence,
+    required int queueDepth,
+    required int highConfidenceCount,
+    required int totalImportsToday,
+  }) {
+    final alerts = <String>[];
     if (quarantinePercent > 50) {
-      return 'Critical: Over 50% of imports require review (quarantine depth: $queueDepth)';
-    }
-    if (quarantinePercent > 30) {
-      return 'Warning: ${quarantinePercent.toStringAsFixed(0)}% of imports need review';
+      alerts.add(
+        'Critical: Over 50% of imports require review (quarantine depth: $queueDepth)',
+      );
+    } else if (quarantinePercent > 30) {
+      alerts.add(
+        'Warning: ${quarantinePercent.toStringAsFixed(0)}% of imports need review',
+      );
     }
     if (avgConfidence < 0.50) {
-      return 'Alert: Average confidence score is low (${avgConfidence.toStringAsFixed(2)})';
+      alerts.add(
+        'Alert: Average confidence score is low (${avgConfidence.toStringAsFixed(2)})',
+      );
     }
-    return null;
+    if (totalImportsToday > 0 && highConfidenceCount == 0) {
+      alerts.add('Anomaly: no high-confidence imports in the latest run.');
+    }
+    return alerts;
   }
 }
 
@@ -72,6 +86,7 @@ class ImportHealthReport {
     required this.mediumConfidenceCount,
     required this.lowConfidenceCount,
     this.alert,
+    this.alerts = const [],
   });
 
   final bool isHealthy;
@@ -81,7 +96,13 @@ class ImportHealthReport {
   final int highConfidenceCount;
   final int mediumConfidenceCount;
   final int lowConfidenceCount;
+
+  /// The most severe alert, if any. Kept for backward compatibility;
+  /// consumers should prefer [alerts].
   final String? alert;
+
+  /// All health alerts generated for this run.
+  final List<String> alerts;
 
   String get status => isHealthy ? 'Healthy' : 'Degraded';
 }

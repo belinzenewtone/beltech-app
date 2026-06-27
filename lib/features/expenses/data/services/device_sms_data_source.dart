@@ -7,14 +7,26 @@ import 'package:beltech/features/expenses/data/services/mpesa_parser_filters.dar
 import 'package:beltech/features/expenses/data/services/mpesa_parser_text.dart';
 
 typedef SmsPermissionRequester = Future<bool> Function();
-typedef SmsQueryRunner = Future<List<SmsMessage>> Function(SmsQuery query);
+typedef SmsQueryRunner = Future<List<SmsMessage>> Function(
+  SmsQuery query, {
+  int start,
+  int count,
+});
 typedef PlatformCheck = bool Function();
 
 class SmsInboxEntry {
-  const SmsInboxEntry({required this.body, required this.receivedAt});
+  const SmsInboxEntry({
+    required this.body,
+    required this.receivedAt,
+    this.sender,
+  });
 
   final String body;
   final DateTime? receivedAt;
+
+  /// The SMS sender address, if available (e.g. "MPESA", "SAFARICOM", a
+  /// phone number, or a shortcode).
+  final String? sender;
 }
 
 class DeviceSmsDataSource {
@@ -32,6 +44,10 @@ class DeviceSmsDataSource {
   final SmsPermissionRequester _requestPermission;
   final SmsQueryRunner _queryRunner;
   final PlatformCheck _isAndroid;
+
+  /// Number of SMS messages to fetch per inbox query. Lower means lower peak
+  /// memory and faster "first results"; higher means fewer platform round-trips.
+  static const int _chunkSize = 200;
 
   Future<bool> get hasRequestedPermission async =>
       await Permission.sms.isGranted && _isAndroid();
@@ -60,37 +76,64 @@ class DeviceSmsDataSource {
       return const [];
     }
 
-    final messages = await _queryRunner(_query);
+    final result = <SmsInboxEntry>[];
+    for (var start = 0;; start += _chunkSize) {
+      final messages = await _queryRunner(
+        _query,
+        start: start,
+        count: _chunkSize,
+      );
+      if (messages.isEmpty) {
+        break;
+      }
 
-    return messages
-        .where((message) {
-          final body = message.body?.trim() ?? '';
-          if (body.isEmpty) {
-            return false;
+      DateTime? oldestInChunk;
+      for (final message in messages) {
+        final body = message.body?.trim() ?? '';
+        if (body.isEmpty) {
+          continue;
+        }
+        final at = message.date;
+        if (from != null) {
+          if (at == null || at.isBefore(from)) {
+            continue;
           }
-          if (from != null) {
-            final at = message.date;
-            if (at == null || at.isBefore(from)) {
-              return false;
-            }
-          }
-          final sender = (message.address ?? '').toLowerCase();
-          final normalized = normalizeParserText(body);
-          final lowerNormalized = normalized.toLowerCase();
-          if (shouldIgnoreMpesaSms(lowerNormalized)) {
-            return false;
-          }
-          final mpesaSender = sender.contains('mpesa');
-          final mpesaBody = looksLikeMpesaMessage(lowerNormalized);
-          return mpesaSender || mpesaBody;
-        })
-        .map(
-          (message) => SmsInboxEntry(
+        }
+        final sender = (message.address ?? '').toLowerCase();
+        final normalized = normalizeParserText(body);
+        final lowerNormalized = normalized.toLowerCase();
+        if (shouldIgnoreMpesaSms(lowerNormalized)) {
+          continue;
+        }
+        final mpesaSender = sender.contains('mpesa');
+        final mpesaBody = looksLikeMpesaMessage(lowerNormalized);
+        if (!mpesaSender && !mpesaBody) {
+          continue;
+        }
+        result.add(
+          SmsInboxEntry(
             body: message.body!.trim(),
-            receivedAt: message.date,
+            receivedAt: at,
+            sender: message.address?.trim(),
           ),
-        )
-        .toList();
+        );
+        if (at != null && (oldestInChunk == null || at.isBefore(oldestInChunk))) {
+          oldestInChunk = at;
+        }
+      }
+
+      // Messages are sorted newest-first. Once the oldest raw message in a
+      // chunk is before the requested window, older chunks won't help either.
+      if (from != null &&
+          oldestInChunk != null &&
+          oldestInChunk.isBefore(from)) {
+        break;
+      }
+      if (messages.length < _chunkSize) {
+        break;
+      }
+    }
+    return result;
   }
 
   static bool _defaultIsAndroid() =>
@@ -101,10 +144,15 @@ class DeviceSmsDataSource {
     return status.isGranted;
   }
 
-  static Future<List<SmsMessage>> _defaultQueryRunner(SmsQuery query) {
+  static Future<List<SmsMessage>> _defaultQueryRunner(
+    SmsQuery query, {
+    int start = 0,
+    int count = _chunkSize,
+  }) {
     return query.querySms(
       kinds: const [SmsQueryKind.inbox],
-      count: 1000,
+      start: start,
+      count: count,
       sort: true,
     );
   }

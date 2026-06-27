@@ -29,16 +29,20 @@ class _AppDriftSchema {
       'id INTEGER PRIMARY KEY AUTOINCREMENT,'
       'title TEXT NOT NULL,'
       'description TEXT,'
-      'completed INTEGER NOT NULL DEFAULT 0,'
-      'due_at INTEGER,'
-      'priority TEXT NOT NULL DEFAULT \'medium\','
-      'reminder_enabled INTEGER NOT NULL DEFAULT 1,'
-      'reminder_minutes_before INTEGER NOT NULL DEFAULT 30'
+      'status TEXT NOT NULL DEFAULT \'pending\','
+      'priority TEXT NOT NULL DEFAULT \'neutral\','
+      'deadline INTEGER,'
+      'completed_at INTEGER,'
+      'reminder_offsets TEXT NOT NULL DEFAULT \'\','
+      'alarm_enabled INTEGER NOT NULL DEFAULT 0,'
+      'created_at INTEGER NOT NULL DEFAULT (strftime(\'%s\',\'now\') * 1000)'
       ')',
     );
     await _AppDriftSchemaMigrations.tryAddTaskDescriptionColumn(store);
-    await _AppDriftSchemaMigrations.tryAddTaskReminderEnabledColumn(store);
-    await _AppDriftSchemaMigrations.tryAddTaskReminderMinutesColumn(store);
+    await _AppDriftSchemaMigrations.migrateTaskPriorityColumn(store);
+    await _AppDriftSchemaMigrations.migrateTaskStatusColumns(store);
+    await _AppDriftSchemaMigrations.migrateTaskReminderColumns(store);
+    await _AppDriftSchemaMigrations.migrateTaskAlarmColumn(store);
     await store._db.runCustom(
       'CREATE TABLE IF NOT EXISTS events('
       'id INTEGER PRIMARY KEY AUTOINCREMENT,'
@@ -47,17 +51,29 @@ class _AppDriftSchema {
       'end_at INTEGER,'
       'note TEXT,'
       'completed INTEGER NOT NULL DEFAULT 0,'
-      'priority TEXT NOT NULL DEFAULT \'medium\','
-      'event_type TEXT NOT NULL DEFAULT \'general\','
-      'reminder_enabled INTEGER NOT NULL DEFAULT 1,'
-      'reminder_minutes_before INTEGER NOT NULL DEFAULT 15'
+      'priority TEXT NOT NULL DEFAULT \'neutral\','
+      'event_type TEXT NOT NULL DEFAULT \'personal\','
+      'event_kind TEXT NOT NULL DEFAULT \'event\','
+      'all_day INTEGER NOT NULL DEFAULT 0,'
+      'repeat_rule TEXT NOT NULL DEFAULT \'never\','
+      'reminder_offsets TEXT NOT NULL DEFAULT \'\','
+      'alarm_enabled INTEGER NOT NULL DEFAULT 0,'
+      'guests TEXT NOT NULL DEFAULT \'\','
+      'time_zone_id TEXT NOT NULL DEFAULT \'\','
+      'reminder_time_of_day_minutes INTEGER NOT NULL DEFAULT 480'
       ')',
     );
     await _AppDriftSchemaMigrations.tryAddEventCompletedColumn(store);
     await _AppDriftSchemaMigrations.tryAddEventPriorityColumn(store);
     await _AppDriftSchemaMigrations.tryAddEventTypeColumn(store);
-    await _AppDriftSchemaMigrations.tryAddEventReminderEnabledColumn(store);
-    await _AppDriftSchemaMigrations.tryAddEventReminderMinutesColumn(store);
+    await _AppDriftSchemaMigrations.tryAddEventKindColumn(store);
+    await _AppDriftSchemaMigrations.tryAddEventAllDayColumn(store);
+    await _AppDriftSchemaMigrations.tryAddEventRepeatRuleColumn(store);
+    await _AppDriftSchemaMigrations.migrateEventReminderColumns(store);
+    await _AppDriftSchemaMigrations.migrateEventAlarmColumn(store);
+    await _AppDriftSchemaMigrations.tryAddEventGuestsColumn(store);
+    await _AppDriftSchemaMigrations.tryAddEventTimeZoneColumn(store);
+    await _AppDriftSchemaMigrations.tryAddEventReminderTimeColumn(store);
     await store._db.runCustom(
       'CREATE TABLE IF NOT EXISTS incomes('
       'id INTEGER PRIMARY KEY AUTOINCREMENT,'
@@ -278,7 +294,7 @@ class _AppDriftSchema {
       'CREATE INDEX IF NOT EXISTS idx_tx_transaction_type ON transactions(transaction_type)',
     );
     await store._db.runCustom(
-      'CREATE INDEX IF NOT EXISTS idx_tasks_completed ON tasks(completed)',
+      'CREATE INDEX IF NOT EXISTS idx_tasks_status ON tasks(status)',
     );
     await store._db.runCustom(
       'CREATE INDEX IF NOT EXISTS idx_events_start_at ON events(start_at)',
@@ -303,6 +319,9 @@ class _AppDriftSchema {
     );
     await store._db.runCustom(
       'CREATE INDEX IF NOT EXISTS idx_import_audit_scope_created ON sms_import_audit(scope, created_at DESC)',
+    );
+    await store._db.runCustom(
+      'CREATE INDEX IF NOT EXISTS idx_import_audit_semantic_hash_decision ON sms_import_audit(scope, semantic_hash, decision)',
     );
     await store._db.runCustom(
       'CREATE UNIQUE INDEX IF NOT EXISTS idx_review_scope_source_hash ON sms_review_queue(scope, source_hash)',

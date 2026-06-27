@@ -6,8 +6,10 @@ import 'package:beltech/core/theme/app_typography.dart';
 import 'package:beltech/core/utils/currency_formatter.dart';
 import 'package:beltech/core/widgets/app_card.dart';
 import 'package:beltech/core/widgets/app_empty_state.dart';
+import 'package:beltech/core/widgets/app_icon_pill_button.dart';
 import 'package:beltech/core/widgets/secondary_page_shell.dart';
 import 'package:beltech/features/loans/domain/entities/loan_item.dart';
+import 'package:beltech/features/loans/presentation/widgets/fuliza_lifecycle_card.dart';
 import 'package:beltech/features/loans/presentation/widgets/loan_form_sheet.dart';
 import 'package:beltech/features/loans/presentation/widgets/loan_item_card.dart';
 import 'package:flutter/material.dart';
@@ -31,11 +33,14 @@ class LoansScreen extends ConsumerWidget {
     return SecondaryPageShell(
       title: 'Loans',
       scrollable: false,
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _showForm(context, ref),
-        icon: const Icon(Icons.add),
-        label: const Text('Loan'),
-      ),
+      actions: [
+        AppIconPillButton(
+          icon: Icons.add_rounded,
+          label: 'Add',
+          tone: AppIconPillTone.accent,
+          onPressed: () => _showForm(context, ref),
+        ),
+      ],
       child: Column(
         children: [
           AppCard(
@@ -65,6 +70,8 @@ class LoansScreen extends ConsumerWidget {
               ],
             ),
           ),
+          const SizedBox(height: AppSpacing.md),
+          const FulizaLifecycleCard(),
           const SizedBox(height: AppSpacing.md),
           Expanded(
             child: loansAsync.when(
@@ -127,10 +134,13 @@ class LoansScreen extends ConsumerWidget {
                 );
               },
               loading: () => Column(
-                children: List.generate(4, (_) => Padding(
-                  padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-                  child: AppSkeleton.card(context),
-                )),
+                children: List.generate(
+                  4,
+                  (_) => Padding(
+                    padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+                    child: AppSkeleton.card(context),
+                  ),
+                ),
               ),
               error: (e, _) => Center(
                 child: Text(

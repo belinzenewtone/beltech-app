@@ -46,12 +46,12 @@ String formatEventDateTimeLabel(BuildContext context, DateTime value) {
   CalendarEventPriority priority,
 ) {
   return switch (priority) {
-    CalendarEventPriority.high => (label: 'Urgent', color: AppColors.danger),
-    CalendarEventPriority.medium => (
+    CalendarEventPriority.urgent => (label: 'Urgent', color: AppColors.danger),
+    CalendarEventPriority.important => (
       label: 'Important',
       color: AppColors.warning,
     ),
-    CalendarEventPriority.low => (label: 'Neutral', color: AppColors.accent),
+    CalendarEventPriority.neutral => (label: 'Neutral', color: AppColors.accent),
   };
 }
 
@@ -79,25 +79,37 @@ String formatEventDateTimeLabel(BuildContext context, DateTime value) {
       color: AppColors.orange,
       icon: Icons.favorite_outline,
     ),
-    CalendarEventType.general => (
-      label: 'General',
+    CalendarEventType.other => (
+      label: 'Other',
       color: AppColors.slate,
       icon: Icons.event_note_outlined,
     ),
-    CalendarEventType.birthday => (
+  };
+}
+
+({String label, Color color, IconData icon}) eventKindOption(
+  CalendarEventKind kind,
+) {
+  return switch (kind) {
+    CalendarEventKind.birthday => (
       label: 'Birthday',
       color: AppColors.warning,
       icon: Icons.cake_outlined,
     ),
-    CalendarEventType.anniversary => (
+    CalendarEventKind.anniversary => (
       label: 'Anniversary',
       color: AppColors.danger,
       icon: Icons.celebration_outlined,
     ),
-    CalendarEventType.countdown => (
+    CalendarEventKind.countdown => (
       label: 'Countdown',
       color: AppColors.accent,
       icon: Icons.timer_outlined,
+    ),
+    CalendarEventKind.event => (
+      label: 'Event',
+      color: AppColors.slate,
+      icon: Icons.event_note_outlined,
     ),
   };
 }

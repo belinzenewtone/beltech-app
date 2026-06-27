@@ -230,15 +230,6 @@ class AssistantProfileStore {
   }
 
   String _formatMemberSinceLabel(DateTime date) {
-    const weekdays = [
-      'Monday',
-      'Tuesday',
-      'Wednesday',
-      'Thursday',
-      'Friday',
-      'Saturday',
-      'Sunday',
-    ];
     const months = [
       'January',
       'February',
@@ -253,10 +244,9 @@ class AssistantProfileStore {
       'November',
       'December',
     ];
-    final weekday = weekdays[date.weekday - 1];
     final month = months[date.month - 1];
     final day = date.day.toString().padLeft(2, '0');
-    return '$weekday, $month $day, ${date.year}';
+    return '$month $day, ${date.year}';
   }
 
   Future<void> _sanitizeLegacySeedProfile() async {

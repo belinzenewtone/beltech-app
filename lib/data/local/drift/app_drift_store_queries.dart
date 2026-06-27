@@ -13,8 +13,12 @@ class _AppDriftQueries {
     return HomeOverviewRecord(
       todayKes: await sumTransactionsBetween(store, todayStart, tomorrowStart),
       weekKes: await sumTransactionsBetween(store, weekStart, weekEnd),
-      completedCount: await countWhere(store, 'tasks', 'completed = 1'),
-      pendingCount: await countWhere(store, 'tasks', 'completed = 0'),
+      completedCount: await countWhere(store, "tasks", "status = 'completed'"),
+      pendingCount: await countWhere(
+        store,
+        "tasks",
+        "status != 'completed'",
+      ),
       upcomingEventsCount: await countWhere(
         store,
         'events',
@@ -62,7 +66,7 @@ class _AppDriftQueries {
 
   static Future<List<DriftTaskRecord>> loadTasks(AppDriftStore store) async {
     final rows = await store._db.runSelect(
-      'SELECT id, title, description, completed, due_at, priority, reminder_enabled, reminder_minutes_before FROM tasks ORDER BY id DESC',
+      'SELECT id, title, description, status, priority, deadline, completed_at, reminder_offsets, alarm_enabled FROM tasks ORDER BY deadline ASC, id DESC',
       const [],
     );
     return rows
@@ -71,17 +75,34 @@ class _AppDriftQueries {
             id: store._asInt(row['id']),
             title: (row['title'] ?? '') as String,
             description: row['description'] as String?,
-            completed: store._asInt(row['completed']) == 1,
-            priority: (row['priority'] ?? 'medium') as String,
-            reminderEnabled: store._asInt(row['reminder_enabled']) == 1,
-            reminderMinutesBefore: store._asInt(row['reminder_minutes_before']),
-            dueDate: row['due_at'] == null
+            status: (row['status'] ?? 'pending') as String,
+            priority: (row['priority'] ?? 'neutral') as String,
+            deadline: row['deadline'] == null
                 ? null
                 : DateTime.fromMillisecondsSinceEpoch(
-                    store._asInt(row['due_at']),
+                    store._asInt(row['deadline']),
                   ),
+            completedAt: row['completed_at'] == null
+                ? null
+                : DateTime.fromMillisecondsSinceEpoch(
+                    store._asInt(row['completed_at']),
+                  ),
+            reminderOffsets: _parseReminderOffsets(
+              (row['reminder_offsets'] ?? '') as String,
+            ),
+            alarmEnabled: store._asInt(row['alarm_enabled']) == 1,
           ),
         )
+        .toList();
+  }
+
+  static List<int> _parseReminderOffsets(String raw) {
+    if (raw.isEmpty) return const [];
+    return raw
+        .split(',')
+        .map((s) => int.tryParse(s.trim()))
+        .whereType<int>()
+        .where((m) => m >= 0)
         .toList();
   }
 
@@ -98,31 +119,10 @@ class _AppDriftQueries {
     AppDriftStore store,
   ) async {
     final rows = await store._db.runSelect(
-      'SELECT id, title, start_at, end_at, note, completed, priority, event_type, reminder_enabled, reminder_minutes_before FROM events ORDER BY completed ASC, start_at ASC',
+      'SELECT id, title, start_at, end_at, note, completed, priority, event_type, event_kind, all_day, repeat_rule, reminder_offsets, alarm_enabled, guests, time_zone_id, reminder_time_of_day_minutes FROM events ORDER BY completed ASC, start_at ASC',
       const [],
     );
-    return rows
-        .map(
-          (row) => DriftEventRecord(
-            id: store._asInt(row['id']),
-            title: (row['title'] ?? '') as String,
-            startAt: DateTime.fromMillisecondsSinceEpoch(
-              store._asInt(row['start_at']),
-            ),
-            completed: store._asInt(row['completed']) == 1,
-            priority: (row['priority'] ?? 'medium') as String,
-            eventType: (row['event_type'] ?? 'general') as String,
-            reminderEnabled: store._asInt(row['reminder_enabled']) == 1,
-            reminderMinutesBefore: store._asInt(row['reminder_minutes_before']),
-            endAt: row['end_at'] == null
-                ? null
-                : DateTime.fromMillisecondsSinceEpoch(
-                    store._asInt(row['end_at']),
-                  ),
-            note: row['note'] as String?,
-          ),
-        )
-        .toList();
+    return rows.map((row) => _eventRecordFromRow(store, row)).toList();
   }
 
   static Future<List<DriftEventRecord>> loadEventsInRange(
@@ -131,31 +131,44 @@ class _AppDriftQueries {
     DateTime end,
   ) async {
     final rows = await store._db.runSelect(
-      'SELECT id, title, start_at, end_at, note, completed, priority, event_type, reminder_enabled, reminder_minutes_before FROM events WHERE start_at >= ? AND start_at < ? ORDER BY completed ASC, start_at ASC',
+      'SELECT id, title, start_at, end_at, note, completed, priority, event_type, event_kind, all_day, repeat_rule, reminder_offsets, alarm_enabled, guests, time_zone_id, reminder_time_of_day_minutes FROM events WHERE start_at >= ? AND start_at < ? ORDER BY completed ASC, start_at ASC',
       [start.millisecondsSinceEpoch, end.millisecondsSinceEpoch],
     );
-    return rows
-        .map(
-          (row) => DriftEventRecord(
-            id: store._asInt(row['id']),
-            title: (row['title'] ?? '') as String,
-            startAt: DateTime.fromMillisecondsSinceEpoch(
-              store._asInt(row['start_at']),
+    return rows.map((row) => _eventRecordFromRow(store, row)).toList();
+  }
+
+  static DriftEventRecord _eventRecordFromRow(
+    AppDriftStore store,
+    Map<String, Object?> row,
+  ) {
+    return DriftEventRecord(
+      id: store._asInt(row['id']),
+      title: (row['title'] ?? '') as String,
+      startAt: DateTime.fromMillisecondsSinceEpoch(
+        store._asInt(row['start_at']),
+      ),
+      completed: store._asInt(row['completed']) == 1,
+      priority: (row['priority'] ?? 'neutral') as String,
+      eventType: (row['event_type'] ?? 'personal') as String,
+      eventKind: (row['event_kind'] ?? 'event') as String,
+      reminderOffsets: _parseReminderOffsets(
+        (row['reminder_offsets'] ?? '') as String,
+      ),
+      alarmEnabled: store._asInt(row['alarm_enabled']) == 1,
+      endAt: row['end_at'] == null
+          ? null
+          : DateTime.fromMillisecondsSinceEpoch(
+              store._asInt(row['end_at']),
             ),
-            completed: store._asInt(row['completed']) == 1,
-            priority: (row['priority'] ?? 'medium') as String,
-            eventType: (row['event_type'] ?? 'general') as String,
-            reminderEnabled: store._asInt(row['reminder_enabled']) == 1,
-            reminderMinutesBefore: store._asInt(row['reminder_minutes_before']),
-            endAt: row['end_at'] == null
-                ? null
-                : DateTime.fromMillisecondsSinceEpoch(
-                    store._asInt(row['end_at']),
-                  ),
-            note: row['note'] as String?,
-          ),
-        )
-        .toList();
+      note: row['note'] as String?,
+      allDay: store._asInt(row['all_day']) == 1,
+      repeatRule: (row['repeat_rule'] ?? 'never') as String,
+      guests: (row['guests'] ?? '') as String,
+      timeZoneId: (row['time_zone_id'] ?? '') as String,
+      reminderTimeOfDayMinutes: store._asInt(
+        row['reminder_time_of_day_minutes'],
+      ),
+    );
   }
 
   static Future<List<DriftTransactionRecord>> loadRecentTransactions(

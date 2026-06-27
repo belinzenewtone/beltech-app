@@ -1,3 +1,9 @@
+## 0.6.8
+
+- On Android, migrate from the deprecated `android-database-sqlcipher` artifact to
+  `net.zetetic:sqlcipher-android:4.10.0`, providing 16 KB page-size alignment
+  required by Android 15+ devices.
+
 ## 0.5.7
 
 - Consistently compile `SQLCipher` with `SQLITE_THREADSAFE=1` on all supported platforms.

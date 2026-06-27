@@ -1,10 +1,8 @@
 import 'dart:async';
 
 import 'package:beltech/core/di/notification_providers.dart';
-import 'package:beltech/core/notifications/local_notification_service.dart';
 import 'package:beltech/core/di/repository_providers.dart';
 import 'package:beltech/features/tasks/domain/entities/task_item.dart';
-import 'package:beltech/features/tasks/domain/repositories/tasks_repository.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 enum TaskFilter { all, pending, completed }
@@ -35,42 +33,45 @@ class TaskWriteController extends AutoDisposeAsyncNotifier<void> {
     final now = DateTime.now();
     await addTask(
       title: 'New Task ${now.hour}:${now.minute.toString().padLeft(2, '0')}',
-      dueDate: now.add(const Duration(days: 1)),
-      priority: TaskPriority.medium,
+      deadline: now.add(const Duration(days: 1)),
+      priority: TaskPriority.neutral,
     );
   }
 
-  Future<void> addTask({
+  Future<TaskItem?> addTask({
     required String title,
     String? description,
-    DateTime? dueDate,
-    TaskPriority priority = TaskPriority.medium,
-    bool reminderEnabled = true,
-    int reminderMinutesBefore = 30,
+    DateTime? deadline,
+    TaskPriority priority = TaskPriority.neutral,
+    List<int> reminderOffsets = const [],
+    bool alarmEnabled = false,
   }) async {
     final repository = ref.read(tasksRepositoryProvider);
-    final notifications = ref.read(localNotificationServiceProvider);
     state = const AsyncLoading();
+    TaskItem? created;
     state = await AsyncValue.guard(() async {
-      await repository.addTask(
+      created = await repository.addTask(
         title: title,
         description: description,
-        dueDate: dueDate,
+        deadline: deadline,
         priority: priority,
-        reminderEnabled: reminderEnabled,
-        reminderMinutesBefore: reminderMinutesBefore,
+        reminderOffsets: reminderOffsets,
+        alarmEnabled: alarmEnabled,
       );
-      if (dueDate != null && reminderEnabled) {
-        await _scheduleCreatedTaskReminder(
-          repository: repository,
-          notifications: notifications,
-          title: title,
-          dueDate: dueDate,
-          priority: priority,
-          reminderMinutesBefore: reminderMinutesBefore,
+      if (created != null &&
+          deadline != null &&
+          !created!.completed &&
+          reminderOffsets.isNotEmpty) {
+        await _scheduleTaskReminders(
+          taskId: created!.id,
+          title: created!.title,
+          deadline: deadline,
+          reminderOffsets: reminderOffsets,
+          alarmEnabled: alarmEnabled,
         );
       }
     });
+    return created;
   }
 
   Future<void> toggleTask({
@@ -78,23 +79,32 @@ class TaskWriteController extends AutoDisposeAsyncNotifier<void> {
     required bool completed,
   }) async {
     final repository = ref.read(tasksRepositoryProvider);
-    final notifications = ref.read(localNotificationServiceProvider);
     final tasks = await repository.watchTasks().first;
-    final taskBeforeChange = tasks
-        .where((item) => item.id == taskId)
-        .firstOrNull;
+    final taskBeforeChange = tasks.where((item) => item.id == taskId).firstOrNull;
     state = const AsyncLoading();
     state = await AsyncValue.guard(() async {
-      await repository.toggleCompleted(taskId: taskId, completed: completed);
+      if (taskBeforeChange == null) return;
+      await repository.updateTask(
+        taskId: taskId,
+        title: taskBeforeChange.title,
+        description: taskBeforeChange.description,
+        deadline: taskBeforeChange.deadline,
+        priority: taskBeforeChange.priority,
+        status: completed ? TaskStatus.completed : TaskStatus.pending,
+        completedAt: completed ? DateTime.now() : null,
+        reminderOffsets: taskBeforeChange.reminderOffsets,
+        alarmEnabled: taskBeforeChange.alarmEnabled,
+      );
       if (completed) {
-        await notifications.cancelTaskReminder(taskId);
-      } else if (taskBeforeChange?.dueDate != null &&
-          taskBeforeChange!.reminderEnabled) {
-        await notifications.scheduleTaskReminder(
+        await _cancelTaskReminders(taskId);
+      } else if (taskBeforeChange.deadline != null &&
+          taskBeforeChange.reminderOffsets.isNotEmpty) {
+        await _scheduleTaskReminders(
           taskId: taskId,
           title: taskBeforeChange.title,
-          dueDate: taskBeforeChange.dueDate!,
-          minutesBefore: taskBeforeChange.reminderMinutesBefore,
+          deadline: taskBeforeChange.deadline!,
+          reminderOffsets: taskBeforeChange.reminderOffsets,
+          alarmEnabled: taskBeforeChange.alarmEnabled,
         );
       }
     });
@@ -104,43 +114,65 @@ class TaskWriteController extends AutoDisposeAsyncNotifier<void> {
     required int taskId,
     required String title,
     String? description,
-    required DateTime? dueDate,
+    required DateTime? deadline,
     required TaskPriority priority,
-    bool reminderEnabled = true,
-    int reminderMinutesBefore = 30,
+    required List<int> reminderOffsets,
+    required bool alarmEnabled,
   }) async {
     final repository = ref.read(tasksRepositoryProvider);
-    final notifications = ref.read(localNotificationServiceProvider);
     state = const AsyncLoading();
     state = await AsyncValue.guard(() async {
       await repository.updateTask(
         taskId: taskId,
         title: title,
         description: description,
-        dueDate: dueDate,
+        deadline: deadline,
         priority: priority,
-        reminderEnabled: reminderEnabled,
-        reminderMinutesBefore: reminderMinutesBefore,
+        status: TaskStatus.pending,
+        reminderOffsets: reminderOffsets,
+        alarmEnabled: alarmEnabled,
       );
-      if (dueDate == null || !reminderEnabled) {
-        await notifications.cancelTaskReminder(taskId);
+      if (deadline == null || reminderOffsets.isEmpty) {
+        await _cancelTaskReminders(taskId);
       } else {
-        await notifications.scheduleTaskReminder(
+        await _scheduleTaskReminders(
           taskId: taskId,
           title: title,
-          dueDate: dueDate,
-          minutesBefore: reminderMinutesBefore,
+          deadline: deadline,
+          reminderOffsets: reminderOffsets,
+          alarmEnabled: alarmEnabled,
         );
       }
     });
   }
 
+  Future<void> _scheduleTaskReminders({
+    required int taskId,
+    required String title,
+    required DateTime deadline,
+    required List<int> reminderOffsets,
+    required bool alarmEnabled,
+  }) async {
+    final notifications = ref.read(localNotificationServiceProvider);
+    await notifications.scheduleTaskReminder(
+      taskId: taskId,
+      title: title,
+      deadline: deadline,
+      reminderOffsets: reminderOffsets,
+      alarmEnabled: alarmEnabled,
+    );
+  }
+
+  Future<void> _cancelTaskReminders(int taskId) async {
+    final notifications = ref.read(localNotificationServiceProvider);
+    await notifications.cancelTaskReminder(taskId);
+  }
+
   Future<void> deleteTask(int taskId) async {
     final repository = ref.read(tasksRepositoryProvider);
-    final notifications = ref.read(localNotificationServiceProvider);
     state = const AsyncLoading();
     state = await AsyncValue.guard(() async {
-      await notifications.cancelTaskReminder(taskId);
+      await _cancelTaskReminders(taskId);
       await repository.deleteTask(taskId);
     });
   }
@@ -152,7 +184,6 @@ class TaskWriteController extends AutoDisposeAsyncNotifier<void> {
     }
 
     final repository = ref.read(tasksRepositoryProvider);
-    final notifications = ref.read(localNotificationServiceProvider);
     final tasks = await repository.watchTasks().first;
     final byId = {for (final task in tasks) task.id: task};
     var completedCount = 0;
@@ -165,10 +196,20 @@ class TaskWriteController extends AutoDisposeAsyncNotifier<void> {
           continue;
         }
         if (!task.completed) {
-          await repository.toggleCompleted(taskId: id, completed: true);
+          await repository.updateTask(
+            taskId: id,
+            title: task.title,
+            description: task.description,
+            deadline: task.deadline,
+            priority: task.priority,
+            status: TaskStatus.completed,
+            completedAt: DateTime.now(),
+            reminderOffsets: task.reminderOffsets,
+            alarmEnabled: task.alarmEnabled,
+          );
           completedCount += 1;
         }
-        await notifications.cancelTaskReminder(id);
+        await _cancelTaskReminders(id);
       }
     });
     if (state.hasError) {
@@ -184,13 +225,12 @@ class TaskWriteController extends AutoDisposeAsyncNotifier<void> {
     }
 
     final repository = ref.read(tasksRepositoryProvider);
-    final notifications = ref.read(localNotificationServiceProvider);
     var deletedCount = 0;
 
     state = const AsyncLoading();
     state = await AsyncValue.guard(() async {
       for (final id in ids) {
-        await notifications.cancelTaskReminder(id);
+        await _cancelTaskReminders(id);
         await repository.deleteTask(id);
         deletedCount += 1;
       }
@@ -208,7 +248,6 @@ class TaskWriteController extends AutoDisposeAsyncNotifier<void> {
     }
 
     final repository = ref.read(tasksRepositoryProvider);
-    final notifications = ref.read(localNotificationServiceProvider);
     final tasks = await repository.watchTasks().first;
     final byId = {for (final task in tasks) task.id: task};
     var archivedCount = 0;
@@ -224,11 +263,14 @@ class TaskWriteController extends AutoDisposeAsyncNotifier<void> {
           taskId: id,
           title: task.title,
           description: task.description,
-          dueDate: null,
-          priority: TaskPriority.low,
+          deadline: null,
+          priority: TaskPriority.neutral,
+          status: TaskStatus.completed,
+          completedAt: DateTime.now(),
+          reminderOffsets: const [],
+          alarmEnabled: false,
         );
-        await repository.toggleCompleted(taskId: id, completed: true);
-        await notifications.cancelTaskReminder(id);
+        await _cancelTaskReminders(id);
         archivedCount += 1;
       }
     });
@@ -236,42 +278,6 @@ class TaskWriteController extends AutoDisposeAsyncNotifier<void> {
       throw state.error!;
     }
     return archivedCount;
-  }
-
-  Future<void> _scheduleCreatedTaskReminder({
-    required TasksRepository repository,
-    required LocalNotificationService notifications,
-    required String title,
-    required DateTime dueDate,
-    required TaskPriority priority,
-    required int reminderMinutesBefore,
-  }) async {
-    try {
-      final tasks = await repository.watchTasks().first;
-      final created = tasks.where((task) {
-        if (task.title != title || task.priority != priority) {
-          return false;
-        }
-        final due = task.dueDate;
-        if (due == null) {
-          return false;
-        }
-        return due.year == dueDate.year &&
-            due.month == dueDate.month &&
-            due.day == dueDate.day;
-      }).firstOrNull;
-      if (created == null || created.dueDate == null) {
-        return;
-      }
-      await notifications.scheduleTaskReminder(
-        taskId: created.id,
-        title: created.title,
-        dueDate: created.dueDate!,
-        minutesBefore: reminderMinutesBefore,
-      );
-    } catch (_) {
-      return;
-    }
   }
 }
 

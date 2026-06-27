@@ -27,7 +27,9 @@ import 'package:beltech/features/expenses/data/services/device_sms_data_source.d
 import 'package:beltech/features/expenses/data/services/merchant_learning_service.dart';
 import 'package:beltech/features/expenses/data/services/mpesa_parser_service.dart';
 import 'package:beltech/features/expenses/domain/repositories/expenses_repository.dart';
+import 'package:beltech/features/export/data/repositories/export_history_repository_impl.dart';
 import 'package:beltech/features/export/data/repositories/export_repository_impl.dart';
+import 'package:beltech/features/export/domain/repositories/export_history_repository.dart';
 import 'package:beltech/features/export/domain/repositories/export_repository.dart';
 import 'package:beltech/features/home/data/repositories/home_repository_impl.dart';
 import 'package:beltech/features/home/domain/repositories/home_repository.dart';
@@ -80,6 +82,9 @@ final globalSearchRepositoryProvider = Provider<GlobalSearchRepository>(
 );
 final exportRepositoryProvider = Provider<ExportRepository>(
   (ref) => ExportRepositoryImpl(ref.watch(appDriftStoreProvider)),
+);
+final exportHistoryRepositoryProvider = Provider<ExportHistoryRepository>(
+  (_) => ExportHistoryRepositoryImpl(),
 );
 final tasksRepositoryProvider = Provider<TasksRepository>(
   (ref) => TasksRepositoryImpl(ref.watch(appDriftStoreProvider)),

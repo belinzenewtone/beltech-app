@@ -32,7 +32,7 @@ final List<MpesaParserRule> _primaryRules = [
     confidence: MpesaConfidence.high,
     reason: 'reversal',
     requiredPatterns: [
-      RegExp('${_wb}(?:has been reversed|transaction.*reversed)'),
+      RegExp('$_wb(?:has been reversed|transaction.*reversed)'),
     ],
   ),
 
@@ -51,6 +51,7 @@ final List<MpesaParserRule> _primaryRules = [
   // Fuliza repayment:
   //   "Ksh 730.00 from your M-PESA has been used to partially pay your
   //    outstanding Fuliza M-PESA."
+  //   "Ksh 200.00 paid from your Fuliza M-PESA ..."
   MpesaParserRule(
     type: MpesaTransactionType.fulizaRepayment,
     confidence: MpesaConfidence.high,
@@ -60,9 +61,18 @@ final List<MpesaParserRule> _primaryRules = [
       RegExp('${_wb}outstanding\\s+fuliza'),
     ],
   ),
+  MpesaParserRule(
+    type: MpesaTransactionType.fulizaRepayment,
+    confidence: MpesaConfidence.high,
+    reason: 'fuliza_repayment',
+    requiredPatterns: [
+      RegExp('${_wb}paid\\s+from\\s+your\\s+fuliza'),
+    ],
+  ),
 
   // Fuliza draw:
   //   "Ksh 1,000.00 has been added to your M-PESA by Fuliza M-PESA."
+  //   "Ksh 500.00 Fuliza M-PESA amount credited ..."
   MpesaParserRule(
     type: MpesaTransactionType.fulizaDraw,
     confidence: MpesaConfidence.high,
@@ -70,6 +80,27 @@ final List<MpesaParserRule> _primaryRules = [
     requiredPatterns: [
       RegExp('added to your m-?pesa'),
       RegExp('${_wb}by\\s+fuliza'),
+    ],
+  ),
+  MpesaParserRule(
+    type: MpesaTransactionType.fulizaDraw,
+    confidence: MpesaConfidence.high,
+    reason: 'fuliza_draw',
+    requiredPatterns: [
+      RegExp('${_wb}fuliza\\s+m-?pesa'),
+      RegExp('${_wb}amount\\s+credited'),
+    ],
+  ),
+
+  // Received variants.
+  // "You have received Ksh X from NAME on DATE"
+  MpesaParserRule(
+    type: MpesaTransactionType.received,
+    confidence: MpesaConfidence.high,
+    reason: 'receive_you_have',
+    requiredPatterns: [
+      RegExp('${_wb}you\\s+have\\s+received'),
+      RegExp('$_wb(?:ksh|kes)\\s*\\d'),
     ],
   ),
 
@@ -90,6 +121,20 @@ final List<MpesaParserRule> _primaryRules = [
       RegExp('${_wb}sent\\s+to'),
       RegExp(
         '${_wb}for\\s+(?:account|acc(?:ount)?)(?:\\s*(?:no\\.?|number|#))?',
+      ),
+    ],
+  ),
+
+  // Paybill: account keyword appears anywhere after "sent to" / "paid to".
+  // Catches variants like "sent to KPLC account 998877" or "paid to DSTV acc#12345".
+  MpesaParserRule(
+    type: MpesaTransactionType.paybill,
+    confidence: MpesaConfidence.high,
+    reason: 'paybill_account_keyword',
+    requiredPatterns: [
+      RegExp('$_wb(?:sent|paid)\\s+to'),
+      RegExp(
+        '$_wb(?:for\\s+)?(?:account|acc(?:ount)?)(?:\\s*(?:no\\.?|number|#))?',
       ),
     ],
   ),
@@ -122,7 +167,7 @@ final List<MpesaParserRule> _fallbackRules = [
     confidence: MpesaConfidence.medium,
     reason: 'fuliza_repayment_kw',
     requiredPatterns: [
-      RegExp('${_wb}(?:repay.*fuliza|fuliza.*repay)'),
+      RegExp('$_wb(?:repay.*fuliza|fuliza.*repay)'),
     ],
   ),
 
@@ -173,18 +218,91 @@ final List<MpesaParserRule> mpesaParserRules = [
 ///   Phase 2 — keyword fallback rules   (medium confidence)
 ///   Phase 3 — unknown / low confidence (no rule matched)
 (MpesaTransactionType, MpesaConfidence, String) detectMpesaTransaction(
-  String message,
-) {
+  String message, {
+  String? sender,
+}) {
   final normalized = message.toLowerCase();
   for (final rule in _primaryRules) {
     if (rule.matches(normalized)) {
-      return (rule.type, rule.confidence, rule.reason);
+      return (
+        rule.type,
+        _adjustConfidenceForSender(rule.confidence, sender),
+        rule.reason,
+      );
     }
   }
   for (final rule in _fallbackRules) {
     if (rule.matches(normalized)) {
-      return (rule.type, rule.confidence, rule.reason);
+      return (
+        rule.type,
+        _adjustConfidenceForSender(rule.confidence, sender),
+        rule.reason,
+      );
     }
   }
-  return (MpesaTransactionType.unknown, MpesaConfidence.low, 'fallback');
+  return (
+    MpesaTransactionType.unknown,
+    _adjustConfidenceForSender(MpesaConfidence.low, sender),
+    'fallback',
+  );
 }
+
+MpesaConfidence _adjustConfidenceForSender(
+  MpesaConfidence base,
+  String? sender,
+) {
+  if (sender == null || sender.isEmpty) {
+    return base;
+  }
+  final lower = sender.toLowerCase();
+  // Messages from the official M-PESA sender are the most trustworthy.
+  if (lower.contains('mpesa')) {
+    return base;
+  }
+  // Bank / non-M-Pesa senders are more likely to be cross-service noise or
+  // promotional messages, so downgrade one confidence level.
+  if (_looksLikeBankOrShortcode(lower)) {
+    return _downgradeConfidence(base);
+  }
+  return base;
+}
+
+bool _looksLikeBankOrShortcode(String sender) {
+  if (RegExp(r'^\d+$').hasMatch(sender)) {
+    return true;
+  }
+  const bankNames = [
+    'kcb',
+    'equity',
+    'coop',
+    'absa',
+    'ncba',
+    'stanbic',
+    'barclays',
+    'family',
+    'im',
+    'dtb',
+    'sbm',
+    'habib',
+    'gulf',
+    'postbank',
+    'kwft',
+    'unaitas',
+    'm-shwari',
+    'kcb m-pesa',
+    'hustler fund',
+  ];
+  for (final name in bankNames) {
+    if (sender.contains(name)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+MpesaConfidence _downgradeConfidence(MpesaConfidence confidence) =>
+    switch (confidence) {
+      MpesaConfidence.high => MpesaConfidence.medium,
+      MpesaConfidence.medium => MpesaConfidence.low,
+      MpesaConfidence.low => MpesaConfidence.low,
+    };

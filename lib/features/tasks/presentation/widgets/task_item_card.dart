@@ -147,6 +147,9 @@ class TaskItemCard extends ConsumerWidget {
                           color: task.completed
                               ? secondaryText
                               : AppColors.textPrimaryFor(brightness),
+                          decoration: task.completed
+                              ? TextDecoration.lineThrough
+                              : null,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -184,19 +187,19 @@ class TaskItemCard extends ConsumerWidget {
   }
 
   String _subtitle(TaskItem task) {
-    if (task.dueDate != null) {
-      return _formatDate(task.dueDate!);
-    }
     if (task.description != null && task.description!.isNotEmpty) {
       return task.description!;
+    }
+    if (task.deadline != null) {
+      return _formatDate(task.deadline!);
     }
     return 'No deadline';
   }
 
   Color _subtitleColor(BuildContext context, TaskItem task) {
-    if (task.dueDate != null && !task.completed) {
+    if (task.deadline != null && !task.completed) {
       final now = DateTime.now();
-      final due = task.dueDate!;
+      final due = task.deadline!;
       if (due.isBefore(now)) {
         return AppColors.danger;
       }

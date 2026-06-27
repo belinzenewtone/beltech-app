@@ -5,7 +5,6 @@ class _TasksLayout extends StatelessWidget {
     required this.state,
     required this.tasksState,
     required this.allTasks,
-    required this.selectedFilter,
     required this.writeState,
     required this.countSubtitle,
   });
@@ -13,7 +12,6 @@ class _TasksLayout extends StatelessWidget {
   final _TasksScreenState state;
   final AsyncValue<List<TaskItem>> tasksState;
   final List<TaskItem> allTasks;
-  final TaskFilter selectedFilter;
   final AsyncValue<void> writeState;
   final String countSubtitle;
 
@@ -29,40 +27,6 @@ class _TasksLayout extends StatelessWidget {
               PageHeader(
                 title: 'Tasks',
                 subtitle: countSubtitle,
-                action: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    if (state._selectionMode)
-                      IconButton(
-                        tooltip: allTasks.isEmpty
-                            ? 'Select all'
-                            : state._selectedTaskIds.length == allTasks.length
-                            ? 'Clear selection'
-                            : 'Select all',
-                        onPressed: writeState.isLoading || allTasks.isEmpty
-                            ? null
-                            : () => state._toggleSelectAll(allTasks),
-                        icon: Icon(
-                          state._selectedTaskIds.length == allTasks.length
-                              ? Icons.deselect_rounded
-                              : Icons.select_all_rounded,
-                        ),
-                      ),
-                    IconButton(
-                      tooltip: state._selectionMode
-                          ? 'Exit multi-select'
-                          : 'Select multiple tasks',
-                      onPressed: writeState.isLoading
-                          ? null
-                          : state._toggleSelectionMode,
-                      icon: Icon(
-                        state._selectionMode
-                            ? Icons.close_rounded
-                            : Icons.checklist_rtl_rounded,
-                      ),
-                    ),
-                  ],
-                ),
               ),
               const SizedBox(height: AppSpacing.md),
               AppSearchBar(
@@ -71,40 +35,12 @@ class _TasksLayout extends StatelessWidget {
                 onChanged: (_) => state._refreshSearchResults(),
               ),
               const SizedBox(height: AppSpacing.sectionGap),
-              if (state._selectionMode && state._selectedTaskIds.length >= 2) ...[
-                TaskSelectionBar(
-                  selectedCount: state._selectedTaskIds.length,
-                  isLoading: writeState.isLoading,
-                  onComplete: () => state._completeSelected(context),
-                  onArchive: () => state._archiveSelected(context),
-                  onDelete: () => state._deleteSelected(context),
-                ),
-                const SizedBox(height: AppSpacing.sectionGap),
-              ],
-              SizedBox(
-                height: 36,
-                child: ListView(
-                  scrollDirection: Axis.horizontal,
-                  children: TaskFilter.values.map((filter) {
-                    return Padding(
-                      padding: const EdgeInsets.only(right: 8),
-                      child: CategoryChip(
-                        label: state._filterLabel(filter),
-                        selected: selectedFilter == filter,
-                        onTap: () {
-                          state.ref.read(taskFilterProvider.notifier).state =
-                              filter;
-                        },
-                      ),
-                    );
-                  }).toList(),
-                ),
-              ),
-              const SizedBox(height: AppSpacing.sectionGap),
               Expanded(
                 child: tasksState.when(
                   data: (tasks) {
-                    if (tasks.isEmpty) {
+                    final query = state._searchController.text.trim();
+                    final filtered = _filterForQuery(tasks, query);
+                    if (filtered.isEmpty) {
                       return const SizedBox(
                         width: double.infinity,
                         child: AppEmptyState(
@@ -115,82 +51,17 @@ class _TasksLayout extends StatelessWidget {
                         ),
                       );
                     }
-                    return ListView.separated(
-                      itemBuilder: (_, index) => TaskItemCard(
-                        task: tasks[index],
-                        selectionMode: state._selectionMode,
-                        selected: state._selectedTaskIds.contains(
-                          tasks[index].id,
+                    return ListView(
+                      children: [
+                        ..._buildPriorityGroups(
+                          context,
+                          filtered.where((t) => !t.completed).toList(),
                         ),
-                        onSelectToggle: () =>
-                            state._toggleTaskSelection(tasks[index].id),
-                        busy: writeState.isLoading,
-                        onToggle: () async {
-                          if (state._selectionMode) {
-                            state._toggleTaskSelection(tasks[index].id);
-                            return;
-                          }
-                          final isCompleting = !tasks[index].completed;
-                          await state.ref
-                              .read(taskWriteControllerProvider.notifier)
-                              .toggleTask(
-                                taskId: tasks[index].id,
-                                completed: isCompleting,
-                              );
-                          if (context.mounted &&
-                              !state.ref
-                                  .read(taskWriteControllerProvider)
-                                  .hasError) {
-                            AppFeedback.success(
-                              context,
-                              isCompleting
-                                  ? 'Task completed ✓'
-                                  : 'Task marked as pending',
-                              ref: state.ref,
-                            );
-                          }
-                        },
-                        onEdit: () async {
-                          await state._editTask(context, tasks[index]);
-                        },
-                        onDelete: () async {
-                          if (state._selectionMode) {
-                            state._toggleTaskSelection(tasks[index].id);
-                            return;
-                          }
-                          final deletedTask = tasks[index];
-                          AppHaptics.mediumImpact();
-                          await state.ref
-                              .read(taskWriteControllerProvider.notifier)
-                              .deleteTask(deletedTask.id);
-                          if (!context.mounted) {
-                            return;
-                          }
-                          if (state.ref
-                              .read(taskWriteControllerProvider)
-                              .hasError) {
-                            return;
-                          }
-                          state.ref
-                              .read(toastProvider.notifier)
-                              .showWithUndo(
-                                'Task deleted',
-                                onUndo: () async {
-                                  await state.ref
-                                      .read(taskWriteControllerProvider.notifier)
-                                      .addTask(
-                                        title: deletedTask.title,
-                                        description: deletedTask.description,
-                                        dueDate: deletedTask.dueDate,
-                                        priority: deletedTask.priority,
-                                      );
-                                },
-                              );
-                        },
-                      ),
-                      separatorBuilder: (_, __) =>
-                          const SizedBox(height: AppSpacing.listGap),
-                      itemCount: tasks.length,
+                        ..._buildCompletedGroup(
+                          context,
+                          filtered.where((t) => t.completed).toList(),
+                        ),
+                      ],
                     );
                   },
                   loading: () => Column(
@@ -223,5 +94,128 @@ class _TasksLayout extends StatelessWidget {
         ),
       ],
     );
+  }
+
+  List<Widget> _buildPriorityGroups(BuildContext context, List<TaskItem> pending) {
+    if (pending.isEmpty) return const [];
+    final priorityOrder = [
+      TaskPriority.urgent,
+      TaskPriority.important,
+      TaskPriority.neutral,
+    ];
+    final grouped = {
+      for (final p in priorityOrder)
+        p: pending.where((t) => t.priority == p).toList(),
+    };
+    final labelColor = {
+      TaskPriority.urgent: AppColors.danger,
+      TaskPriority.important: AppColors.warning,
+      TaskPriority.neutral: AppColors.textSecondary,
+    };
+
+    return priorityOrder.expand((priority) {
+      final group = grouped[priority]!;
+      if (group.isEmpty) return const <Widget>[];
+      return [
+        Padding(
+          padding: const EdgeInsets.only(bottom: 4),
+          child: Text(
+            priority.label,
+            style: AppTypography.sectionTitle(context).copyWith(
+              color: labelColor[priority],
+            ),
+          ),
+        ),
+        ...group.map((task) => _taskCard(context, task)),
+        const SizedBox(height: AppSpacing.sectionGap),
+      ];
+    }).toList();
+  }
+
+  List<Widget> _buildCompletedGroup(BuildContext context, List<TaskItem> completed) {
+    if (completed.isEmpty) return const [];
+    final shown = completed.take(20).toList();
+    return [
+      Padding(
+        padding: const EdgeInsets.only(bottom: 4),
+        child: Text(
+          'Completed',
+          style: AppTypography.sectionTitle(context).copyWith(
+            color: AppColors.textSecondary,
+          ),
+        ),
+      ),
+      ...shown.map((task) => _taskCard(context, task)),
+    ];
+  }
+
+  Widget _taskCard(BuildContext context, TaskItem task) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppSpacing.listGap),
+      child: TaskItemCard(
+        task: task,
+        selectionMode: false,
+        selected: false,
+        onSelectToggle: () {},
+        busy: writeState.isLoading,
+        onToggle: () async {
+          final isCompleting = !task.completed;
+          await state.ref
+              .read(taskWriteControllerProvider.notifier)
+              .toggleTask(
+                taskId: task.id,
+                completed: isCompleting,
+              );
+          if (context.mounted &&
+              !state.ref.read(taskWriteControllerProvider).hasError) {
+            AppFeedback.success(
+              context,
+              isCompleting ? 'Task completed ✓' : 'Task marked as pending',
+              ref: state.ref,
+            );
+          }
+        },
+        onEdit: () async {
+          await state._editTask(context, task);
+        },
+        onDelete: () async {
+          final deletedTask = task;
+          AppHaptics.mediumImpact();
+          await state.ref
+              .read(taskWriteControllerProvider.notifier)
+              .deleteTask(deletedTask.id);
+          if (!context.mounted) {
+            return;
+          }
+          if (state.ref.read(taskWriteControllerProvider).hasError) {
+            return;
+          }
+          state.ref.read(toastProvider.notifier).showWithUndo(
+            'Task deleted',
+            onUndo: () async {
+              await state.ref
+                  .read(taskWriteControllerProvider.notifier)
+                  .addTask(
+                    title: deletedTask.title,
+                    description: deletedTask.description,
+                    deadline: deletedTask.deadline,
+                    priority: deletedTask.priority,
+                    reminderOffsets: deletedTask.reminderOffsets,
+                    alarmEnabled: deletedTask.alarmEnabled,
+                  );
+            },
+          );
+        },
+      ),
+    );
+  }
+
+  List<TaskItem> _filterForQuery(List<TaskItem> tasks, String query) {
+    if (query.isEmpty) return tasks;
+    final trimmed = query.toLowerCase();
+    return tasks.where((task) {
+      return task.title.toLowerCase().contains(trimmed) ||
+          (task.description?.toLowerCase().contains(trimmed) ?? false);
+    }).toList();
   }
 }

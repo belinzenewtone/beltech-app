@@ -30,7 +30,7 @@ class HomeToolsRow extends StatelessWidget {
               _ToolPill(
                 icon: Icons.space_dashboard_outlined,
                 label: 'Planner',
-                iconColor: AppColors.accent,
+                iconColor: AppColors.violet,
                 onTap: () {
                   AppHaptics.lightImpact();
                   context.pushNamed('planner');
@@ -40,7 +40,7 @@ class HomeToolsRow extends StatelessWidget {
               _ToolPill(
                 icon: Icons.search_rounded,
                 label: 'Search',
-                iconColor: AppColors.accent,
+                iconColor: AppColors.teal,
                 onTap: () {
                   AppHaptics.lightImpact();
                   context.pushNamed('search');
@@ -48,19 +48,9 @@ class HomeToolsRow extends StatelessWidget {
               ),
               const SizedBox(width: 8),
               _ToolPill(
-                icon: Icons.access_time_rounded,
-                label: 'Review',
-                iconColor: AppColors.accent,
-                onTap: () {
-                  AppHaptics.lightImpact();
-                  context.pushNamed('week-review');
-                },
-              ),
-              const SizedBox(width: 8),
-              _ToolPill(
                 icon: Icons.bar_chart_rounded,
                 label: 'Analytics',
-                iconColor: AppColors.accent,
+                iconColor: AppColors.warning,
                 onTap: () {
                   AppHaptics.lightImpact();
                   context.pushNamed('analytics');
@@ -70,7 +60,7 @@ class HomeToolsRow extends StatelessWidget {
               _ToolPill(
                 icon: Icons.repeat_rounded,
                 label: 'Recurring',
-                iconColor: AppColors.accent,
+                iconColor: AppColors.success,
                 onTap: () {
                   AppHaptics.lightImpact();
                   context.pushNamed('recurring');
@@ -100,17 +90,18 @@ class _ToolPill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final brightness = Theme.of(context).brightness;
+    final isLight = brightness == Brightness.light;
 
     return GestureDetector(
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
-          color: AppColors.surfaceFor(brightness),
+          color: isLight
+              ? iconColor.withValues(alpha: 0.08)
+              : iconColor.withValues(alpha: 0.12),
           border: Border.all(
-            color: brightness == Brightness.light
-                ? AppColors.borderFor(brightness)
-                : AppColors.border,
+            color: iconColor.withValues(alpha: isLight ? 0.24 : 0.32),
           ),
           borderRadius: BorderRadius.circular(AppRadius.full),
         ),
@@ -122,7 +113,7 @@ class _ToolPill extends StatelessWidget {
             Text(
               label,
               style: AppTypography.bodySm(context).copyWith(
-                fontWeight: FontWeight.w500,
+                fontWeight: FontWeight.w600,
                 fontSize: 13,
                 color: AppColors.textPrimaryFor(brightness),
               ),

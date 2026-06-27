@@ -37,6 +37,7 @@ class _HomeAiInsightCardState extends State<HomeAiInsightCard> {
 
   @override
   Widget build(BuildContext context) {
+    final br = Theme.of(context).brightness;
     return AppCard(
       tone: AppCardTone.muted,
       padding: const EdgeInsets.all(AppSpacing.md),
@@ -46,8 +47,8 @@ class _HomeAiInsightCardState extends State<HomeAiInsightCard> {
           Container(
             width: 36,
             height: 36,
-            decoration: const BoxDecoration(
-              color: AppColors.surfaceMuted,
+            decoration: BoxDecoration(
+              color: AppColors.surfaceMutedFor(br),
               shape: BoxShape.circle,
             ),
             child: const Icon(
@@ -112,6 +113,7 @@ class HomeWeeklyMoneyBrief extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final brightness = Theme.of(context).brightness;
     final topCategory = _topCategory(overview.recentTransactions);
 
     return AppCard(
@@ -125,8 +127,8 @@ class HomeWeeklyMoneyBrief extends StatelessWidget {
               Container(
                 width: 36,
                 height: 36,
-                decoration: const BoxDecoration(
-                  color: AppColors.surfaceMuted,
+                decoration: BoxDecoration(
+                  color: AppColors.surfaceMutedFor(brightness),
                   shape: BoxShape.circle,
                 ),
                 child: const Icon(
@@ -177,10 +179,11 @@ class _BriefStat extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final brightness = Theme.of(context).brightness;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
       decoration: BoxDecoration(
-        color: AppColors.surfaceMuted,
+        color: AppColors.surfaceMutedFor(brightness),
         borderRadius: BorderRadius.circular(AppRadius.sm),
       ),
       child: Column(
@@ -219,8 +222,8 @@ class HomeProductivityCard extends StatelessWidget {
           Container(
             width: 40,
             height: 40,
-            decoration: const BoxDecoration(
-              color: AppColors.surfaceMuted,
+            decoration: BoxDecoration(
+              color: AppColors.surfaceMutedFor(brightness),
               shape: BoxShape.circle,
             ),
             child: const Icon(

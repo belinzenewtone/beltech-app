@@ -8,12 +8,18 @@ abstract class CalendarRepository {
   Future<void> addEvent({
     required String title,
     required DateTime startAt,
-    CalendarEventPriority priority = CalendarEventPriority.medium,
-    CalendarEventType type = CalendarEventType.general,
+    CalendarEventPriority priority = CalendarEventPriority.neutral,
+    CalendarEventType type = CalendarEventType.personal,
+    CalendarEventKind kind = CalendarEventKind.event,
     DateTime? endAt,
     String? note,
-    bool reminderEnabled = true,
-    int reminderMinutesBefore = 15,
+    List<int> reminderOffsets = const [],
+    bool alarmEnabled = false,
+    bool allDay = false,
+    RepeatRule repeatRule = RepeatRule.never,
+    String guests = '',
+    String timeZoneId = '',
+    int reminderTimeOfDayMinutes = 480,
   });
 
   Future<void> updateEvent({
@@ -22,10 +28,16 @@ abstract class CalendarRepository {
     required DateTime startAt,
     required CalendarEventPriority priority,
     required CalendarEventType type,
+    required CalendarEventKind kind,
     DateTime? endAt,
     String? note,
-    bool reminderEnabled = true,
-    int reminderMinutesBefore = 15,
+    List<int> reminderOffsets = const [],
+    bool alarmEnabled = false,
+    bool allDay = false,
+    RepeatRule repeatRule = RepeatRule.never,
+    String guests = '',
+    String timeZoneId = '',
+    int reminderTimeOfDayMinutes = 480,
   });
 
   Future<void> setCompleted({required int eventId, required bool completed});

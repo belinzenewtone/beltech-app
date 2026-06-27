@@ -137,8 +137,18 @@ class RecurringRepositoryImpl implements RecurringRepository {
           inserted += 1;
         case RecurringKind.task:
           await _store.executor.runInsert(
-            'INSERT INTO tasks(title, description, completed, due_at, priority) VALUES (?, ?, ?, ?, ?)',
-            [title, description, 0, when.millisecondsSinceEpoch, priority],
+            'INSERT INTO tasks(title, description, status, deadline, priority, reminder_offsets, alarm_enabled, created_at) '
+            'VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+            [
+              title,
+              description,
+              'pending',
+              when.millisecondsSinceEpoch,
+              priority,
+              '',
+              0,
+              DateTime.now().millisecondsSinceEpoch,
+            ],
           );
           inserted += 1;
         case RecurringKind.event:

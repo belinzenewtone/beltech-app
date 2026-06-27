@@ -1,12 +1,17 @@
 import 'package:beltech/core/di/expenses_providers.dart';
+import 'package:beltech/core/forms/form_schemas.dart';
 import 'package:beltech/core/theme/app_colors.dart';
 import 'package:beltech/core/theme/app_radius.dart';
 import 'package:beltech/core/theme/app_spacing.dart';
 import 'package:beltech/core/theme/app_typography.dart';
+import 'package:beltech/core/utils/category_visual.dart';
 import 'package:beltech/core/widgets/app_button.dart';
 import 'package:beltech/core/utils/currency_formatter.dart';
 import 'package:beltech/core/widgets/app_card.dart';
+import 'package:beltech/core/widgets/app_form_sheet.dart';
+import 'package:beltech/core/widgets/app_toast.dart';
 import 'package:beltech/core/widgets/secondary_page_shell.dart';
+import 'package:beltech/features/expenses/presentation/providers/expense_categories_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -23,6 +28,14 @@ class _QuarantineQueueScreenState extends ConsumerState<QuarantineQueueScreen> {
   _SortOption _sortBy = _SortOption.dateNewest;
   Set<String> _selectedIds = {};
   bool _isSelectionMode = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(quarantineQueueNotifierProvider.notifier).load();
+    });
+  }
 
   List<_PresentationQuarantineItem> _getFilteredAndSortedItems(
     List<_PresentationQuarantineItem> items,
@@ -56,6 +69,7 @@ class _QuarantineQueueScreenState extends ConsumerState<QuarantineQueueScreen> {
     final notifier = ref.read(quarantineQueueNotifierProvider.notifier);
     return SecondaryPageShell(
       title: 'Review Queue',
+      scrollable: false,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -177,6 +191,7 @@ class _QuarantineQueueScreenState extends ConsumerState<QuarantineQueueScreen> {
       date: item.candidate.occurredAt,
       confidence: confidence,
       rawMessage: item.candidate.rawMessage,
+      reason: item.reason,
       domainItem: item,
     );
   }
@@ -199,13 +214,24 @@ class _QuarantineQueueScreenState extends ConsumerState<QuarantineQueueScreen> {
     _PresentationQuarantineItem item,
     QuarantineQueueNotifier notifier,
   ) async {
-    // TODO: Implement edit dialog/sheet
-    // For now, just call approve with original values
+    final result = await showModalBottomSheet<_QuarantineEditResult>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) => _QuarantineEditSheet(
+        title: item.title,
+        amount: item.amount,
+        category: item.domainItem.candidate.category,
+      ),
+    );
+
+    if (result == null || !mounted) return;
+
     await notifier.approveWithEdits(
       item.domainItem,
-      item.title,
-      item.amount,
-      item.domainItem.candidate.category,
+      result.title,
+      result.amount,
+      result.category,
     );
   }
 
@@ -429,6 +455,7 @@ class _PresentationQuarantineItem {
     required this.date,
     required this.confidence,
     required this.rawMessage,
+    required this.reason,
     required this.domainItem,
   });
 
@@ -438,6 +465,7 @@ class _PresentationQuarantineItem {
   final DateTime date;
   final _Confidence confidence;
   final String rawMessage;
+  final String reason;
   final QuarantineItem domainItem;
 }
 
@@ -608,13 +636,28 @@ class _QuarantineItemCard extends StatelessWidget {
           AppCard(
             tone: AppCardTone.muted,
             padding: const EdgeInsets.all(AppSpacing.sm),
-            child: Text(
-              item.rawMessage,
-              style: AppTypography.bodySm(
-                context,
-              ).copyWith(color: AppColors.textSecondary),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Quarantined: ${item.reason}',
+                  style: AppTypography.bodySm(
+                    context,
+                  ).copyWith(
+                    color: AppColors.warning,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.xs),
+                Text(
+                  item.rawMessage,
+                  style: AppTypography.bodySm(
+                    context,
+                  ).copyWith(color: AppColors.textSecondary),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
             ),
           ),
           const SizedBox(height: AppSpacing.md),
@@ -634,6 +677,145 @@ class _QuarantineItemCard extends StatelessWidget {
             ],
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _QuarantineEditResult {
+  const _QuarantineEditResult({
+    required this.title,
+    required this.amount,
+    required this.category,
+  });
+
+  final String title;
+  final double amount;
+  final String category;
+}
+
+class _QuarantineEditSheet extends ConsumerStatefulWidget {
+  const _QuarantineEditSheet({
+    required this.title,
+    required this.amount,
+    required this.category,
+  });
+
+  final String title;
+  final double amount;
+  final String category;
+
+  @override
+  ConsumerState<_QuarantineEditSheet> createState() =>
+      _QuarantineEditSheetState();
+}
+
+class _QuarantineEditSheetState extends ConsumerState<_QuarantineEditSheet> {
+  late final TextEditingController _titleController;
+  late final TextEditingController _amountController;
+  late String _selectedCategory;
+
+  @override
+  void initState() {
+    super.initState();
+    _titleController = TextEditingController(text: widget.title);
+    _amountController = TextEditingController(
+      text: widget.amount.toStringAsFixed(2),
+    );
+    _selectedCategory = widget.category;
+  }
+
+  @override
+  void dispose() {
+    _titleController.dispose();
+    _amountController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final categoriesAsync = ref.watch(expenseCategoriesProvider);
+    final categories = categoriesAsync.valueOrNull ?? expenseCategoryDefaults;
+    if (!categories.contains(_selectedCategory)) {
+      _selectedCategory = categories.first;
+    }
+
+    return AppFormSheet(
+      title: 'Edit & Approve',
+      onClose: () => Navigator.of(context).pop(),
+      footer: Row(
+        children: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancel'),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: AppButton(
+              label: 'Approve',
+              fullWidth: true,
+              onPressed: categoriesAsync.isLoading ? null : _submit,
+            ),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          TextField(
+            controller: _titleController,
+            textCapitalization: TextCapitalization.words,
+            decoration: const InputDecoration(hintText: 'Title'),
+          ),
+          const SizedBox(height: 14),
+          TextField(
+            controller: _amountController,
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            decoration: const InputDecoration(hintText: 'Amount (KES)'),
+          ),
+          const SizedBox(height: 14),
+          DropdownButtonFormField<String>(
+            initialValue: _selectedCategory,
+            decoration: const InputDecoration(labelText: 'Category'),
+            items: categories.map((c) {
+              final visual = categoryVisual(c);
+              return DropdownMenuItem<String>(
+                value: c,
+                child: Row(
+                  children: [
+                    Icon(visual.icon, size: 16, color: visual.foreground),
+                    const SizedBox(width: 10),
+                    Text(c),
+                  ],
+                ),
+              );
+            }).toList(),
+            onChanged: categoriesAsync.isLoading
+                ? null
+                : (v) { if (v != null) setState(() => _selectedCategory = v); },
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _submit() {
+    final result = FormSchemas.expenseSchema.validate({
+      'title': _titleController.text,
+      'amount': _amountController.text,
+      'category': _selectedCategory,
+    });
+    if (!result.isValid) {
+      final firstError = result.errors.values.first;
+      ref.read(toastProvider.notifier).error(firstError);
+      return;
+    }
+    final amount = double.tryParse(_amountController.text.trim()) ?? 0;
+    Navigator.of(context).pop(
+      _QuarantineEditResult(
+        title: _titleController.text.trim(),
+        amount: amount,
+        category: _selectedCategory,
       ),
     );
   }

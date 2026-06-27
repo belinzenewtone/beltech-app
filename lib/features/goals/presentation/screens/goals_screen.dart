@@ -1,6 +1,7 @@
 import 'package:beltech/core/di/repository_providers.dart';
 import 'package:beltech/core/theme/app_spacing.dart';
 import 'package:beltech/core/widgets/app_empty_state.dart';
+import 'package:beltech/core/widgets/app_icon_pill_button.dart';
 import 'package:beltech/core/widgets/app_skeleton.dart';
 import 'package:beltech/core/widgets/secondary_page_shell.dart';
 import 'package:beltech/features/goals/domain/entities/goal_item.dart';
@@ -22,87 +23,95 @@ class GoalsScreen extends ConsumerWidget {
     return SecondaryPageShell(
       title: 'Goals',
       scrollable: false,
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _showForm(context, ref),
-        icon: const Icon(Icons.add),
-        label: const Text('Goal'),
-      ),
+      actions: [
+        AppIconPillButton(
+          icon: Icons.add_rounded,
+          label: 'Add',
+          tone: AppIconPillTone.accent,
+          onPressed: () => _showForm(context, ref),
+        ),
+      ],
       child: Column(
         children: [
-          Expanded(child: goalsAsync.when(
-        data: (goals) {
-          if (goals.isEmpty) {
-            return ListView(
-              children: const [
-                SizedBox(
-                  width: double.infinity,
-                  child: AppEmptyState(
-                    icon: Icons.flag_outlined,
-                    title: 'No goals yet',
-                    subtitle: 'Add your first goal',
+          Expanded(
+            child: goalsAsync.when(
+              data: (goals) {
+                if (goals.isEmpty) {
+                  return ListView(
+                    children: const [
+                      SizedBox(
+                        width: double.infinity,
+                        child: AppEmptyState(
+                          icon: Icons.flag_outlined,
+                          title: 'No goals yet',
+                          subtitle: 'Add your first goal',
+                        ),
+                      ),
+                    ],
+                  );
+                }
+                return ListView.builder(
+                  padding: const EdgeInsets.only(bottom: 80),
+                  itemCount: goals.length,
+                  itemBuilder: (context, i) => Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: GoalItemCard(
+                      goal: goals[i],
+                      onTap: () => _showForm(context, ref, goals[i]),
+                      onDelete: () async {
+                        final confirmed = await showDialog<bool>(
+                          context: context,
+                          builder: (ctx) => AlertDialog(
+                            title: const Text('Delete goal?'),
+                            content: Text(
+                              'Remove "${goals[i].title}"?',
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.pop(ctx, false),
+                                child: const Text('Cancel'),
+                              ),
+                              TextButton(
+                                onPressed: () => Navigator.pop(ctx, true),
+                                child: const Text(
+                                  'Delete',
+                                  style: TextStyle(color: Color(0xFFF87171)),
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                        if (confirmed == true) {
+                          await ref
+                              .read(goalsRepositoryProvider)
+                              .deleteGoal(goals[i].id);
+                        }
+                      },
+                    ),
+                  ),
+                );
+              },
+              loading: () => Column(
+                children: List.generate(
+                  4,
+                  (_) => Padding(
+                    padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+                    child: AppSkeleton.card(context),
                   ),
                 ),
-              ],
-            );
-          }
-          return ListView.builder(
-            padding: const EdgeInsets.only(bottom: 80),
-            itemCount: goals.length,
-            itemBuilder: (context, i) => Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: GoalItemCard(
-                goal: goals[i],
-                onTap: () => _showForm(context, ref, goals[i]),
-                onDelete: () async {
-                  final confirmed = await showDialog<bool>(
-                    context: context,
-                    builder: (ctx) => AlertDialog(
-                      title: const Text('Delete goal?'),
-                      content: Text(
-                        'Remove "${goals[i].title}"?',
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      actions: [
-                        TextButton(
-                          onPressed: () => Navigator.pop(ctx, false),
-                          child: const Text('Cancel'),
-                        ),
-                        TextButton(
-                          onPressed: () => Navigator.pop(ctx, true),
-                          child: const Text(
-                            'Delete',
-                            style: TextStyle(color: Color(0xFFF87171)),
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
-                  if (confirmed == true) {
-                    await ref
-                        .read(goalsRepositoryProvider)
-                        .deleteGoal(goals[i].id);
-                  }
-                },
+              ),
+              error: (e, _) => Center(
+                child: Text(
+                  'Error: $e',
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.center,
+                ),
               ),
             ),
-          );
-        },
-        loading: () => Column(
-          children: List.generate(4, (_) => Padding(
-            padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-            child: AppSkeleton.card(context),
-          )),
-        ),
-        error: (e, _) => Center(
-          child: Text(
-            'Error: $e',
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            textAlign: TextAlign.center,
           ),
-        ),
-      )),
         ],
       ),
     );

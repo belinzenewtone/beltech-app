@@ -1,11 +1,11 @@
 import java.io.FileInputStream
 import java.util.Properties
 import org.gradle.api.GradleException
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
     id("com.android.application")
-    id("kotlin-android")
-    // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
+    // The Flutter Gradle Plugin now provides Built-in Kotlin; do not apply kotlin-android here.
     id("dev.flutter.flutter-gradle-plugin")
 }
 
@@ -57,17 +57,13 @@ if (releaseTaskRequested && !hasReleaseSigningConfig) {
 
 android {
     namespace = "com.beltech.app"
-    compileSdk = flutter.compileSdkVersion
-    ndkVersion = flutter.ndkVersion
+    compileSdk = 36
+    ndkVersion = "28.2.13676358"
 
     compileOptions {
         isCoreLibraryDesugaringEnabled = true
-        sourceCompatibility = JavaVersion.VERSION_17
-        targetCompatibility = JavaVersion.VERSION_17
-    }
-
-    kotlinOptions {
-        jvmTarget = JavaVersion.VERSION_17.toString()
+        sourceCompatibility = JavaVersion.VERSION_21
+        targetCompatibility = JavaVersion.VERSION_21
     }
 
     defaultConfig {
@@ -75,8 +71,8 @@ android {
         applicationId = "com.beltech.app"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
-        minSdk = flutter.minSdkVersion
-        targetSdk = flutter.targetSdkVersion
+        minSdk = 24
+        targetSdk = 35
         versionCode = flutter.versionCode
         versionName = flutter.versionName
     }
@@ -92,6 +88,14 @@ android {
         }
     }
 
+    packaging {
+        jniLibs {
+            // Extract native libraries at install time so the system can align
+            // them to 16KB pages on Android 15+ / 16KB page-size devices.
+            useLegacyPackaging = true
+        }
+    }
+
     buildTypes {
         release {
             val releaseSigning = signingConfigs.findByName("release")
@@ -104,6 +108,12 @@ android {
                 )
             }
         }
+    }
+}
+
+kotlin {
+    compilerOptions {
+        jvmTarget.set(JvmTarget.JVM_21)
     }
 }
 

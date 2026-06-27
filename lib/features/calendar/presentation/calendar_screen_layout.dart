@@ -31,12 +31,12 @@ class _CalendarLayout extends StatelessWidget {
 
     final monthTaskDays = (tasksState.valueOrNull ?? const <TaskItem>[])
         .where((task) {
-          final dueDate = task.dueDate;
-          return dueDate != null &&
-              dueDate.year == visibleMonth.year &&
-              dueDate.month == visibleMonth.month;
+          final deadline = task.deadline;
+          return deadline != null &&
+              deadline.year == visibleMonth.year &&
+              deadline.month == visibleMonth.month;
         })
-        .map((task) => task.dueDate!.day)
+        .map((task) => task.deadline!.day)
         .toSet();
 
     return Stack(

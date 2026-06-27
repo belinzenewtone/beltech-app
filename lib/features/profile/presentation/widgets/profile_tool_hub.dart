@@ -4,43 +4,42 @@ import 'package:beltech/core/widgets/app_card.dart';
 import 'package:beltech/core/widgets/tool_shortcut_grid.dart';
 import 'package:flutter/material.dart';
 
-/// Profile-specific tool shortcuts rendered in a single accent tone to keep
-/// the hub calm and consistent with the rest of the Profile screen.
+/// Profile-specific tool shortcuts with distinct category colors.
 const _profileShortcuts = [
   ToolShortcut(
     label: 'Analytics',
     icon: Icons.query_stats_rounded,
-    color: AppColors.accent,
+    color: AppColors.warning,
     routeName: 'analytics',
   ),
   ToolShortcut(
-    label: 'Bills',
-    icon: Icons.receipt_long_rounded,
-    color: AppColors.accent,
-    routeName: 'bills',
-  ),
-  ToolShortcut(
-    label: 'Loans',
-    icon: Icons.account_balance_outlined,
-    color: AppColors.accent,
-    routeName: 'loans',
+    label: 'Hub',
+    icon: Icons.hub_outlined,
+    color: AppColors.violet,
+    routeName: 'finance-hub',
   ),
   ToolShortcut(
     label: 'Goals',
     icon: Icons.flag_outlined,
-    color: AppColors.accent,
+    color: AppColors.success,
     routeName: 'goals',
   ),
   ToolShortcut(
     label: 'Learning',
     icon: Icons.school_outlined,
-    color: AppColors.accent,
+    color: AppColors.sky,
     routeName: 'learning',
   ),
   ToolShortcut(
-    label: 'Import Health',
+    label: 'Export',
+    icon: Icons.download_rounded,
+    color: AppColors.categoryBill,
+    routeName: 'export',
+  ),
+  ToolShortcut(
+    label: 'Health',
     icon: Icons.monitor_heart_outlined,
-    color: AppColors.accent,
+    color: AppColors.teal,
     routeName: 'import-health',
   ),
 ];

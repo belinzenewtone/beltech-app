@@ -142,10 +142,16 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
                               type: input.eventType != null
                                   ? _eventTypeFromSuper(input.eventType!)
                                   : event.type,
+                              kind: event.kind,
                               endAt: input.endAt,
                               note: input.description,
-                              reminderEnabled: input.reminderEnabled,
-                              reminderMinutesBefore: input.reminderMinutesBefore,
+                              reminderOffsets: input.reminderOffsets ?? const [],
+                              alarmEnabled: input.alarmEnabled,
+                              allDay: event.allDay,
+                              repeatRule: event.repeatRule,
+                              guests: event.guests,
+                              timeZoneId: event.timeZoneId,
+                              reminderTimeOfDayMinutes: event.reminderTimeOfDayMinutes,
                             );
                       },
                       onDelete: (event) async {
@@ -166,11 +172,16 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
                                     startAt: event.startAt,
                                     priority: event.priority,
                                     type: event.type,
+                                    kind: event.kind,
                                     endAt: event.endAt,
                                     note: event.note,
-                                    reminderEnabled: event.reminderEnabled,
-                                    reminderMinutesBefore:
-                                        event.reminderMinutesBefore,
+                                    reminderOffsets: event.reminderOffsets,
+                                    alarmEnabled: event.alarmEnabled,
+                                    allDay: event.allDay,
+                                    repeatRule: event.repeatRule,
+                                    guests: event.guests,
+                                    timeZoneId: event.timeZoneId,
+                                    reminderTimeOfDayMinutes: event.reminderTimeOfDayMinutes,
                                   );
                             },
                           );
@@ -224,24 +235,24 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
       endAt: event.endAt,
       priority: _eventPriority(event.priority),
       eventType: _superTypeFromEvent(event.type),
-      reminderEnabled: event.reminderEnabled,
-      reminderMinutesBefore: event.reminderMinutesBefore,
+      reminderOffsets: event.reminderOffsets,
+      alarmEnabled: event.alarmEnabled,
     );
   }
 
   SuperEntryPriority _eventPriority(CalendarEventPriority priority) {
     return switch (priority) {
-      CalendarEventPriority.high => SuperEntryPriority.high,
-      CalendarEventPriority.low => SuperEntryPriority.low,
-      CalendarEventPriority.medium => SuperEntryPriority.medium,
+      CalendarEventPriority.urgent => SuperEntryPriority.high,
+      CalendarEventPriority.neutral => SuperEntryPriority.low,
+      CalendarEventPriority.important => SuperEntryPriority.medium,
     };
   }
 
   CalendarEventPriority _inputPriority(SuperEntryPriority? priority) {
     return switch (priority) {
-      SuperEntryPriority.high => CalendarEventPriority.high,
-      SuperEntryPriority.low => CalendarEventPriority.low,
-      _ => CalendarEventPriority.medium,
+      SuperEntryPriority.high => CalendarEventPriority.urgent,
+      SuperEntryPriority.low => CalendarEventPriority.neutral,
+      _ => CalendarEventPriority.important,
     };
   }
 
@@ -251,7 +262,7 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
       SuperEntryEventType.personal => CalendarEventType.personal,
       SuperEntryEventType.finance => CalendarEventType.finance,
       SuperEntryEventType.health => CalendarEventType.health,
-      SuperEntryEventType.general => CalendarEventType.general,
+      SuperEntryEventType.general => CalendarEventType.other,
     };
   }
 
@@ -261,11 +272,7 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
       CalendarEventType.personal => SuperEntryEventType.personal,
       CalendarEventType.finance => SuperEntryEventType.finance,
       CalendarEventType.health => SuperEntryEventType.health,
-      CalendarEventType.general => SuperEntryEventType.general,
-      CalendarEventType.birthday ||
-              CalendarEventType.anniversary ||
-              CalendarEventType.countdown =>
-        SuperEntryEventType.general,
+      CalendarEventType.other => SuperEntryEventType.general,
     };
   }
 }

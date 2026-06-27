@@ -1,16 +1,25 @@
 import 'package:beltech/core/theme/app_colors.dart';
 import 'package:beltech/features/tasks/domain/entities/task_item.dart';
+import 'package:beltech/features/tasks/presentation/providers/time_tracking_providers.dart';
 import 'package:beltech/features/tasks/presentation/widgets/task_item_card.dart';
 import 'package:beltech/features/tasks/presentation/widgets/task_item_visuals.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:intl/intl.dart';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 Widget _wrap(Widget child) {
-  return MaterialApp(
-    theme: ThemeData.dark(),
-    home: Scaffold(body: SizedBox.expand(child: child)),
+  return ProviderScope(
+    overrides: [
+      timerTickProvider.overrideWith((ref) => Stream.value(DateTime.now())),
+      activeTimerProvider.overrideWith((ref, taskId) => Future.value(null)),
+    ],
+    child: MaterialApp(
+      theme: ThemeData.dark(),
+      home: Scaffold(body: SizedBox.expand(child: child)),
+    ),
   );
 }
 
@@ -40,8 +49,8 @@ const _base = TaskItem(
   id: 1,
   title: 'Buy groceries',
   description: null,
-  completed: false,
-  priority: TaskPriority.medium,
+  status: TaskStatus.pending,
+  priority: TaskPriority.important,
 );
 
 // ── Tests ─────────────────────────────────────────────────────────────────────
@@ -58,8 +67,8 @@ void main() {
         id: 2,
         title: 'Review PR',
         description: 'Check the diff carefully',
-        completed: false,
-        priority: TaskPriority.high,
+        status: TaskStatus.pending,
+        priority: TaskPriority.urgent,
       );
       await tester.pumpWidget(_wrap(_card(task: task)));
       expect(find.text('Check the diff carefully'), findsOneWidget);
@@ -67,64 +76,74 @@ void main() {
 
     testWidgets('does not show description widget when null', (tester) async {
       await tester.pumpWidget(_wrap(_card(task: _base)));
-      // Only the title text is present; description text absent
       expect(find.text('Buy groceries'), findsOneWidget);
       expect(find.text('null'), findsNothing);
     });
 
-    testWidgets('shows Urgent capsule for high priority', (tester) async {
-      const task = TaskItem(
+    testWidgets('shows formatted deadline when no description', (tester) async {
+      final deadline = DateTime.now().add(const Duration(days: 5));
+      final task = TaskItem(
         id: 3,
-        title: 'Fix crash',
-        description: null,
-        completed: false,
-        priority: TaskPriority.high,
+        title: 'Future task',
+        status: TaskStatus.pending,
+        priority: TaskPriority.neutral,
+        deadline: deadline,
       );
       await tester.pumpWidget(_wrap(_card(task: task)));
-      expect(find.text('Urgent'), findsOneWidget);
+      expect(
+        find.text(DateFormat('MMM d, h:mm a').format(deadline)),
+        findsOneWidget,
+      );
     });
 
-    testWidgets('shows Important capsule for medium priority', (tester) async {
+    testWidgets('shows No deadline when nothing else to display', (tester) async {
       await tester.pumpWidget(_wrap(_card(task: _base)));
-      expect(find.text('Important'), findsOneWidget);
-    });
-
-    testWidgets('shows Neutral capsule for low priority', (tester) async {
-      const task = TaskItem(
-        id: 4,
-        title: 'Water plants',
-        description: null,
-        completed: false,
-        priority: TaskPriority.low,
-      );
-      await tester.pumpWidget(_wrap(_card(task: task)));
-      expect(find.text('Neutral'), findsOneWidget);
-    });
-
-    testWidgets('completed task shows Completed badge', (tester) async {
-      const task = TaskItem(
-        id: 5,
-        title: 'Call dentist',
-        description: null,
-        completed: true,
-        priority: TaskPriority.low,
-      );
-      await tester.pumpWidget(_wrap(_card(task: task)));
-      expect(find.text('Completed'), findsOneWidget);
+      expect(find.text('No deadline'), findsOneWidget);
     });
 
     testWidgets('completed task title has strikethrough', (tester) async {
       const task = TaskItem(
-        id: 6,
+        id: 4,
         title: 'Done task',
-        description: null,
-        completed: true,
-        priority: TaskPriority.medium,
+        status: TaskStatus.completed,
+        priority: TaskPriority.important,
       );
       await tester.pumpWidget(_wrap(_card(task: task)));
 
       final textWidget = tester.widget<Text>(find.text('Done task'));
       expect(textWidget.style?.decoration, TextDecoration.lineThrough);
+    });
+  });
+
+  group('TaskItemCard — status circle tooltips', () {
+    testWidgets('pending task tooltip is Mark complete', (tester) async {
+      await tester.pumpWidget(_wrap(_card(task: _base)));
+      expect(find.byTooltip('Mark complete'), findsOneWidget);
+    });
+
+    testWidgets('completed task tooltip is Mark incomplete', (tester) async {
+      const task = TaskItem(
+        id: 5,
+        title: 'Done',
+        status: TaskStatus.completed,
+        priority: TaskPriority.important,
+      );
+      await tester.pumpWidget(_wrap(_card(task: task)));
+      expect(find.byTooltip('Mark incomplete'), findsOneWidget);
+    });
+
+    testWidgets('selection mode unselected keeps Mark complete tooltip', (tester) async {
+      await tester.pumpWidget(
+        _wrap(_card(task: _base, selectionMode: true, selected: false)),
+      );
+      expect(find.byTooltip('Mark complete'), findsOneWidget);
+    });
+
+    testWidgets('selection mode selected tooltip is Deselect', (tester) async {
+      await tester.pumpWidget(
+        _wrap(_card(task: _base, selectionMode: true, selected: true)),
+      );
+      expect(find.byTooltip('Deselect'), findsOneWidget);
     });
   });
 
@@ -134,15 +153,12 @@ void main() {
     ) async {
       await tester.pumpWidget(_wrap(_card(task: _base)));
 
-      // The Dismissible widget has a background for start-to-end swipe.
       final dismissible = tester.widget<Dismissible>(find.byType(Dismissible));
       final bg = dismissible.background as TaskSwipeBackground?;
       expect(bg?.color, AppColors.successMuted);
     });
 
-    testWidgets('delete swipe background uses dangerMuted colour', (
-      tester,
-    ) async {
+    testWidgets('delete swipe background uses dangerMuted colour', (tester) async {
       await tester.pumpWidget(_wrap(_card(task: _base)));
 
       final dismissible = tester.widget<Dismissible>(find.byType(Dismissible));
@@ -165,69 +181,8 @@ void main() {
     });
   });
 
-  group('TaskItemCard — icon button tooltips', () {
-    testWidgets('toggle button tooltip is Mark complete for incomplete task', (
-      tester,
-    ) async {
-      await tester.pumpWidget(_wrap(_card(task: _base)));
-      // IconButton tooltip is on the first IconButton (toggle)
-      final buttons = tester.widgetList<IconButton>(find.byType(IconButton));
-      expect(buttons.first.tooltip, 'Mark complete');
-    });
-
-    testWidgets('toggle button tooltip is Mark incomplete for done task', (
-      tester,
-    ) async {
-      const task = TaskItem(
-        id: 7,
-        title: 'Done',
-        description: null,
-        completed: true,
-        priority: TaskPriority.medium,
-      );
-      await tester.pumpWidget(_wrap(_card(task: task)));
-      final buttons = tester.widgetList<IconButton>(find.byType(IconButton));
-      expect(buttons.first.tooltip, 'Mark incomplete');
-    });
-
-    testWidgets('edit button tooltip is Edit task', (tester) async {
-      await tester.pumpWidget(_wrap(_card(task: _base)));
-      final buttons = tester.widgetList<IconButton>(find.byType(IconButton));
-      expect(buttons.last.tooltip, 'Edit task');
-    });
-
-    testWidgets('selection mode changes toggle tooltip to Select task', (
-      tester,
-    ) async {
-      await tester.pumpWidget(
-        _wrap(_card(task: _base, selectionMode: true, selected: false)),
-      );
-      final buttons = tester.widgetList<IconButton>(find.byType(IconButton));
-      expect(buttons.first.tooltip, 'Select task');
-    });
-
-    testWidgets(
-      'selection mode changes toggle tooltip to Deselect task when selected',
-      (tester) async {
-        await tester.pumpWidget(
-          _wrap(_card(task: _base, selectionMode: true, selected: true)),
-        );
-        final buttons = tester.widgetList<IconButton>(find.byType(IconButton));
-        expect(buttons.first.tooltip, 'Deselect task');
-      },
-    );
-
-    testWidgets('edit button is hidden in selection mode', (tester) async {
-      await tester.pumpWidget(
-        _wrap(_card(task: _base, selectionMode: true, selected: false)),
-      );
-      // Only the toggle button present; edit hidden
-      expect(find.byType(IconButton), findsOneWidget);
-    });
-  });
-
   group('TaskItemCard — interactions', () {
-    testWidgets('tapping toggle button calls onToggle', (tester) async {
+    testWidgets('tapping status circle calls onToggle', (tester) async {
       var called = false;
       await tester.pumpWidget(
         _wrap(
@@ -239,12 +194,12 @@ void main() {
           ),
         ),
       );
-      await tester.tap(find.byType(IconButton).first);
+      await tester.tap(find.byTooltip('Mark complete'));
       await tester.pumpAndSettle();
       expect(called, isTrue);
     });
 
-    testWidgets('tapping edit button calls onEdit', (tester) async {
+    testWidgets('tapping card calls onEdit', (tester) async {
       var called = false;
       await tester.pumpWidget(
         _wrap(
@@ -256,12 +211,12 @@ void main() {
           ),
         ),
       );
-      await tester.tap(find.byType(IconButton).last);
+      await tester.tap(find.text('Buy groceries'));
       await tester.pumpAndSettle();
       expect(called, isTrue);
     });
 
-    testWidgets('busy state disables toggle button', (tester) async {
+    testWidgets('busy state disables status circle', (tester) async {
       var called = false;
       await tester.pumpWidget(
         _wrap(
@@ -274,12 +229,12 @@ void main() {
           ),
         ),
       );
-      await tester.tap(find.byType(IconButton).first);
+      await tester.tap(find.byTooltip('Mark complete'));
       await tester.pumpAndSettle();
       expect(called, isFalse);
     });
 
-    testWidgets('tapping card in selection mode calls onSelectToggle', (
+    testWidgets('selection mode tapping status circle calls onSelectToggle', (
       tester,
     ) async {
       var called = false;
@@ -295,27 +250,24 @@ void main() {
           ),
         ),
       );
-      await tester.tap(find.byType(IconButton).first);
+      await tester.tap(find.byTooltip('Mark complete'));
       await tester.pumpAndSettle();
       expect(called, isTrue);
     });
   });
 
   group('TaskItemCard — due date display', () {
-    testWidgets('shows Today badge for due date matching today', (
-      tester,
-    ) async {
+    testWidgets('shows today for deadline matching today', (tester) async {
       final today = DateTime.now();
       final task = TaskItem(
         id: 10,
         title: 'Today task',
-        description: null,
-        completed: false,
-        priority: TaskPriority.medium,
-        dueDate: DateTime(today.year, today.month, today.day, 23, 59),
+        status: TaskStatus.pending,
+        priority: TaskPriority.important,
+        deadline: DateTime(today.year, today.month, today.day, 23, 59),
       );
       await tester.pumpWidget(_wrap(_card(task: task)));
-      expect(find.text('Today'), findsOneWidget);
+      expect(find.textContaining('today'), findsOneWidget);
     });
 
     testWidgets('shows date string for future task beyond tomorrow', (
@@ -325,15 +277,13 @@ void main() {
       final task = TaskItem(
         id: 11,
         title: 'Future task',
-        description: null,
-        completed: false,
-        priority: TaskPriority.low,
-        dueDate: future,
+        status: TaskStatus.pending,
+        priority: TaskPriority.neutral,
+        deadline: future,
       );
       await tester.pumpWidget(_wrap(_card(task: task)));
-      // Formatted as month/day/year
       expect(
-        find.text('${future.month}/${future.day}/${future.year}'),
+        find.text(DateFormat('MMM d, h:mm a').format(future)),
         findsOneWidget,
       );
     });

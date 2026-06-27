@@ -2,19 +2,24 @@ import 'package:beltech/features/expenses/data/services/device_sms_data_source.d
 import 'package:flutter_sms_inbox/flutter_sms_inbox.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+SmsQueryRunner _runnerOnce(List<SmsMessage> messages) {
+  return (SmsQuery query, {int start = 0, int count = 200}) async =>
+      start == 0 ? messages : const <SmsMessage>[];
+}
+
 void main() {
   test('returns empty list when platform is not Android', () async {
     final source = DeviceSmsDataSource(
       isAndroid: () => false,
       requestPermission: () async => true,
-      queryRunner: (_) async => [
+      queryRunner: _runnerOnce([
         _sms(
           body:
               'QW12AB34CD Confirmed. Ksh1,250.00 sent to SKY CAFE on 7/3/26 at 6:24 PM.',
           sender: 'MPESA',
           date: DateTime.now(),
         ),
-      ],
+      ]),
     );
 
     final result = await source.loadLikelyMpesaMessages();
@@ -26,7 +31,7 @@ void main() {
     final source = DeviceSmsDataSource(
       isAndroid: () => true,
       requestPermission: () async => true,
-      queryRunner: (_) async => [
+      queryRunner: _runnerOnce([
         _sms(
           body:
               'QW12AB34CD Confirmed. Ksh1,250.00 sent to SKY CAFE on 7/3/26 at 6:24 PM.',
@@ -44,7 +49,7 @@ void main() {
           sender: 'MPESA',
           date: now.subtract(const Duration(days: 5)),
         ),
-      ],
+      ]),
     );
 
     final result = await source.loadLikelyMpesaMessages(
@@ -59,13 +64,13 @@ void main() {
     final source = DeviceSmsDataSource(
       isAndroid: () => true,
       requestPermission: () async => true,
-      queryRunner: (_) async => [
+      queryRunner: _runnerOnce([
         _sms(
           body: 'AA11BB22CC Confirmed. Ksh100.00 sent to JOHN sometime.',
           sender: 'MPESA',
           date: now.subtract(const Duration(minutes: 10)),
         ),
-      ],
+      ]),
     );
 
     final entries = await source.loadLikelyMpesaEntries();
@@ -78,14 +83,14 @@ void main() {
     final source = DeviceSmsDataSource(
       isAndroid: () => true,
       requestPermission: () async => true,
-      queryRunner: (_) async => [
+      queryRunner: _runnerOnce([
         _sms(
           body:
               'Dear customer, Fuliza M-PESA limit update: your available balance is Ksh1,200.00. Dial *234# for details.',
           sender: 'MPESA',
           date: DateTime.now(),
         ),
-      ],
+      ]),
     );
 
     final entries = await source.loadLikelyMpesaEntries();

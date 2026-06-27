@@ -9,6 +9,7 @@ import 'package:beltech/features/analytics/presentation/providers/analytics_prov
 import 'package:beltech/features/analytics/presentation/widgets/analytics_bar_chart.dart';
 import 'package:beltech/features/analytics/presentation/widgets/analytics_category_breakdown.dart';
 import 'package:beltech/features/analytics/presentation/widgets/analytics_overview_cards.dart';
+import 'package:beltech/features/analytics/presentation/widgets/analytics_top_merchants.dart';
 import 'package:beltech/features/analytics/presentation/widgets/analytics_trend_chart.dart';
 import 'package:beltech/features/analytics/presentation/widgets/net_cashflow_card.dart';
 import 'package:beltech/features/expenses/presentation/providers/expense_categories_provider.dart';
@@ -215,6 +216,8 @@ class _AnalyticsContentState extends ConsumerState<_AnalyticsContent> {
           registry: ref.watch(expenseCategoriesProvider).valueOrNull ??
               expenseCategoryDefaults,
         ),
+        const SizedBox(height: AppSpacing.sectionGap),
+        AnalyticsTopMerchants(merchants: widget.snapshot.topMerchants),
       ],
     );
   }

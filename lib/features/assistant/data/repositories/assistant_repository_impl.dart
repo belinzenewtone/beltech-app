@@ -16,11 +16,14 @@ class AssistantRepositoryImpl implements AssistantRepository {
     this._store,
     this._appStore, {
     Object? proxyService,
-    this._billsRepository,
-    this._loansRepository,
-    this._goalsRepository,
-    this._learningRepository,
-  });
+    BillsRepository? billsRepository,
+    LoansRepository? loansRepository,
+    GoalsRepository? goalsRepository,
+    LearningRepository? learningRepository,
+  })  : _billsRepository = billsRepository,
+        _loansRepository = loansRepository,
+        _goalsRepository = goalsRepository,
+        _learningRepository = learningRepository;
 
   final AssistantProfileStore _store;
   final AppDriftStore _appStore;
@@ -155,7 +158,7 @@ class AssistantRepositoryImpl implements AssistantRepository {
   Future<int> _pendingTasks() async {
     await _appStore.ensureInitialized();
     final rows = await _appStore.executor.runSelect(
-      'SELECT COUNT(*) AS total FROM tasks WHERE completed = 0',
+      "SELECT COUNT(*) AS total FROM tasks WHERE status != 'completed'",
       const [],
     );
     return _asInt(rows.firstOrNull?['total']);
@@ -165,7 +168,7 @@ class AssistantRepositoryImpl implements AssistantRepository {
     await _appStore.ensureInitialized();
     final now = DateTime.now().millisecondsSinceEpoch;
     final rows = await _appStore.executor.runSelect(
-      'SELECT COUNT(*) AS total FROM tasks WHERE completed = 0 AND due_at IS NOT NULL AND due_at < ?',
+      "SELECT COUNT(*) AS total FROM tasks WHERE status != 'completed' AND deadline IS NOT NULL AND deadline < ?",
       [now],
     );
     return _asInt(rows.firstOrNull?['total']);

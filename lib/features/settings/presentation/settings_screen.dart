@@ -1,14 +1,12 @@
 import 'package:beltech/core/di/notification_providers.dart';
 import 'package:beltech/core/theme/app_colors.dart';
 import 'package:beltech/core/theme/app_spacing.dart';
-import 'package:go_router/go_router.dart';
 import 'package:beltech/core/theme/app_typography.dart';
 import 'package:beltech/core/widgets/app_card.dart';
 import 'package:beltech/core/widgets/app_feedback.dart';
 import 'package:beltech/core/widgets/loading_indicator.dart';
 import 'package:beltech/core/widgets/secondary_page_shell.dart';
 import 'package:beltech/features/auth/domain/entities/auth_state.dart';
-import 'package:beltech/features/settings/presentation/widgets/settings_row.dart';
 import 'package:beltech/features/auth/presentation/providers/auth_providers.dart';
 import 'package:beltech/features/settings/presentation/widgets/fuliza_settings_card.dart';
 import 'package:beltech/features/settings/presentation/widgets/notification_preferences_section.dart';

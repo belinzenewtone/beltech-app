@@ -45,7 +45,7 @@ class _OfflineBannerState extends State<OfflineBanner> {
       duration: const Duration(milliseconds: 280),
       transitionBuilder: (child, animation) => SizeTransition(
         sizeFactor: animation,
-        alignment: Alignment.topCenter,
+        axisAlignment: -1.0,
         child: child,
       ),
       child: _offline

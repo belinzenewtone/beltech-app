@@ -1,6 +1,8 @@
 import 'package:beltech/features/budget/domain/entities/budget_snapshot.dart';
 import 'package:beltech/features/budget/presentation/providers/budget_providers.dart';
 import 'package:beltech/features/expenses/domain/entities/expense_item.dart';
+import 'package:beltech/features/expenses/data/services/balance_reconciliation_service.dart';
+import 'package:beltech/features/expenses/domain/entities/merchant_registry_entry.dart';
 import 'package:beltech/features/expenses/presentation/providers/expenses_providers.dart';
 import 'package:beltech/features/income/domain/entities/income_item.dart';
 import 'package:beltech/features/income/presentation/providers/income_providers.dart';
@@ -18,13 +20,17 @@ final insightsProvider = FutureProvider<List<InsightCard>>((ref) async {
   final tasksState = ref.watch(tasksProvider);
   final incomesState = ref.watch(incomesProvider);
   final billsState = ref.watch(billsProvider);
+  final topMerchantsState = ref.watch(topMerchantsProvider);
+  final reconciliationState = ref.watch(balanceReconciliationProvider);
 
   final isLoading =
       expensesState.isLoading ||
       budgetState.isLoading ||
       tasksState.isLoading ||
       incomesState.isLoading ||
-      billsState.isLoading;
+      billsState.isLoading ||
+      topMerchantsState.isLoading ||
+      reconciliationState.isLoading;
   if (isLoading) return [];
 
   final transactions =
@@ -35,6 +41,8 @@ final insightsProvider = FutureProvider<List<InsightCard>>((ref) async {
   final tasks = tasksState.valueOrNull ?? const [];
   final incomes = incomesState.valueOrNull ?? const [];
   final bills = billsState.valueOrNull ?? const [];
+  final topMerchants = topMerchantsState.valueOrNull ?? const [];
+  final reconciliations = reconciliationState.valueOrNull ?? const [];
 
   final cards = <InsightCard>[];
   final now = DateTime.now();
@@ -72,6 +80,14 @@ final insightsProvider = FutureProvider<List<InsightCard>>((ref) async {
   _addUnusualSpending(cards, now, thisMonthTxns, thisMonthTotal);
   _addUpcomingBills(cards, now, bills);
   _addSavingsRate(cards, now, incomes, thisMonthTotal, currentMonth);
+  _addMerchantConcentration(
+    cards,
+    now,
+    topMerchants,
+    thisMonthTotal,
+    transactions,
+  );
+  _addBalanceReconciliation(cards, now, reconciliations);
 
   cards.add(generalTipInsight(now));
 
@@ -324,6 +340,89 @@ void _addSavingsRate(
       confidence: 0.8,
       generatedAt: now,
       actionRoute: 'goals',
+    ),
+  );
+}
+
+void _addMerchantConcentration(
+  List<InsightCard> cards,
+  DateTime now,
+  List<MerchantRegistryEntry> registryMerchants,
+  double thisMonthTotal,
+  List<ExpenseItem> transactions,
+) {
+  if (thisMonthTotal <= 0 || transactions.isEmpty) return;
+
+  final merchantTotals = <String, double>{};
+  for (final t in transactions) {
+    final title = t.title.toLowerCase().trim();
+    if (title.isEmpty) continue;
+    merchantTotals[title] = (merchantTotals[title] ?? 0) + t.amountKes;
+  }
+
+  String? topMerchant;
+  double topAmount = 0;
+  for (final entry in merchantTotals.entries) {
+    if (entry.value > topAmount) {
+      topAmount = entry.value;
+      topMerchant = entry.key;
+    }
+  }
+
+  if (topMerchant == null || topAmount / thisMonthTotal < 0.25) return;
+
+  final pct = (topAmount / thisMonthTotal * 100).round();
+  final registry = registryMerchants.where(
+    (m) => m.merchantKey.toLowerCase() == topMerchant,
+  );
+  final categoryHint = registry.isNotEmpty
+      ? ' (${registry.first.category})'
+      : '';
+
+  cards.add(
+    InsightCard(
+      id: 'merchant-concentration-$topMerchant',
+      kind: InsightKind.health,
+      title: 'High merchant concentration',
+      body:
+          '$topMerchant$categoryHint accounts for $pct% of your '
+          'spending this month. Consider reviewing recurring payments '
+          'or negotiating better terms.',
+      tone: InsightTone.info,
+      confidence: 0.75,
+      generatedAt: now,
+      actionRoute: 'analytics',
+    ),
+  );
+}
+
+void _addBalanceReconciliation(
+  List<InsightCard> cards,
+  DateTime now,
+  List<BalanceReconciliationResult> reconciliations,
+) {
+  final discrepancies = reconciliations.where((r) => r.hasDiscrepancy).toList();
+  if (discrepancies.isEmpty) return;
+
+  final totalVariance = discrepancies
+      .fold<double>(0, (s, r) => s + r.variance.abs());
+  final top = discrepancies.first;
+
+  cards.add(
+    InsightCard(
+      id: 'balance-reconciliation',
+      kind: InsightKind.health,
+      title: 'Possible missing transactions',
+      body:
+          '${discrepancies.length} SMS balance point(s) do not match recorded '
+          'amounts (total variance KES ${totalVariance.toStringAsFixed(0)}). '
+          'Latest mismatch at ${top.occurredAt}: reported delta '
+          'KES ${top.reportedDelta.toStringAsFixed(0)} vs recorded '
+          'KES ${top.recordedDelta.toStringAsFixed(0)}.',
+      tone: InsightTone.warning,
+      confidence: 0.7,
+      generatedAt: now,
+      actionRoute: 'analytics',
     ),
   );
 }

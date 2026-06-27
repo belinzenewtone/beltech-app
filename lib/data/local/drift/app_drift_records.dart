@@ -60,20 +60,22 @@ class DriftTaskRecord {
     required this.id,
     required this.title,
     required this.description,
-    required this.completed,
+    required this.status,
     required this.priority,
-    required this.reminderEnabled,
-    required this.reminderMinutesBefore,
-    this.dueDate,
+    required this.reminderOffsets,
+    required this.alarmEnabled,
+    this.deadline,
+    this.completedAt,
   });
   final int id;
   final String title;
   final String? description;
-  final bool completed;
+  final String status;
   final String priority;
-  final DateTime? dueDate;
-  final bool reminderEnabled;
-  final int reminderMinutesBefore;
+  final DateTime? deadline;
+  final DateTime? completedAt;
+  final List<int> reminderOffsets;
+  final bool alarmEnabled;
 }
 
 class DriftEventRecord {
@@ -84,10 +86,16 @@ class DriftEventRecord {
     required this.completed,
     required this.priority,
     required this.eventType,
-    required this.reminderEnabled,
-    required this.reminderMinutesBefore,
+    required this.eventKind,
+    required this.reminderOffsets,
+    required this.alarmEnabled,
     this.endAt,
     this.note,
+    this.allDay = false,
+    this.repeatRule = 'never',
+    this.guests = '',
+    this.timeZoneId = '',
+    this.reminderTimeOfDayMinutes = 480,
   });
   final int id;
   final String title;
@@ -95,8 +103,14 @@ class DriftEventRecord {
   final bool completed;
   final String priority;
   final String eventType;
+  final String eventKind;
   final DateTime? endAt;
   final String? note;
-  final bool reminderEnabled;
-  final int reminderMinutesBefore;
+  final List<int> reminderOffsets;
+  final bool alarmEnabled;
+  final bool allDay;
+  final String repeatRule;
+  final String guests;
+  final String timeZoneId;
+  final int reminderTimeOfDayMinutes;
 }

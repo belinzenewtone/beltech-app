@@ -26,8 +26,8 @@ Future<SuperEntryInput?> showSuperAddSheet(
   var kind = initialInput?.kind ?? defaultKind;
   SuperEntryPriority? priority = initialInput?.priority;
   SuperEntryEventType? eventType = initialInput?.eventType;
-  var reminderEnabled = initialInput?.reminderEnabled ?? false;
-  int? reminderMinutesBefore = initialInput?.reminderMinutesBefore;
+  var reminderOffsets = List<int>.from(initialInput?.reminderOffsets ?? const []);
+  var alarmEnabled = initialInput?.alarmEnabled ?? false;
   DateTime? dueAt = initialInput?.dueAt;
   DateTime? startAt = initialInput?.startAt;
   DateTime? endAt = initialInput?.endAt;
@@ -55,15 +55,13 @@ Future<SuperEntryInput?> showSuperAddSheet(
     final hasTitle = titleController.text.trim().isNotEmpty;
     if (!hasTitle) return false;
     if (kind == SuperEntryKind.task) {
-      return priority != null &&
-          (!reminderEnabled || reminderMinutesBefore != null);
+      return priority != null;
     }
     if (kind == SuperEntryKind.event) {
       return priority != null &&
           eventType != null &&
           startAt != null &&
-          (endAt == null || !endAt!.isBefore(startAt!)) &&
-          (!reminderEnabled || reminderMinutesBefore != null);
+          (endAt == null || !endAt!.isBefore(startAt!));
     }
     if (kind == SuperEntryKind.birthday) {
       return startAt != null;
@@ -172,10 +170,8 @@ Future<SuperEntryInput?> showSuperAddSheet(
                               remind3DaysBefore: isCountdown
                                   ? remind3DaysBefore
                                   : false,
-                              reminderEnabled: reminderEnabled,
-                              reminderMinutesBefore:
-                                  reminderMinutesBefore ??
-                                  (isEventLike ? 15 : 30),
+                              reminderOffsets: reminderOffsets,
+                              alarmEnabled: alarmEnabled,
                             ),
                           );
                         },
@@ -410,39 +406,49 @@ Future<SuperEntryInput?> showSuperAddSheet(
                         const SizedBox(height: 14),
                       ],
 
-                      // ── Reminder ──
+                      // ── Reminders ──
+                      Text(
+                        'Reminders',
+                        style: AppTypography.sectionTitle(context),
+                      ),
+                      const SizedBox(height: 10),
+                      SuperAddReminderOffsetsSelector(
+                        selectedOffsets: reminderOffsets,
+                        onToggle: (minutes) => setState(() {
+                          if (reminderOffsets.contains(minutes)) {
+                            reminderOffsets.remove(minutes);
+                          } else {
+                            reminderOffsets.add(minutes);
+                          }
+                          selectionError = null;
+                        }),
+                      ),
+                      const SizedBox(height: 14),
+
+                      // ── Alarm reminders ──
                       AppCard(
                         tone: AppCardTone.muted,
                         child: Row(
                           children: [
+                            const Icon(
+                              Icons.notifications_active_rounded,
+                              color: AppColors.accent,
+                            ),
+                            const SizedBox(width: 12),
                             Expanded(
                               child: Text(
-                                'Reminder',
+                                'Alarm reminders',
                                 style: AppTypography.bodyMd(context),
                               ),
                             ),
                             Switch.adaptive(
-                              value: reminderEnabled,
-                              onChanged: (value) => setState(() {
-                                reminderEnabled = value;
-                                if (!value) {
-                                  selectionError = null;
-                                }
-                              }),
+                              value: alarmEnabled,
+                              onChanged: (value) =>
+                                  setState(() => alarmEnabled = value),
                             ),
                           ],
                         ),
                       ),
-                      if (reminderEnabled) ...[
-                        const SizedBox(height: 10),
-                        SuperAddReminderMinutesSelector(
-                          selectedMinutes: reminderMinutesBefore,
-                          onChanged: (value) => setState(() {
-                            reminderMinutesBefore = value;
-                            selectionError = null;
-                          }),
-                        ),
-                      ],
                     ],
                   ],
                 ),

@@ -12,15 +12,18 @@ class FakeLocalNotificationService extends LocalNotificationService {
   final List<int> canceledEventIds = [];
   final List<int> scheduledTaskReminderMinutes = [];
   final List<int> scheduledEventReminderMinutes = [];
+
   @override
   Future<void> scheduleTaskReminder({
     required int taskId,
     required String title,
-    required DateTime dueDate,
-    int minutesBefore = 30,
+    required DateTime deadline,
+    List<int> reminderOffsets = const [30],
+    bool alarmEnabled = false,
   }) async {
+    if (reminderOffsets.isEmpty) return;
     scheduledTaskIds.add(taskId);
-    scheduledTaskReminderMinutes.add(minutesBefore);
+    scheduledTaskReminderMinutes.addAll(reminderOffsets);
   }
 
   @override
@@ -33,10 +36,15 @@ class FakeLocalNotificationService extends LocalNotificationService {
     required int eventId,
     required String title,
     required DateTime startAt,
-    int minutesBefore = 15,
+    List<int> reminderOffsets = const [15],
+    bool alarmEnabled = false,
+    CalendarEventKind kind = CalendarEventKind.event,
+    bool allDay = false,
+    int reminderTimeOfDayMinutes = 480,
   }) async {
+    if (reminderOffsets.isEmpty) return;
     scheduledEventIds.add(eventId);
-    scheduledEventReminderMinutes.add(minutesBefore);
+    scheduledEventReminderMinutes.addAll(reminderOffsets);
   }
 
   @override
@@ -49,6 +57,7 @@ class FakeTasksRepository implements TasksRepository {
   final StreamController<void> _changes = StreamController<void>.broadcast();
   final List<TaskItem> _tasks = [];
   int _nextId = 1;
+
   @override
   Stream<List<TaskItem>> watchTasks() {
     return Stream<List<TaskItem>>.multi((controller) {
@@ -61,49 +70,27 @@ class FakeTasksRepository implements TasksRepository {
   }
 
   @override
-  Future<void> addTask({
+  Future<TaskItem> addTask({
     required String title,
     String? description,
-    DateTime? dueDate,
-    TaskPriority priority = TaskPriority.medium,
-    bool reminderEnabled = true,
-    int reminderMinutesBefore = 30,
+    DateTime? deadline,
+    TaskPriority priority = TaskPriority.neutral,
+    List<int> reminderOffsets = const [],
+    bool alarmEnabled = false,
   }) async {
-    _tasks.insert(
-      0,
-      TaskItem(
-        id: _nextId++,
-        title: title,
-        description: description,
-        completed: false,
-        priority: priority,
-        dueDate: dueDate,
-        reminderEnabled: reminderEnabled,
-        reminderMinutesBefore: reminderMinutesBefore,
-      ),
+    final created = TaskItem(
+      id: _nextId++,
+      title: title,
+      description: description,
+      status: TaskStatus.pending,
+      priority: priority,
+      deadline: deadline,
+      reminderOffsets: reminderOffsets,
+      alarmEnabled: alarmEnabled,
     );
+    _tasks.insert(0, created);
     _changes.add(null);
-  }
-
-  @override
-  Future<void> toggleCompleted({
-    required int taskId,
-    required bool completed,
-  }) async {
-    final index = _tasks.indexWhere((item) => item.id == taskId);
-    if (index == -1) {
-      return;
-    }
-    final current = _tasks[index];
-    _tasks[index] = TaskItem(
-      id: current.id,
-      title: current.title,
-      description: current.description,
-      completed: completed,
-      priority: current.priority,
-      dueDate: current.dueDate,
-    );
-    _changes.add(null);
+    return created;
   }
 
   @override
@@ -111,25 +98,27 @@ class FakeTasksRepository implements TasksRepository {
     required int taskId,
     required String title,
     String? description,
-    required DateTime? dueDate,
+    required DateTime? deadline,
     required TaskPriority priority,
-    bool reminderEnabled = true,
-    int reminderMinutesBefore = 30,
+    required TaskStatus status,
+    DateTime? completedAt,
+    List<int> reminderOffsets = const [],
+    bool alarmEnabled = false,
   }) async {
     final index = _tasks.indexWhere((item) => item.id == taskId);
     if (index == -1) {
       return;
     }
-    final current = _tasks[index];
     _tasks[index] = TaskItem(
       id: taskId,
       title: title,
-      description: description ?? current.description,
-      completed: current.completed,
+      description: description,
+      status: status,
+      completedAt: completedAt,
       priority: priority,
-      dueDate: dueDate,
-      reminderEnabled: reminderEnabled,
-      reminderMinutesBefore: reminderMinutesBefore,
+      deadline: deadline,
+      reminderOffsets: reminderOffsets,
+      alarmEnabled: alarmEnabled,
     );
     _changes.add(null);
   }
@@ -145,6 +134,7 @@ class FakeCalendarRepository implements CalendarRepository {
   final StreamController<void> _changes = StreamController<void>.broadcast();
   final List<CalendarEvent> _events = [];
   int _nextId = 1;
+
   @override
   Stream<List<CalendarEvent>> watchEventsForDay(DateTime day) {
     return Stream<List<CalendarEvent>>.multi((controller) {
@@ -182,12 +172,18 @@ class FakeCalendarRepository implements CalendarRepository {
   Future<void> addEvent({
     required String title,
     required DateTime startAt,
-    CalendarEventPriority priority = CalendarEventPriority.medium,
-    CalendarEventType type = CalendarEventType.general,
+    CalendarEventPriority priority = CalendarEventPriority.neutral,
+    CalendarEventType type = CalendarEventType.personal,
+    CalendarEventKind kind = CalendarEventKind.event,
     DateTime? endAt,
     String? note,
-    bool reminderEnabled = true,
-    int reminderMinutesBefore = 15,
+    List<int> reminderOffsets = const [],
+    bool alarmEnabled = false,
+    bool allDay = false,
+    RepeatRule repeatRule = RepeatRule.never,
+    String guests = '',
+    String timeZoneId = '',
+    int reminderTimeOfDayMinutes = 480,
   }) async {
     _events.add(
       CalendarEvent(
@@ -196,11 +192,17 @@ class FakeCalendarRepository implements CalendarRepository {
         startAt: startAt,
         completed: false,
         priority: priority,
+        kind: kind,
         type: type,
         endAt: endAt,
         note: note,
-        reminderEnabled: reminderEnabled,
-        reminderMinutesBefore: reminderMinutesBefore,
+        reminderOffsets: reminderOffsets,
+        alarmEnabled: alarmEnabled,
+        allDay: allDay,
+        repeatRule: repeatRule,
+        guests: guests,
+        timeZoneId: timeZoneId,
+        reminderTimeOfDayMinutes: reminderTimeOfDayMinutes,
       ),
     );
     _changes.add(null);
@@ -213,10 +215,16 @@ class FakeCalendarRepository implements CalendarRepository {
     required DateTime startAt,
     required CalendarEventPriority priority,
     required CalendarEventType type,
+    required CalendarEventKind kind,
     DateTime? endAt,
     String? note,
-    bool reminderEnabled = true,
-    int reminderMinutesBefore = 15,
+    List<int> reminderOffsets = const [],
+    bool alarmEnabled = false,
+    bool allDay = false,
+    RepeatRule repeatRule = RepeatRule.never,
+    String guests = '',
+    String timeZoneId = '',
+    int reminderTimeOfDayMinutes = 480,
   }) async {
     final index = _events.indexWhere((item) => item.id == eventId);
     if (index == -1) {
@@ -228,11 +236,17 @@ class FakeCalendarRepository implements CalendarRepository {
       startAt: startAt,
       completed: _events[index].completed,
       priority: priority,
+      kind: kind,
       type: type,
       endAt: endAt,
       note: note,
-      reminderEnabled: reminderEnabled,
-      reminderMinutesBefore: reminderMinutesBefore,
+      reminderOffsets: reminderOffsets,
+      alarmEnabled: alarmEnabled,
+      allDay: allDay,
+      repeatRule: repeatRule,
+      guests: guests,
+      timeZoneId: timeZoneId,
+      reminderTimeOfDayMinutes: reminderTimeOfDayMinutes,
     );
     _changes.add(null);
   }
@@ -256,8 +270,8 @@ class FakeCalendarRepository implements CalendarRepository {
       type: current.type,
       endAt: current.endAt,
       note: current.note,
-      reminderEnabled: current.reminderEnabled,
-      reminderMinutesBefore: current.reminderMinutesBefore,
+      reminderOffsets: current.reminderOffsets,
+      alarmEnabled: current.alarmEnabled,
     );
     _changes.add(null);
   }

@@ -29,8 +29,8 @@ Core user experiences (based on provided UI references):
 
 ## Required Toolchain
 
-- Flutter `3.41.6` (stable)
-- Dart `3.11.4`
+- Flutter `3.44.4` (stable)
+- Dart `3.12.2`
 
 For local consistency:
 
@@ -38,7 +38,7 @@ For local consistency:
 fvm use
 ```
 
-CI is pinned to Flutter `3.41.6` and verifies Dart `3.11.4` for every PR/build.
+CI is pinned to Flutter `3.44.4` and verifies Dart `3.12.2` for every PR/build.
 
 ## Supabase Runtime Configuration
 

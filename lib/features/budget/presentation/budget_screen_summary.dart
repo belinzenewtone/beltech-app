@@ -62,6 +62,7 @@ class _BudgetProgressRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final exceeded = item.spentKes > item.monthlyLimitKes;
+    final brightness = Theme.of(context).brightness;
     return Row(
       children: [
         Expanded(
@@ -74,7 +75,7 @@ class _BudgetProgressRow extends StatelessWidget {
                 value: item.usageRatio,
                 minHeight: 6,
                 borderRadius: BorderRadius.circular(100),
-                backgroundColor: AppColors.surfaceMuted,
+                backgroundColor: AppColors.surfaceMutedFor(brightness),
                 valueColor: AlwaysStoppedAnimation<Color>(
                   exceeded ? AppColors.danger : AppColors.accent,
                 ),

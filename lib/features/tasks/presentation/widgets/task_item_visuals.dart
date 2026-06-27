@@ -4,9 +4,9 @@ import 'package:flutter/material.dart';
 
 Color taskPriorityColor(TaskPriority priority) {
   return switch (priority) {
-    TaskPriority.high => AppColors.danger,
-    TaskPriority.medium => AppColors.accent,
-    TaskPriority.low => AppColors.info,
+    TaskPriority.urgent => AppColors.danger,
+    TaskPriority.important => AppColors.warning,
+    TaskPriority.neutral => AppColors.info,
   };
 }
 

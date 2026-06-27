@@ -144,8 +144,8 @@ All AI agents and contributors must follow these rules when generating or editin
 
 ## CR-17: Toolchain Baseline Rules
 
-- New and modified code must remain compatible with Flutter `3.41.x` and Dart `3.11.x`.
-- Do not introduce Dart language features that require a lower-bound SDK higher than `3.11.4`.
+- New and modified code must remain compatible with Flutter `3.44.4` and Dart `3.12.2`.
+- Do not introduce Dart language features that require a lower-bound SDK higher than `3.12.2`.
 - CI/tooling version pins must stay aligned with this baseline unless a deliberate repo-wide upgrade is approved.
 
 ## Compliance Checklist (Required Before Finalizing Changes)

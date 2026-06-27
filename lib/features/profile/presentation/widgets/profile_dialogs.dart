@@ -76,9 +76,9 @@ Future<void> showEditProfileDialog(
               const SizedBox(height: 14),
               TextFormField(
                 controller: usernameCtrl,
-                maxLength: 10,
+                maxLength: 8,
                 inputFormatters: [
-                  LengthLimitingTextInputFormatter(10),
+                  LengthLimitingTextInputFormatter(8),
                   FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z0-9_]')),
                 ],
                 decoration: const InputDecoration(
@@ -88,7 +88,7 @@ Future<void> showEditProfileDialog(
                 validator: (v) {
                   final val = v?.trim() ?? '';
                   if (val.isEmpty) return 'Username is required';
-                  if (val.length > 10) return 'Max 10 characters';
+                  if (val.length > 8) return 'Max 8 characters';
                   if (!RegExp(r'^[a-zA-Z0-9_]+$').hasMatch(val)) {
                     return 'Alphanumeric and underscore only';
                   }

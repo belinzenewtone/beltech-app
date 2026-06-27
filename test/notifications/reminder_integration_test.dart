@@ -26,9 +26,9 @@ void main() {
         .read(taskWriteControllerProvider.notifier)
         .addTask(
           title: 'Reminder Task',
-          dueDate: due,
-          priority: TaskPriority.high,
-          reminderMinutesBefore: 45,
+          deadline: due,
+          priority: TaskPriority.urgent,
+          reminderOffsets: const [45],
         );
 
     expect(notifications.scheduledTaskIds, contains(1));
@@ -39,15 +39,16 @@ void main() {
         .updateTask(
           taskId: 1,
           title: 'Reminder Task',
-          dueDate: null,
-          priority: TaskPriority.high,
-          reminderMinutesBefore: 45,
+          deadline: null,
+          priority: TaskPriority.urgent,
+          reminderOffsets: const [45],
+          alarmEnabled: false,
         );
 
     expect(notifications.canceledTaskIds, contains(1));
   });
 
-  test('task add/update skips scheduling when reminder is disabled', () async {
+  test('task add/update skips scheduling when reminder offsets are empty', () async {
     final tasksRepo = FakeTasksRepository();
     final notifications = FakeLocalNotificationService();
     final container = ProviderContainer(
@@ -63,10 +64,10 @@ void main() {
         .read(taskWriteControllerProvider.notifier)
         .addTask(
           title: 'No Reminder Task',
-          dueDate: due,
-          priority: TaskPriority.low,
-          reminderEnabled: false,
-          reminderMinutesBefore: 10,
+          deadline: due,
+          priority: TaskPriority.neutral,
+          reminderOffsets: const [],
+          alarmEnabled: false,
         );
 
     expect(notifications.scheduledTaskIds, isEmpty);
@@ -76,10 +77,10 @@ void main() {
         .updateTask(
           taskId: 1,
           title: 'No Reminder Task',
-          dueDate: due,
-          priority: TaskPriority.low,
-          reminderEnabled: false,
-          reminderMinutesBefore: 10,
+          deadline: due,
+          priority: TaskPriority.neutral,
+          reminderOffsets: const [],
+          alarmEnabled: false,
         );
 
     expect(notifications.scheduledTaskIds, isEmpty);
@@ -104,11 +105,11 @@ void main() {
         .addEvent(
           title: 'Team Call',
           startAt: start,
-          priority: CalendarEventPriority.medium,
+          priority: CalendarEventPriority.important,
           type: CalendarEventType.work,
           endAt: start.add(const Duration(hours: 1)),
           note: 'Planning',
-          reminderMinutesBefore: 20,
+          reminderOffsets: const [20],
         );
 
     expect(notifications.scheduledEventIds, contains(1));
@@ -120,7 +121,7 @@ void main() {
     expect(notifications.canceledEventIds, contains(1));
   });
 
-  test('event add/update skips scheduling when reminder is disabled', () async {
+  test('event add/update skips scheduling when reminder offsets are empty', () async {
     final calendarRepo = FakeCalendarRepository();
     final notifications = FakeLocalNotificationService();
     final container = ProviderContainer(
@@ -138,10 +139,10 @@ void main() {
         .addEvent(
           title: 'No Reminder Event',
           startAt: start,
-          priority: CalendarEventPriority.low,
+          priority: CalendarEventPriority.neutral,
           type: CalendarEventType.personal,
-          reminderEnabled: false,
-          reminderMinutesBefore: 5,
+          reminderOffsets: const [],
+          alarmEnabled: false,
         );
 
     expect(notifications.scheduledEventIds, isEmpty);
@@ -152,10 +153,11 @@ void main() {
           eventId: 1,
           title: 'No Reminder Event',
           startAt: start,
-          priority: CalendarEventPriority.low,
+          priority: CalendarEventPriority.neutral,
           type: CalendarEventType.personal,
-          reminderEnabled: false,
-          reminderMinutesBefore: 5,
+          kind: CalendarEventKind.event,
+          reminderOffsets: const [],
+          alarmEnabled: false,
         );
 
     expect(notifications.scheduledEventIds, isEmpty);

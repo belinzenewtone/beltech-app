@@ -12,6 +12,7 @@ import 'package:beltech/features/expenses/domain/entities/expense_import_review.
 import 'package:beltech/features/expenses/domain/entities/expense_item.dart';
 import 'package:beltech/features/expenses/domain/entities/fee_analytics.dart';
 import 'package:beltech/features/expenses/domain/entities/merchant_detail.dart';
+import 'package:beltech/features/expenses/domain/entities/merchant_registry_entry.dart';
 import 'package:beltech/features/expenses/domain/repositories/expenses_repository.dart';
 
 part 'expenses_repository_impl_import_pipeline.dart';
@@ -124,80 +125,7 @@ class ExpensesRepositoryImpl implements ExpensesRepository {
     return _processDueQueueImpl(this, from: from);
   }
 
-  Future<void> _enqueueSmsImports(List<_QueuedSmsImport> envelopes) async {
-    await _store.ensureInitialized();
-    final nowMs = DateTime.now().millisecondsSinceEpoch;
-    for (final envelope in envelopes) {
-      final message = envelope.message.trim();
-      if (message.isEmpty) {
-        continue;
-      }
-      final candidate = _parser.parseSingleDetailed(
-        message,
-        fallbackOccurredAt: envelope.sourceTimestamp,
-      );
-      final sourceHash = candidate?.sourceHash ?? _parser.sourceHash(message);
-      final semanticHash = candidate?.semanticHash ?? sourceHash;
-      await _store.executor.runInsert(
-        'INSERT OR IGNORE INTO sms_import_queue('
-        'scope, raw_message, source_hash, semantic_hash, source_timestamp, status, route, confidence, created_at, updated_at'
-        ') VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-        [
-          'local',
-          message,
-          sourceHash,
-          semanticHash,
-          envelope.sourceTimestamp?.millisecondsSinceEpoch,
-          'pending',
-          candidate?.route.name ?? MpesaParseRoute.quarantine.name,
-          candidate?.confidenceScore ?? 0,
-          nowMs,
-          nowMs,
-        ],
-      );
-      final sourceTimestampMs =
-          envelope.sourceTimestamp?.millisecondsSinceEpoch;
-      await _store.executor.runUpdate(
-        'UPDATE sms_import_queue SET '
-        'raw_message = ?, '
-        'semantic_hash = ?, '
-        'source_timestamp = CASE '
-        '  WHEN ? IS NULL THEN source_timestamp '
-        '  WHEN source_timestamp IS NULL OR ? > source_timestamp THEN ? '
-        '  ELSE source_timestamp '
-        'END, '
-        'route = ?, '
-        'confidence = ?, '
-        'status = CASE WHEN status IN (?, ?) THEN ? ELSE status END, '
-        'attempt = CASE WHEN status IN (?, ?) THEN 0 ELSE attempt END, '
-        'next_retry_at = CASE WHEN status IN (?, ?) THEN NULL ELSE next_retry_at END, '
-        'last_error = CASE WHEN status IN (?, ?) THEN NULL ELSE last_error END, '
-        'updated_at = ? '
-        'WHERE scope = ? AND source_hash = ?',
-        [
-          message,
-          semanticHash,
-          sourceTimestampMs,
-          sourceTimestampMs,
-          sourceTimestampMs,
-          candidate?.route.name ?? MpesaParseRoute.quarantine.name,
-          candidate?.confidenceScore ?? 0,
-          'retry',
-          'failed',
-          'pending',
-          'retry',
-          'failed',
-          'retry',
-          'failed',
-          'retry',
-          'failed',
-          nowMs,
-          'local',
-          sourceHash,
-        ],
-      );
-    }
-  }
+
 
   @override
   Future<int> importFromDevice({DateTime? from}) async {
@@ -211,12 +139,150 @@ class ExpensesRepositoryImpl implements ExpensesRepository {
               (entry) => _QueuedSmsImport(
                 message: entry.body,
                 sourceTimestamp: entry.receivedAt,
+                sender: entry.sender,
               ),
             )
             .toList(growable: false),
       );
     }
     return _processDueQueueImpl(this, from: from);
+  }
+
+  Future<void> _enqueueSmsImports(List<_QueuedSmsImport> envelopes) async {
+    await _store.ensureInitialized();
+    final nowMs = DateTime.now().millisecondsSinceEpoch;
+
+    // Deduplicate within the incoming batch and build parse jobs.
+    final jobs = <SmsParseJob>[];
+    final rawByHash = <String, String>{};
+    final sourceTimestampByHash = <String, DateTime?>{};
+    for (final envelope in envelopes) {
+      final message = envelope.message.trim();
+      if (message.isEmpty) {
+        continue;
+      }
+      final hash = _parser.sourceHash(message);
+      rawByHash[hash] = message;
+      sourceTimestampByHash[hash] = envelope.sourceTimestamp;
+      jobs.add(
+        SmsParseJob(
+          message,
+          fallbackOccurredAt: envelope.sourceTimestamp,
+          sender: envelope.sender,
+        ),
+      );
+    }
+    if (jobs.isEmpty) {
+      return;
+    }
+
+    // Parse once in an isolate for large batches; synchronously for small ones.
+    final candidates = await MpesaParserService.parseJobsInIsolate(jobs);
+    final candidateByHash = <String, ParsedMpesaCandidate>{};
+    for (final candidate in candidates) {
+      candidateByHash[candidate.sourceHash] = candidate;
+    }
+
+    final allHashes = rawByHash.keys.toList();
+    final alreadyImported = await _existingSourceHashes(
+      'transactions',
+      allHashes,
+    );
+    final alreadyQueued = await _existingSourceHashes(
+      'sms_import_queue',
+      allHashes,
+    );
+
+    final insertRows = <List<Object?>>[];
+    final refreshRows = <List<Object?>>[];
+
+    for (final hash in rawByHash.keys) {
+      // Skip messages that have already made it into the ledger.
+      if (alreadyImported.contains(hash)) {
+        continue;
+      }
+
+      final raw = rawByHash[hash]!;
+      final sourceTimestamp = sourceTimestampByHash[hash];
+      final candidate = candidateByHash[hash];
+      final semanticHash = candidate?.semanticHash ?? hash;
+      final route = candidate?.route.name ?? MpesaParseRoute.quarantine.name;
+      final confidence = candidate?.confidenceScore ?? 0.0;
+      final sourceTimestampMs = sourceTimestamp?.millisecondsSinceEpoch;
+
+      refreshRows.add([
+        raw,
+        semanticHash,
+        sourceTimestampMs,
+        sourceTimestampMs,
+        sourceTimestampMs,
+        route,
+        confidence,
+        'retry',
+        'failed',
+        'pending',
+        'retry',
+        'failed',
+        'retry',
+        'failed',
+        'retry',
+        'failed',
+        nowMs,
+        'local',
+        hash,
+      ]);
+
+      if (!alreadyQueued.contains(hash)) {
+        insertRows.add([
+          'local',
+          raw,
+          hash,
+          semanticHash,
+          sourceTimestampMs,
+          'pending',
+          route,
+          confidence,
+          nowMs,
+          nowMs,
+        ]);
+      }
+    }
+
+    if (insertRows.isNotEmpty) {
+      await _store.insertSmsImportQueueBatch(insertRows);
+    }
+    if (refreshRows.isNotEmpty) {
+      await _store.refreshSmsImportQueueBatch(refreshRows);
+    }
+  }
+
+  Future<Set<String>> _existingSourceHashes(
+    String table,
+    List<String> hashes,
+  ) async {
+    final result = <String>{};
+    if (hashes.isEmpty) {
+      return result;
+    }
+    const chunkSize = 500;
+    for (var i = 0; i < hashes.length; i += chunkSize) {
+      final chunk = hashes.sublist(
+        i,
+        (i + chunkSize).clamp(0, hashes.length),
+      );
+      final placeholders = List.filled(chunk.length, '?').join(',');
+      final rows = await _store.executor.runSelect(
+        'SELECT source_hash FROM $table WHERE source_hash IN ($placeholders)',
+        chunk,
+      );
+      for (final row in rows) {
+        final hash = '${row['source_hash']}';
+        if (hash.isNotEmpty) {
+          result.add(hash);
+        }
+      }
+    }
+    return result;
   }
 
   @override
@@ -328,6 +394,21 @@ class ExpensesRepositoryImpl implements ExpensesRepository {
   }
 
   @override
+  Future<List<MerchantRegistryEntry>> searchMerchantRegistry(
+    String query, {
+    int limit = 15,
+  }) => _searchMerchantRegistryImpl(this, query, limit: limit);
+
+  @override
+  Future<List<MerchantRegistryEntry>> fetchTopMerchants({int limit = 10}) =>
+      _fetchTopMerchantsImpl(this, limit: limit);
+
+  @override
+  Future<MerchantRegistryEntry?> getMerchantRegistryEntry(
+    String merchantTitle,
+  ) => _getMerchantRegistryEntryImpl(this, merchantTitle);
+
+  @override
   Future<FeeAnalytics> fetchFeeAnalytics() async {
     await _store.ensureInitialized();
     // Fee detection: look for common fee keywords in title or specific fee categories
@@ -416,8 +497,13 @@ class ExpensesRepositoryImpl implements ExpensesRepository {
 }
 
 class _QueuedSmsImport {
-  const _QueuedSmsImport({required this.message, this.sourceTimestamp});
+  const _QueuedSmsImport({
+    required this.message,
+    this.sourceTimestamp,
+    this.sender,
+  });
 
   final String message;
   final DateTime? sourceTimestamp;
+  final String? sender;
 }
