@@ -1,3 +1,4 @@
+import 'package:beltech/data/local/drift/app_drift_records.dart';
 import 'package:beltech/data/local/drift/app_drift_store.dart';
 import 'package:beltech/data/local/drift/app_drift_store_mutations.dart';
 import 'package:beltech/features/tasks/domain/entities/task_item.dart';
@@ -11,48 +12,36 @@ class TasksRepositoryImpl implements TasksRepository {
   @override
   Stream<List<TaskItem>> watchTasks() {
     return _store.watchTasks().map(
-      (rows) => rows
-          .map(
-            (row) => TaskItem(
-              id: row.id,
-              title: row.title,
-              description: row.description,
-              completed: row.completed,
-              priority: _toPriority(row.priority),
-              dueDate: row.dueDate,
-              reminderEnabled: row.reminderEnabled,
-              reminderMinutesBefore: row.reminderMinutesBefore,
-            ),
-          )
-          .toList(),
+      (rows) => rows.map((row) => _toItem(row)).toList(),
     );
   }
 
   @override
-  Future<void> addTask({
+  Future<TaskItem> addTask({
     required String title,
     String? description,
-    DateTime? dueDate,
-    TaskPriority priority = TaskPriority.medium,
-    bool reminderEnabled = true,
-    int reminderMinutesBefore = 30,
+    DateTime? deadline,
+    TaskPriority priority = TaskPriority.neutral,
+    List<int> reminderOffsets = const [],
+    bool alarmEnabled = false,
   }) async {
-    await _store.addTask(
+    final id = await _store.addTask(
       title: title,
       description: description,
-      dueDate: dueDate,
+      deadline: deadline,
       priority: priority.name,
-      reminderEnabled: reminderEnabled,
-      reminderMinutesBefore: reminderMinutesBefore,
+      reminderOffsets: reminderOffsets,
+      alarmEnabled: alarmEnabled,
     );
-  }
-
-  @override
-  Future<void> toggleCompleted({
-    required int taskId,
-    required bool completed,
-  }) async {
-    await _store.toggleTaskCompletion(taskId: taskId, completed: completed);
+    return TaskItem(
+      id: id,
+      title: title,
+      description: description,
+      deadline: deadline,
+      priority: priority,
+      reminderOffsets: reminderOffsets,
+      alarmEnabled: alarmEnabled,
+    );
   }
 
   @override
@@ -60,19 +49,23 @@ class TasksRepositoryImpl implements TasksRepository {
     required int taskId,
     required String title,
     String? description,
-    required DateTime? dueDate,
+    required DateTime? deadline,
     required TaskPriority priority,
-    bool reminderEnabled = true,
-    int reminderMinutesBefore = 30,
+    required TaskStatus status,
+    DateTime? completedAt,
+    List<int> reminderOffsets = const [],
+    bool alarmEnabled = false,
   }) async {
     await _store.updateTask(
       id: taskId,
       title: title,
       description: description,
-      dueDate: dueDate,
+      deadline: deadline,
       priority: priority.name,
-      reminderEnabled: reminderEnabled,
-      reminderMinutesBefore: reminderMinutesBefore,
+      status: status.name,
+      completedAt: completedAt?.millisecondsSinceEpoch,
+      reminderOffsets: reminderOffsets,
+      alarmEnabled: alarmEnabled,
     );
   }
 
@@ -81,11 +74,33 @@ class TasksRepositoryImpl implements TasksRepository {
     return _store.deleteTask(taskId);
   }
 
+  TaskItem _toItem(DriftTaskRecord row) {
+    return TaskItem(
+      id: row.id,
+      title: row.title,
+      description: row.description,
+      priority: _toPriority(row.priority),
+      deadline: row.deadline,
+      status: _toStatus(row.status),
+      completedAt: row.completedAt,
+      reminderOffsets: row.reminderOffsets,
+      alarmEnabled: row.alarmEnabled,
+    );
+  }
+
   TaskPriority _toPriority(String value) {
-    return switch (value.toLowerCase()) {
-      'high' => TaskPriority.high,
-      'low' => TaskPriority.low,
-      _ => TaskPriority.medium,
-    };
+    final lower = value.toLowerCase();
+    return TaskPriority.values.firstWhere(
+      (p) => p.name.toLowerCase() == lower,
+      orElse: () => TaskPriority.neutral,
+    );
+  }
+
+  TaskStatus _toStatus(String value) {
+    final lower = value.toLowerCase();
+    return TaskStatus.values.firstWhere(
+      (s) => s.name.toLowerCase() == lower,
+      orElse: () => TaskStatus.pending,
+    );
   }
 }

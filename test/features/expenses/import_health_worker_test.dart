@@ -73,5 +73,35 @@ void main() {
       expect(report.mediumConfidenceCount, equals(3));
       expect(report.lowConfidenceCount, equals(4));
     });
+
+    test('exposes all generated alerts', () {
+      final report = worker.analyzeHealth(
+        quarantineQueueDepth: 15,
+        totalImportsToday: 20,
+        confidenceScores: [0.3, 0.25, 0.2, 0.35, 0.3],
+      );
+
+      expect(report.alerts, isNotEmpty);
+      expect(report.alert, equals(report.alerts.first));
+      expect(
+        report.alerts.any((a) => a.contains('Critical')),
+        isTrue,
+      );
+    });
+
+    test('flags anomaly when no high-confidence imports exist', () {
+      final report = worker.analyzeHealth(
+        quarantineQueueDepth: 2,
+        totalImportsToday: 10,
+        confidenceScores: [0.4, 0.35, 0.45, 0.3],
+      );
+
+      expect(
+        report.alerts.any(
+          (a) => a.toLowerCase().contains('no high-confidence'),
+        ),
+        isTrue,
+      );
+    });
   });
 }

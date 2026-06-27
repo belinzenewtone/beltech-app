@@ -62,8 +62,8 @@ Future<NewEventInput?> _showEventDialog(
     0,
   );
   var selectedStart = initialEvent?.startAt ?? defaultStart;
-  var selectedPriority = initialEvent?.priority ?? CalendarEventPriority.medium;
-  var selectedType = initialEvent?.type ?? CalendarEventType.general;
+  var selectedPriority = initialEvent?.priority ?? CalendarEventPriority.neutral;
+  var selectedType = initialEvent?.type ?? CalendarEventType.personal;
   final eventDuration = initialEvent?.endAt == null
       ? const Duration(hours: 1)
       : initialEvent!.endAt!.difference(initialEvent.startAt).inMinutes <= 0

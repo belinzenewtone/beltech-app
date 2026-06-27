@@ -68,14 +68,19 @@ class HomeDashboardTransactionTile extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Container(
-            width: 40,
-            height: 40,
-            decoration: const BoxDecoration(
-              color: AppColors.surfaceMuted,
-              shape: BoxShape.circle,
-            ),
-            child: Icon(visual.icon, color: AppColors.textSecondary, size: 20),
+          Builder(
+            builder: (ctx) {
+              final br = Theme.of(ctx).brightness;
+              return Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: AppColors.surfaceMutedFor(br),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(visual.icon, color: AppColors.textSecondary, size: 20),
+              );
+            },
           ),
           const SizedBox(width: AppSpacing.md),
           Expanded(

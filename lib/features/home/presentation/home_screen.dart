@@ -43,15 +43,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final displayName = ref.watch(
       profileProvider.select((s) {
         final p = s.valueOrNull;
-        // Prefer username (capped at 10 chars). Fall back to first name.
+        // Prefer username (capped at 8 chars). Fall back to first name.
         final rawUsername = p?.username.trim() ?? '';
         if (rawUsername.isNotEmpty) {
-          return rawUsername.length > 10
-              ? rawUsername.substring(0, 10)
+          return rawUsername.length > 8
+              ? rawUsername.substring(0, 8)
               : rawUsername;
         }
         final raw = p?.name.trim().split(' ').first ?? '';
-        return raw.length > 10 ? raw.substring(0, 10) : raw;
+        return raw.length > 8 ? raw.substring(0, 8) : raw;
       }),
     );
     final greeting = _greeting(displayName);
@@ -62,39 +62,41 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // ── Header ──────────────────────────────────────────────────────────
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('DAILY FOCUS', style: AppTypography.eyebrow(context)),
-                    const SizedBox(height: AppSpacing.xs),
-                    Text(
+              Text('DAILY FOCUS', style: AppTypography.eyebrow(context)),
+              const SizedBox(height: AppSpacing.xs),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Expanded(
+                    child: Text(
                       greeting,
                       style: AppTypography.pageTitle(context),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: AppSpacing.sm),
-                    Text(
-                      _todayLabel,
-                      style: AppTypography.bodyMd(context),
                       maxLines: 1,
+                      softWrap: false,
                       overflow: TextOverflow.ellipsis,
                     ),
-                  ],
-                ),
+                  ),
+                  IconButton(
+                    onPressed: () {
+                      AppHaptics.lightImpact();
+                      context.pushNamed('settings');
+                    },
+                    padding: EdgeInsets.zero,
+                    visualDensity: VisualDensity.compact,
+                    icon: const Icon(Icons.settings_outlined),
+                    tooltip: 'Settings',
+                  ),
+                ],
               ),
-              IconButton(
-                onPressed: () {
-                  AppHaptics.lightImpact();
-                  context.pushNamed('settings');
-                },
-                icon: const Icon(Icons.settings_outlined),
-                tooltip: 'Settings',
+              const SizedBox(height: AppSpacing.sm),
+              Text(
+                _todayLabel,
+                style: AppTypography.bodyMd(context),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
             ],
           ),
@@ -140,7 +142,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final monthDay = DateFormat('MMM d').format(now);
     return '$weekday, $monthDay';
   }
-
 }
 
 // ── Dashboard overview section ────────────────────────────────────────────────
@@ -174,4 +175,3 @@ class _HomeOverviewSection extends StatelessWidget {
     );
   }
 }
-

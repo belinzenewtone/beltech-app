@@ -68,6 +68,9 @@ void main() {
       categoryBreakdown: [
         AnalyticsCategoryShare(category: 'Food', totalKes: 700, percentage: 70),
       ],
+      topMerchants: [
+        AnalyticsMerchantShare(merchant: 'Shop', totalKes: 700, transactionCount: 3),
+      ],
     );
     const b = AnalyticsSnapshot(
       totalSpentThisMonthKes: 1000,
@@ -80,6 +83,9 @@ void main() {
       monthlySpending: [AnalyticsPoint(label: 'W1', amountKes: 700)],
       categoryBreakdown: [
         AnalyticsCategoryShare(category: 'Food', totalKes: 700, percentage: 70),
+      ],
+      topMerchants: [
+        AnalyticsMerchantShare(merchant: 'Shop', totalKes: 700, transactionCount: 3),
       ],
     );
 

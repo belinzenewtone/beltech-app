@@ -57,12 +57,18 @@ class CalendarWriteController extends AutoDisposeAsyncNotifier<void> {
   Future<void> addEvent({
     required String title,
     required DateTime startAt,
-    CalendarEventPriority priority = CalendarEventPriority.medium,
-    CalendarEventType type = CalendarEventType.general,
+    CalendarEventPriority priority = CalendarEventPriority.neutral,
+    CalendarEventType type = CalendarEventType.personal,
+    CalendarEventKind kind = CalendarEventKind.event,
     DateTime? endAt,
     String? note,
-    bool reminderEnabled = true,
-    int reminderMinutesBefore = 15,
+    List<int> reminderOffsets = const [],
+    bool alarmEnabled = false,
+    bool allDay = false,
+    RepeatRule repeatRule = RepeatRule.never,
+    String guests = '',
+    String timeZoneId = '',
+    int reminderTimeOfDayMinutes = 480,
   }) async {
     final repository = ref.read(calendarRepositoryProvider);
     final notifications = ref.read(localNotificationServiceProvider);
@@ -73,19 +79,29 @@ class CalendarWriteController extends AutoDisposeAsyncNotifier<void> {
         startAt: startAt,
         priority: priority,
         type: type,
+        kind: kind,
         endAt: endAt,
         note: note,
-        reminderEnabled: reminderEnabled,
-        reminderMinutesBefore: reminderMinutesBefore,
+        reminderOffsets: reminderOffsets,
+        alarmEnabled: alarmEnabled,
+        allDay: allDay,
+        repeatRule: repeatRule,
+        guests: guests,
+        timeZoneId: timeZoneId,
+        reminderTimeOfDayMinutes: reminderTimeOfDayMinutes,
       );
-      if (reminderEnabled) {
+      if (reminderOffsets.isNotEmpty) {
         await _scheduleCreatedEventReminder(
           repository: repository,
           notifications: notifications,
           title: title,
           startAt: startAt,
+          kind: kind,
           note: note,
-          reminderMinutesBefore: reminderMinutesBefore,
+          reminderOffsets: reminderOffsets,
+          alarmEnabled: alarmEnabled,
+          allDay: allDay,
+          reminderTimeOfDayMinutes: reminderTimeOfDayMinutes,
         );
       }
     });
@@ -97,10 +113,16 @@ class CalendarWriteController extends AutoDisposeAsyncNotifier<void> {
     required DateTime startAt,
     required CalendarEventPriority priority,
     required CalendarEventType type,
+    required CalendarEventKind kind,
     DateTime? endAt,
     String? note,
-    bool reminderEnabled = true,
-    int reminderMinutesBefore = 15,
+    List<int> reminderOffsets = const [],
+    bool alarmEnabled = false,
+    bool allDay = false,
+    RepeatRule repeatRule = RepeatRule.never,
+    String guests = '',
+    String timeZoneId = '',
+    int reminderTimeOfDayMinutes = 480,
   }) async {
     final repository = ref.read(calendarRepositoryProvider);
     final notifications = ref.read(localNotificationServiceProvider);
@@ -112,17 +134,27 @@ class CalendarWriteController extends AutoDisposeAsyncNotifier<void> {
         startAt: startAt,
         priority: priority,
         type: type,
+        kind: kind,
         endAt: endAt,
         note: note,
-        reminderEnabled: reminderEnabled,
-        reminderMinutesBefore: reminderMinutesBefore,
+        reminderOffsets: reminderOffsets,
+        alarmEnabled: alarmEnabled,
+        allDay: allDay,
+        repeatRule: repeatRule,
+        guests: guests,
+        timeZoneId: timeZoneId,
+        reminderTimeOfDayMinutes: reminderTimeOfDayMinutes,
       );
-      if (reminderEnabled) {
+      if (reminderOffsets.isNotEmpty) {
         await notifications.scheduleEventReminder(
           eventId: eventId,
           title: title,
           startAt: startAt,
-          minutesBefore: reminderMinutesBefore,
+          kind: kind,
+          reminderOffsets: reminderOffsets,
+          alarmEnabled: alarmEnabled,
+          allDay: allDay,
+          reminderTimeOfDayMinutes: reminderTimeOfDayMinutes,
         );
       } else {
         await notifications.cancelEventReminder(eventId);
@@ -160,8 +192,12 @@ class CalendarWriteController extends AutoDisposeAsyncNotifier<void> {
     required LocalNotificationService notifications,
     required String title,
     required DateTime startAt,
+    required CalendarEventKind kind,
     String? note,
-    required int reminderMinutesBefore,
+    required List<int> reminderOffsets,
+    bool alarmEnabled = false,
+    bool allDay = false,
+    int reminderTimeOfDayMinutes = 480,
   }) async {
     try {
       final dayStart = DateTime(startAt.year, startAt.month, startAt.day);
@@ -179,7 +215,11 @@ class CalendarWriteController extends AutoDisposeAsyncNotifier<void> {
         eventId: created.id,
         title: created.title,
         startAt: created.startAt,
-        minutesBefore: reminderMinutesBefore,
+        kind: kind,
+        reminderOffsets: reminderOffsets,
+        alarmEnabled: alarmEnabled,
+        allDay: allDay,
+        reminderTimeOfDayMinutes: reminderTimeOfDayMinutes,
       );
     } catch (_) {
       return;
@@ -204,7 +244,7 @@ CalendarEventType _preferType(
     CalendarEventType.finance: 4,
     CalendarEventType.health: 3,
     CalendarEventType.personal: 2,
-    CalendarEventType.general: 1,
+    CalendarEventType.other: 1,
   };
   return (weight[incoming] ?? 0) >= (weight[current] ?? 0) ? incoming : current;
 }

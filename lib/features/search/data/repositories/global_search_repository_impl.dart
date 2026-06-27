@@ -63,7 +63,7 @@ class GlobalSearchRepositoryImpl implements GlobalSearchRepository {
     }
 
     final tasks = await _store.executor.runSelect(
-      'SELECT id, title, description, completed, priority, due_at FROM tasks '
+      'SELECT id, title, description, status, priority, deadline FROM tasks '
       'WHERE LOWER(title) LIKE ? OR LOWER(COALESCE(description, \'\')) LIKE ? OR LOWER(priority) LIKE ? '
       'ORDER BY id DESC LIMIT 15',
       [pattern, pattern, pattern],
@@ -74,10 +74,10 @@ class GlobalSearchRepositoryImpl implements GlobalSearchRepository {
           kind: GlobalSearchKind.task,
           primaryText: '${row['title'] ?? ''}',
           secondaryText:
-              '${row['description'] ?? ''}${(row['description'] as String?)?.isNotEmpty == true ? ' · ' : ''}${row['priority'] ?? 'medium'}',
-          trailingText: _asInt(row['completed']) == 1 ? 'Done' : 'Pending',
+              '${row['description'] ?? ''}${(row['description'] as String?)?.isNotEmpty == true ? ' · ' : ''}${row['priority'] ?? 'neutral'}',
+          trailingText: '${row['status']}' == 'completed' ? 'Done' : 'Pending',
           recordId: _asInt(row['id']),
-          recordDate: _asDate(row['due_at']),
+          recordDate: _asDate(row['deadline']),
         ),
       );
     }
@@ -141,6 +141,25 @@ class GlobalSearchRepositoryImpl implements GlobalSearchRepository {
               : '${row['description']}',
           recordId: _asInt(row['id']),
           recordDate: _asDate(row['next_run_at']),
+        ),
+      );
+    }
+
+    final merchants = await _store.executor.runSelect(
+      'SELECT merchant_key, category, usage_count FROM merchant_categories '
+      'WHERE merchant_key LIKE ? '
+      'ORDER BY usage_count DESC, updated_at DESC LIMIT 15',
+      [pattern],
+    );
+    for (final row in merchants) {
+      final title = '${row['merchant_key'] ?? ''}';
+      if (title.trim().isEmpty) continue;
+      results.add(
+        GlobalSearchResult(
+          kind: GlobalSearchKind.merchant,
+          primaryText: title,
+          secondaryText: '${row['category'] ?? ''}',
+          trailingText: '${_asInt(row['usage_count'])} uses',
         ),
       );
     }

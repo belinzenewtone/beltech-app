@@ -1,9 +1,11 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:beltech/data/local/drift/app_drift_store.dart';
 import 'package:beltech/features/export/data/services/csv_builder.dart';
 import 'package:beltech/features/export/data/services/encrypted_export_service.dart';
 import 'package:beltech/features/export/data/services/pdf_statement_service.dart';
+import 'package:beltech/features/export/domain/entities/export_format.dart';
 import 'package:beltech/features/export/domain/entities/export_result.dart';
 import 'package:beltech/features/export/domain/repositories/export_repository.dart';
 import 'package:flutter/foundation.dart';
@@ -45,17 +47,19 @@ class ExportRepositoryImpl implements ExportRepository {
       totalRows += export.rows;
     }
     final content = sections.join('\n');
-    final dir = await getApplicationDocumentsDirectory();
-    final stamp = DateTime.now().millisecondsSinceEpoch;
-    final dateTag = _dateTag(startDate: startDate, endDate: endDate);
-    final file = File(
-      '${dir.path}${Platform.pathSeparator}dart2_export${dateTag}_$stamp.csv',
+    final file = await _writeFile(
+      content: content,
+      scope: scope,
+      format: ExportFormat.csv,
+      startDate: startDate,
+      endDate: endDate,
+      ext: 'csv',
     );
-    await file.writeAsString(content);
     return ExportResult(
       filePath: file.path,
       rowsExported: totalRows,
       scope: scope,
+      format: ExportFormat.csv,
       isEncrypted: false,
     );
   }
@@ -68,7 +72,7 @@ class ExportRepositoryImpl implements ExportRepository {
     DateTime? endDate,
   }) async {
     if (kIsWeb) {
-      throw Exception('Encrypted export is not supported on web builds.');
+      throw Exception('Encrypted CSV export is not supported on web builds.');
     }
     final plainResult = await exportCsv(
       scope: scope,
@@ -82,12 +86,98 @@ class ExportRepositoryImpl implements ExportRepository {
     );
     final encryptedFile = File('${plainResult.filePath}.enc');
     await encryptedFile.writeAsString(encrypted);
-    // Remove plain file for security
     await File(plainResult.filePath).delete();
     return ExportResult(
       filePath: encryptedFile.path,
       rowsExported: plainResult.rowsExported,
       scope: scope,
+      format: ExportFormat.csv,
+      isEncrypted: true,
+    );
+  }
+
+  @override
+  Future<ExportResult> exportJson({
+    required ExportScope scope,
+    DateTime? startDate,
+    DateTime? endDate,
+  }) async {
+    if (kIsWeb) {
+      throw Exception('JSON export is not supported on web builds.');
+    }
+    await _store.ensureInitialized();
+    final exports = await _buildScopedExports(
+      scope,
+      startDate: startDate,
+      endDate: endDate,
+    );
+
+    final payload = exports
+        .map(
+          (e) => {
+            'name': e.name,
+            'rows': e.rows,
+            'headers': e.headers,
+            'data': e.rawValues
+                .map(
+                  (row) => Map<String, Object?>.fromIterables(e.headers, row),
+                )
+                .toList(),
+          },
+        )
+        .toList();
+    final content = const JsonEncoder.withIndent('  ').convert(payload);
+
+    var totalRows = 0;
+    for (final export in exports) {
+      totalRows += export.rows;
+    }
+
+    final file = await _writeFile(
+      content: content,
+      scope: scope,
+      format: ExportFormat.json,
+      startDate: startDate,
+      endDate: endDate,
+      ext: 'json',
+    );
+    return ExportResult(
+      filePath: file.path,
+      rowsExported: totalRows,
+      scope: scope,
+      format: ExportFormat.json,
+      isEncrypted: false,
+    );
+  }
+
+  @override
+  Future<ExportResult> exportEncryptedJson({
+    required ExportScope scope,
+    required String password,
+    DateTime? startDate,
+    DateTime? endDate,
+  }) async {
+    if (kIsWeb) {
+      throw Exception('Encrypted JSON export is not supported on web builds.');
+    }
+    final plainResult = await exportJson(
+      scope: scope,
+      startDate: startDate,
+      endDate: endDate,
+    );
+    final plainText = await File(plainResult.filePath).readAsString();
+    final encrypted = _encryptService.encrypt(
+      plainText: plainText,
+      password: password,
+    );
+    final encryptedFile = File('${plainResult.filePath}.enc');
+    await encryptedFile.writeAsString(encrypted);
+    await File(plainResult.filePath).delete();
+    return ExportResult(
+      filePath: encryptedFile.path,
+      rowsExported: plainResult.rowsExported,
+      scope: scope,
+      format: ExportFormat.json,
       isEncrypted: true,
     );
   }
@@ -119,8 +209,26 @@ class ExportRepositoryImpl implements ExportRepository {
       filePath: filePath,
       rowsExported: txns.length + incs.length,
       scope: ExportScope.all,
+      format: ExportFormat.pdf,
       isEncrypted: false,
     );
+  }
+
+  @override
+  Future<Map<ExportScope, int>> previewCounts() async {
+    await _store.ensureInitialized();
+    final counts = <ExportScope, int>{};
+    counts[ExportScope.expenses] = await _store.countRows('transactions');
+    counts[ExportScope.incomes] = await _store.countRows('incomes');
+    counts[ExportScope.tasks] = await _store.countRows('tasks');
+    counts[ExportScope.events] = await _store.countRows('events');
+    counts[ExportScope.budgets] = await _store.countRows('budgets');
+    counts[ExportScope.recurring] = await _store.countRows(
+      'recurring_templates',
+    );
+    final total = counts.values.fold<int>(0, (sum, v) => sum + v);
+    counts[ExportScope.all] = total;
+    return counts;
   }
 
   Future<List<PdfTransactionRow>> _fetchTransactions({
@@ -334,6 +442,24 @@ class ExportRepositoryImpl implements ExportRepository {
     return '_${parts.join('_to_')}';
   }
 
+  Future<File> _writeFile({
+    required String content,
+    required ExportScope scope,
+    required ExportFormat format,
+    required DateTime? startDate,
+    required DateTime? endDate,
+    required String ext,
+  }) async {
+    final dir = await getApplicationDocumentsDirectory();
+    final stamp = DateTime.now().millisecondsSinceEpoch;
+    final dateTag = _dateTag(startDate: startDate, endDate: endDate);
+    final file = File(
+      '${dir.path}${Platform.pathSeparator}dart2_export_${scope.name}_${format.name}${dateTag}_$stamp.$ext',
+    );
+    await file.writeAsString(content);
+    return file;
+  }
+
   Future<_ExportChunk> _buildChunk({
     required String name,
     required String query,
@@ -347,6 +473,8 @@ class ExportRepositoryImpl implements ExportRepository {
     return _ExportChunk(
       name: name,
       csv: _csvBuilder.build(headers: headers, rows: values),
+      headers: headers,
+      rawValues: values,
       rows: rows.length,
     );
   }
@@ -356,10 +484,14 @@ class _ExportChunk {
   const _ExportChunk({
     required this.name,
     required this.csv,
+    required this.headers,
+    required this.rawValues,
     required this.rows,
   });
 
   final String name;
   final String csv;
+  final List<String> headers;
+  final List<List<Object?>> rawValues;
   final int rows;
 }

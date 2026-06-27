@@ -40,12 +40,12 @@ class BuildWeekReviewDataUseCase {
         .fold<double>(0, (sum, income) => sum + income.amountKes);
 
     final tasksDueThisWeek = tasks.where((task) {
-      final dueDate = task.dueDate;
-      return dueDate != null && inRange(dueDate, weekStart, weekEnd);
+      final deadline = task.deadline;
+      return deadline != null && inRange(deadline, weekStart, weekEnd);
     }).toList();
     final tasksDueLastWeek = tasks.where((task) {
-      final dueDate = task.dueDate;
-      return dueDate != null && inRange(dueDate, previousWeekStart, weekStart);
+      final deadline = task.deadline;
+      return deadline != null && inRange(deadline, previousWeekStart, weekStart);
     }).toList();
 
     final completedThisWeek = tasksDueThisWeek

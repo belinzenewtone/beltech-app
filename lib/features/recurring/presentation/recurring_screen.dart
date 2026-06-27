@@ -15,8 +15,10 @@ import 'package:beltech/features/recurring/domain/entities/recurring_template.da
 import 'package:beltech/features/search/domain/entities/global_search_result.dart';
 import 'package:beltech/features/search/presentation/providers/global_search_providers.dart';
 import 'package:intl/intl.dart';
+import 'package:beltech/features/recurring/data/services/recurring_suggestion_service.dart';
 import 'package:beltech/features/recurring/presentation/providers/recurring_providers.dart';
 import 'package:beltech/features/recurring/presentation/widgets/recurring_dialogs.dart';
+import 'package:beltech/features/recurring/presentation/widgets/recurring_suggestions.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -29,6 +31,7 @@ class RecurringScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final templatesState = ref.watch(recurringTemplatesProvider);
     final writeState = ref.watch(recurringWriteControllerProvider);
+    final suggestions = ref.watch(recurringSuggestionsProvider);
 
     ref.listen<AsyncValue<void>>(recurringWriteControllerProvider, (
       previous,
@@ -101,13 +104,22 @@ class RecurringScreen extends ConsumerWidget {
             );
           }
           return Column(
-            children: List.generate(templates.length, (index) {
-              final template = templates[index];
-              return Padding(
-                padding: EdgeInsets.only(
-                  bottom: index < templates.length - 1 ? AppSpacing.listGap : 0,
+            children: [
+              if (suggestions.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: AppSpacing.listGap),
+                  child: RecurringSuggestions(
+                    suggestions: suggestions,
+                    onAdd: (s) => _addSuggestedTemplate(context, ref, s),
+                  ),
                 ),
-                child: _RecurringRow(
+              ...List.generate(templates.length, (index) {
+                final template = templates[index];
+                return Padding(
+                  padding: EdgeInsets.only(
+                    bottom: index < templates.length - 1 ? AppSpacing.listGap : 0,
+                  ),
+                  child: _RecurringRow(
                   template: template,
                   busy: writeState.isLoading,
                   onEdit: () async {
@@ -146,6 +158,7 @@ class RecurringScreen extends ConsumerWidget {
                 ),
               );
             }),
+            ],
           );
         },
         loading: () => Column(
@@ -211,6 +224,25 @@ class RecurringScreen extends ConsumerWidget {
         await _editTemplate(context, ref, template);
       });
     });
+  }
+
+  Future<void> _addSuggestedTemplate(
+    BuildContext context,
+    WidgetRef ref,
+    SuggestedRecurringTemplate suggestion,
+  ) async {
+    await ref.read(recurringWriteControllerProvider.notifier).addTemplate(
+      kind: RecurringKind.expense,
+      title: suggestion.title,
+      category: suggestion.category,
+      amountKes: suggestion.amountKes,
+      cadence: suggestion.cadence,
+      nextRunAt: suggestion.nextRunAt,
+    );
+    if (context.mounted &&
+        !ref.read(recurringWriteControllerProvider).hasError) {
+      AppFeedback.success(context, 'Recurring template added');
+    }
   }
 
   Future<void> _editTemplate(

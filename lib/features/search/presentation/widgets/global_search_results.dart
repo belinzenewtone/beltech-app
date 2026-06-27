@@ -187,6 +187,7 @@ String globalSearchKindLabel(GlobalSearchKind kind) {
     GlobalSearchKind.event => 'Event',
     GlobalSearchKind.budget => 'Budget',
     GlobalSearchKind.recurring => 'Recurring',
+    GlobalSearchKind.merchant => 'Merchant',
   };
 }
 
@@ -198,6 +199,7 @@ Color globalSearchKindColor(GlobalSearchKind kind) {
     GlobalSearchKind.event => AppColors.violet,
     GlobalSearchKind.budget => AppColors.warning,
     GlobalSearchKind.recurring => AppColors.accent,
+    GlobalSearchKind.merchant => AppColors.info,
   };
 }
 
@@ -209,6 +211,7 @@ IconData globalSearchKindIcon(GlobalSearchKind kind) {
     GlobalSearchKind.event => Icons.calendar_month_outlined,
     GlobalSearchKind.budget => Icons.savings_outlined,
     GlobalSearchKind.recurring => Icons.autorenew,
+    GlobalSearchKind.merchant => Icons.storefront_outlined,
   };
 }
 

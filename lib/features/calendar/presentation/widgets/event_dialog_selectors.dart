@@ -22,7 +22,7 @@ class EventPrioritySelector extends StatelessWidget {
         return Expanded(
           child: Padding(
             padding: EdgeInsets.only(
-              right: priority == CalendarEventPriority.high ? 0 : 8,
+              right: priority == CalendarEventPriority.urgent ? 0 : 8,
             ),
             child: AppButton(
               label: option.label,

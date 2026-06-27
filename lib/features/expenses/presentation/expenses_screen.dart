@@ -87,9 +87,7 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
                             occurredAt: input.occurredAt,
                           );
                       if (context.mounted &&
-                          !ref
-                              .read(expenseWriteControllerProvider)
-                              .hasError) {
+                          !ref.read(expenseWriteControllerProvider).hasError) {
                         AppFeedback.success(
                           context,
                           'Transaction added',
@@ -103,7 +101,7 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
               icon: Icons.hub_outlined,
               label: 'Hub',
               tone: AppIconPillTone.subtle,
-              onPressed: () => context.pushNamed('import-health'),
+              onPressed: () => context.pushNamed('finance-hub'),
             ),
             const SizedBox(width: 8),
             AppIconPillButton(
@@ -160,19 +158,21 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
                   .deleteExpense(expense.id);
               if (!context.mounted) return;
               if (ref.read(expenseWriteControllerProvider).hasError) return;
-              ref.read(toastProvider.notifier).showWithUndo(
-                'Transaction deleted',
-                onUndo: () async {
-                  await ref
-                      .read(expenseWriteControllerProvider.notifier)
-                      .addExpense(
-                        title: expense.title,
-                        category: expense.category,
-                        amountKes: expense.amountKes,
-                        occurredAt: expense.occurredAt,
-                      );
-                },
-              );
+              ref
+                  .read(toastProvider.notifier)
+                  .showWithUndo(
+                    'Transaction deleted',
+                    onUndo: () async {
+                      await ref
+                          .read(expenseWriteControllerProvider.notifier)
+                          .addExpense(
+                            title: expense.title,
+                            category: expense.category,
+                            amountKes: expense.amountKes,
+                            occurredAt: expense.occurredAt,
+                          );
+                    },
+                  );
             },
           ),
         );
@@ -216,18 +216,14 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
     return PageShell(
       scrollable: false,
       topPadding: 0,
+      horizontalPadding: 0,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Fixed import health banner above the scrollable content.
-          Container(
-            margin: const EdgeInsets.symmetric(
-              horizontal: -AppSpacing.screenHorizontal,
-            ),
-            child: ImportHealthBanner(
-              metrics: importMetrics,
-              onTap: () => context.pushNamed('import-health'),
-            ),
+          ImportHealthBanner(
+            metrics: importMetrics,
+            onTap: () => context.pushNamed('import-health'),
           ),
           Expanded(
             child: AnimatedSwitcher(
@@ -236,7 +232,12 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
               switchOutCurve: Curves.easeInCubic,
               transitionBuilder: (child, animation) =>
                   FadeTransition(opacity: animation, child: child),
-              child: snapshotChild,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.screenHorizontal,
+                ),
+                child: snapshotChild,
+              ),
             ),
           ),
         ],

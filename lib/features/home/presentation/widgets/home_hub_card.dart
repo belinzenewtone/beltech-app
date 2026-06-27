@@ -27,6 +27,7 @@ class HomeHubCard extends ConsumerWidget {
             _HubRow(
               icon: Icons.check_circle_outline_rounded,
               iconColor: AppColors.accent,
+              iconBgColor: AppColors.accent.withValues(alpha: 0.14),
               title: 'Tasks',
               trailingText: overview.pendingCount == 0
                   ? 'All done'
@@ -46,7 +47,8 @@ class HomeHubCard extends ConsumerWidget {
             ),
             _HubRow(
               icon: Icons.calendar_month_outlined,
-              iconColor: AppColors.accent,
+              iconColor: AppColors.violet,
+              iconBgColor: AppColors.violet.withValues(alpha: 0.14),
               title: 'Next Event',
               trailingText: overview.upcomingEventsCount == 0
                   ? 'No events'
@@ -66,7 +68,8 @@ class HomeHubCard extends ConsumerWidget {
             ),
             _HubRow(
               icon: Icons.bar_chart_rounded,
-              iconColor: AppColors.accent,
+              iconColor: AppColors.warning,
+              iconBgColor: AppColors.warning.withValues(alpha: 0.14),
               title: 'Analytics',
               trailingText: '',
               onTap: () {
@@ -84,7 +87,8 @@ class HomeHubCard extends ConsumerWidget {
             ),
             _HubRow(
               icon: Icons.search_rounded,
-              iconColor: AppColors.accent,
+              iconColor: AppColors.teal,
+              iconBgColor: AppColors.teal.withValues(alpha: 0.14),
               title: 'Search',
               trailingText: '',
               onTap: () {
@@ -106,10 +110,12 @@ class _HubRow extends StatelessWidget {
     required this.title,
     required this.trailingText,
     required this.onTap,
+    this.iconBgColor,
   });
 
   final IconData icon;
   final Color iconColor;
+  final Color? iconBgColor;
   final String title;
   final String trailingText;
   final VoidCallback onTap;
@@ -125,17 +131,20 @@ class _HubRow extends StatelessWidget {
         ),
         child: Row(
           children: [
-            Container(
-              width: 36,
-              height: 36,
-              decoration: BoxDecoration(
-                color: AppColors.surfaceMutedFor(
-                  Theme.of(context).brightness,
-                ),
-                shape: BoxShape.circle,
-              ),
-              alignment: Alignment.center,
-              child: Icon(icon, color: iconColor, size: 20),
+            Builder(
+              builder: (ctx) {
+                final br = Theme.of(ctx).brightness;
+                return Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    color: iconBgColor ?? AppColors.surfaceMutedFor(br),
+                    shape: BoxShape.circle,
+                  ),
+                  alignment: Alignment.center,
+                  child: Icon(icon, color: iconColor, size: 20),
+                );
+              },
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -145,9 +154,7 @@ class _HubRow extends StatelessWidget {
               Text(
                 trailingText,
                 style: AppTypography.bodySm(context).copyWith(
-                  color: AppColors.textSecondaryFor(
-                    Theme.of(context).brightness,
-                  ),
+                  color: AppColors.textSecondary,
                   fontWeight: FontWeight.w500,
                 ),
               ),

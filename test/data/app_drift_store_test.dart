@@ -34,32 +34,34 @@ void main() {
     expect(updatedOther, greaterThan(initialOther));
   });
 
-  test('addTask and toggleTaskCompletion publish updated tasks', () async {
+  test('addTask and setTaskCompletion publish updated tasks', () async {
     final afterAddFuture = store.watchTasks().firstWhere(
       (tasks) => tasks.any((task) => task.title == 'Follow up supplier'),
     );
 
     await store.addTask(
       title: 'Follow up supplier',
-      dueDate: DateTime.now().add(const Duration(days: 1)),
+      deadline: DateTime.now().add(const Duration(days: 1)),
     );
 
     final afterAdd = await afterAddFuture.timeout(const Duration(seconds: 2));
     final created = afterAdd.firstWhere(
       (task) => task.title == 'Follow up supplier',
     );
-    expect(created.completed, isFalse);
-    expect(created.priority, 'medium');
+    expect(created.status, 'pending');
+    expect(created.priority, 'neutral');
 
     final afterToggleFuture = store.watchTasks().firstWhere(
-      (tasks) => tasks.any((task) => task.id == created.id && task.completed),
+      (tasks) => tasks.any(
+        (task) => task.id == created.id && task.status == 'completed',
+      ),
     );
-    await store.toggleTaskCompletion(taskId: created.id, completed: true);
+    await store.setTaskCompletion(taskId: created.id, completed: true);
     final afterToggle = await afterToggleFuture.timeout(
       const Duration(seconds: 2),
     );
     final toggled = afterToggle.firstWhere((task) => task.id == created.id);
-    expect(toggled.completed, isTrue);
+    expect(toggled.status, 'completed');
   });
 
   test('addEvent updates selected-day event stream', () async {

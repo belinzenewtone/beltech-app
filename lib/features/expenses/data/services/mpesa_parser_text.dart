@@ -30,10 +30,15 @@ bool looksLikeMpesaMessage(String message) {
     r'^[a-z0-9]{10}\b',
     caseSensitive: false,
   ).hasMatch(message.trim());
+  final hasAmount = lower.contains('ksh') || lower.contains('kes');
   return lower.contains('mpesa') ||
       lower.contains('m-pesa') ||
-      (lower.contains('confirmed') &&
-          (lower.contains('ksh') || lower.contains('kes') || hasTxCode));
+      (lower.contains('confirmed') && (hasAmount || hasTxCode)) ||
+      (hasAmount &&
+          RegExp(
+            r'\b(you have received|sent to|paid to|received from)\b',
+            caseSensitive: false,
+          ).hasMatch(message));
 }
 
 DateTime? parseMpesaDateTime(String message, RegExp dateTimePattern) {

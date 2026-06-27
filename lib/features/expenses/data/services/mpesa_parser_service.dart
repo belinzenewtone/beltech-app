@@ -1,9 +1,26 @@
 import 'dart:convert';
+import 'dart:isolate';
+
 import 'package:beltech/features/expenses/data/services/mpesa_parser_filters.dart';
 import 'package:beltech/features/expenses/data/services/mpesa_parser_models.dart';
 import 'package:beltech/features/expenses/data/services/mpesa_parser_rules.dart';
 import 'package:beltech/features/expenses/data/services/mpesa_parser_text.dart';
 import 'package:crypto/crypto.dart';
+
+/// A single unit of work that can be sent to a parser isolate.
+class SmsParseJob {
+  const SmsParseJob(
+    this.rawMessage, {
+    this.fallbackOccurredAt,
+    this.sender,
+  });
+
+  final String rawMessage;
+  final DateTime? fallbackOccurredAt;
+
+  /// The SMS sender address, if available.
+  final String? sender;
+}
 
 class MpesaParserService {
   const MpesaParserService();
@@ -22,7 +39,7 @@ class MpesaParserService {
     caseSensitive: false,
   );
   static final RegExp _paybillPattern = RegExp(
-    r'(?:for\s+(?:account|acc(?:ount)?)(?:\s*(?:no\.?|number|#))?|account\s*(?:no\.?|number|#))\s*([a-z0-9-]{3,})',
+    r'(?:for\s+)?(?:account|acc(?:ount)?)\s*(?:no\.?|number|#)?\s*([a-z0-9-]{3,})',
     caseSensitive: false,
   );
   static final RegExp _sentToPattern = RegExp(
@@ -30,7 +47,7 @@ class MpesaParserService {
     caseSensitive: false,
   );
   static final RegExp _receivedFromPattern = RegExp(
-    r'received from\s+([a-z0-9 .,&-]{3,}?)(?=\s+on\b|[.]|$)',
+    r'received\b.*?\s+from\s+([a-z0-9 .,&-]{3,}?)(?=\s+on\b|[.]|$)',
     caseSensitive: false,
   );
   static final RegExp _paidToPattern = RegExp(
@@ -84,6 +101,19 @@ class MpesaParserService {
     return results;
   }
 
+  /// Parses a list of [SmsParseJob]s off the main thread when the batch is
+  /// large enough to justify isolate serialization overhead.
+  static Future<List<ParsedMpesaCandidate>> parseJobsInIsolate(
+    List<SmsParseJob> jobs,
+  ) async {
+    if (jobs.isEmpty) return const [];
+    // Small batches are faster synchronously; avoid isolate setup cost.
+    if (jobs.length < 50) {
+      return _parseJobsImpl(jobs);
+    }
+    return Isolate.run(() => _parseJobsImpl(jobs));
+  }
+
   ParsedMpesaTransaction? parseSingle(String message) {
     final detailed = parseSingleDetailed(message);
     if (detailed == null || detailed.route == MpesaParseRoute.quarantine) {
@@ -102,6 +132,7 @@ class MpesaParserService {
   ParsedMpesaCandidate? parseSingleDetailed(
     String message, {
     DateTime? fallbackOccurredAt,
+    String? sender,
   }) {
     final cleaned = normalizeParserText(message);
     if (cleaned.isEmpty ||
@@ -113,14 +144,22 @@ class MpesaParserService {
 
     // Detect type early so fulizaCharge can skip the transaction-code
     // requirement (charge notices carry no M-Pesa code).
-    final (type, confidence, reason) = _detect(cleaned);
+    final (type, confidence, reason) = _detect(cleaned, sender: sender);
 
     String? code = _extractMpesaCode(cleaned);
     if (code == null) {
-      if (type == MpesaTransactionType.fulizaCharge) {
+      if (type == MpesaTransactionType.fulizaCharge ||
+          _isTrustedCodelessTransaction(
+            cleaned,
+            type: type,
+            sender: sender,
+          )) {
         // Derive a synthetic identifier from the message hash.
         final hash = sourceHash(cleaned);
-        code = 'FCHG${hash.substring(0, 6).toUpperCase()}';
+        final prefix = type == MpesaTransactionType.fulizaCharge
+            ? 'FCHG'
+            : 'SYN${type.name.substring(0, 3).toUpperCase()}';
+        code = '$prefix${hash.substring(0, 10 - prefix.length).toUpperCase()}';
       } else {
         return _buildQuarantine(
           cleaned,
@@ -223,8 +262,11 @@ class MpesaParserService {
     );
   }
 
-  (MpesaTransactionType, MpesaConfidence, String) _detect(String message) =>
-      detectMpesaTransaction(message);
+  (MpesaTransactionType, MpesaConfidence, String) _detect(
+    String message, {
+    String? sender,
+  }) =>
+      detectMpesaTransaction(message, sender: sender);
 
   MpesaParseRoute _routeFor(MpesaConfidence confidence) => switch (confidence) {
     MpesaConfidence.high => MpesaParseRoute.directLedger,
@@ -326,6 +368,26 @@ class MpesaParserService {
     return double.tryParse(value.replaceAll(',', ''));
   }
 
+  /// Trust codeless transaction variants only when they come from the official
+  /// M-PESA sender and contain the minimum signals (amount + date). This lets
+  /// through variants like "You have received Ksh..." that omit the usual
+  /// 10-character code.
+  bool _isTrustedCodelessTransaction(
+    String message, {
+    required MpesaTransactionType type,
+    String? sender,
+  }) {
+    if (sender == null || !sender.toLowerCase().contains('mpesa')) {
+      return false;
+    }
+    if (type == MpesaTransactionType.unknown ||
+        type == MpesaTransactionType.fulizaCharge) {
+      return false;
+    }
+    return _extractAmount(message) != null &&
+        parseMpesaDateTime(message, _dateTimePattern) != null;
+  }
+
   String? _extractMpesaCode(String message) =>
       _codePattern.firstMatch(message)?.group(1);
 
@@ -338,4 +400,28 @@ class MpesaParserService {
     final value = _amountPattern.firstMatch(message)?.group(1);
     return value == null ? null : double.tryParse(value.replaceAll(',', ''));
   }
+}
+
+/// Top-level worker used by [Isolate.run]. Recreates the stateless parser
+/// inside the isolate and applies the same fallback parse the main-thread
+/// pipeline uses for queued messages.
+List<ParsedMpesaCandidate> _parseJobsImpl(List<SmsParseJob> jobs) {
+  const parser = MpesaParserService();
+  final results = <ParsedMpesaCandidate>[];
+  for (final job in jobs) {
+    var parsed = parser.parseSingleDetailed(
+      job.rawMessage,
+      fallbackOccurredAt: job.fallbackOccurredAt,
+      sender: job.sender,
+    );
+    parsed ??= parser.parseSingleDetailed(
+      'UNKNOWN Confirmed. Ksh0.00 ${job.rawMessage}',
+      fallbackOccurredAt: job.fallbackOccurredAt,
+      sender: job.sender,
+    );
+    if (parsed != null) {
+      results.add(parsed);
+    }
+  }
+  return results;
 }

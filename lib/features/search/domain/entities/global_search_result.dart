@@ -1,4 +1,4 @@
-enum GlobalSearchKind { expense, income, task, event, budget, recurring }
+enum GlobalSearchKind { expense, income, task, event, budget, recurring, merchant }
 
 class GlobalSearchResult {
   const GlobalSearchResult({

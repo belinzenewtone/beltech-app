@@ -188,7 +188,7 @@ class _WeekEventCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final typeColor = _eventColor(event.type);
+    final typeColor = _eventColor(event);
     final time =
         '${event.startAt.hour.toString().padLeft(2, '0')}:${event.startAt.minute.toString().padLeft(2, '0')}';
 
@@ -241,16 +241,23 @@ class _WeekEventCard extends StatelessWidget {
   }
 }
 
-Color _eventColor(CalendarEventType type) => switch (type) {
-  CalendarEventType.work => AppColors.accent,
-  CalendarEventType.personal => AppColors.violet,
-  CalendarEventType.finance => AppColors.teal,
-  CalendarEventType.health => AppColors.warning,
-  CalendarEventType.general => AppColors.slate,
-  CalendarEventType.birthday => AppColors.warning,
-  CalendarEventType.anniversary => AppColors.danger,
-  CalendarEventType.countdown => AppColors.accent,
-};
+Color _eventColor(CalendarEvent event) {
+  if (event.kind != CalendarEventKind.event) {
+    return switch (event.kind) {
+      CalendarEventKind.birthday => AppColors.warning,
+      CalendarEventKind.anniversary => AppColors.danger,
+      CalendarEventKind.countdown => AppColors.accent,
+      CalendarEventKind.event => AppColors.slate,
+    };
+  }
+  return switch (event.type) {
+    CalendarEventType.work => AppColors.accent,
+    CalendarEventType.personal => AppColors.violet,
+    CalendarEventType.finance => AppColors.teal,
+    CalendarEventType.health => AppColors.warning,
+    CalendarEventType.other => AppColors.slate,
+  };
+}
 
 bool _sameDate(DateTime a, DateTime b) =>
     a.year == b.year && a.month == b.month && a.day == b.day;

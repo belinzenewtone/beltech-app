@@ -16,10 +16,28 @@ void main() {
   });
 
   test('search returns task and expense matches', () async {
+    await store.addTransaction(
+      title: 'Hotel booking',
+      category: 'Travel',
+      amountKes: 2500,
+    );
+    await store.addTask(
+      title: 'Confirm hotel reservation',
+      description: 'Check-in details',
+    );
+
     final results = await repository.search('hotel');
     expect(results, isNotEmpty);
     expect(
       results.any((item) => item.primaryText.toLowerCase().contains('hotel')),
+      isTrue,
+    );
+    expect(
+      results.any((item) => item.kind.name.toLowerCase() == 'task'),
+      isTrue,
+    );
+    expect(
+      results.any((item) => item.kind.name.toLowerCase() == 'expense'),
       isTrue,
     );
   });

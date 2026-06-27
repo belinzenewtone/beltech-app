@@ -9,6 +9,8 @@ import 'package:timezone/data/latest.dart' as tz_data;
 import 'package:timezone/timezone.dart' as tz;
 
 import 'package:beltech/core/widgets/permission_rationale.dart';
+import 'package:beltech/features/calendar/domain/entities/calendar_event.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 class LocalNotificationService {
   LocalNotificationService({FlutterLocalNotificationsPlugin? plugin})
@@ -58,6 +60,7 @@ class LocalNotificationService {
   static const String _channelDescription =
       'Notifications for task deadlines and calendar events.';
   static const String _notificationsEnabledKey = 'notifications_enabled';
+  static const int _maxOffsets = 20;
 
   final FlutterLocalNotificationsPlugin _plugin;
   bool _initialized = false;
@@ -65,53 +68,100 @@ class LocalNotificationService {
   Future<void> scheduleTaskReminder({
     required int taskId,
     required String title,
-    required DateTime dueDate,
-    int minutesBefore = 30,
+    required DateTime deadline,
+    List<int> reminderOffsets = const [30],
+    bool alarmEnabled = false,
   }) async {
-    final hasExplicitTime = dueDate.hour != 0 || dueDate.minute != 0;
-    final dueAnchor = hasExplicitTime
-        ? dueDate
-        : DateTime(dueDate.year, dueDate.month, dueDate.day, 9);
-    final reminderAt = minutesBefore <= 0
-        ? dueAnchor
-        : dueAnchor.subtract(Duration(minutes: minutesBefore));
-    await _scheduleAt(
-      id: _notifId(_nsTask, taskId),
-      title: 'Task Reminder',
-      body: '$title is due soon.',
-      when: reminderAt,
-      payload: '/tasks',
-    );
+    await cancelTaskReminder(taskId);
+    final now = DateTime.now();
+    final triggers = _computeTaskReminderTriggers(deadline, reminderOffsets, now);
+    for (var i = 0; i < triggers.length; i++) {
+      await _scheduleAt(
+        id: _notifId(_nsTask, taskId * 100 + i),
+        title: alarmEnabled ? 'Task Alarm' : 'Task Reminder',
+        body: alarmEnabled ? '$title is due now.' : '$title is due soon.',
+        when: triggers[i],
+        payload: '/tasks',
+        alarmEnabled: alarmEnabled,
+      );
+    }
   }
 
-  Future<void> cancelTaskReminder(int taskId) {
-    return _cancelById(_notifId(_nsTask, taskId));
+  List<DateTime> _computeTaskReminderTriggers(
+    DateTime deadline,
+    List<int> reminderOffsets,
+    DateTime now,
+  ) {
+    return reminderOffsets
+        .map((minutes) => deadline.subtract(Duration(minutes: minutes)))
+        .where((trigger) => trigger.isAfter(now))
+        .toList()
+      ..sort();
+  }
+
+  Future<void> cancelTaskReminder(int taskId) async {
+    for (var i = 0; i < _maxOffsets; i++) {
+      await _cancelById(_notifId(_nsTask, taskId * 100 + i));
+    }
   }
 
   Future<void> scheduleEventReminder({
     required int eventId,
     required String title,
     required DateTime startAt,
-    int minutesBefore = 15,
+    List<int> reminderOffsets = const [15],
+    bool alarmEnabled = false,
+    CalendarEventKind kind = CalendarEventKind.event,
+    bool allDay = false,
+    int reminderTimeOfDayMinutes = 480,
   }) async {
+    await cancelEventReminder(eventId);
     final now = DateTime.now();
-    final preferredReminderAt = minutesBefore <= 0
-        ? startAt
-        : startAt.subtract(Duration(minutes: minutesBefore));
-    final reminderAt = preferredReminderAt.isAfter(now)
-        ? preferredReminderAt
-        : startAt;
-    await _scheduleAt(
-      id: _notifId(_nsEvent, eventId),
-      title: 'Upcoming Event',
-      body: '$title starts soon.',
-      when: reminderAt,
-      payload: '/calendar',
+    final triggers = _computeEventReminderTriggers(
+      startAt: startAt,
+      offsets: reminderOffsets,
+      now: now,
+      allDay: allDay,
+      reminderTimeOfDayMinutes: reminderTimeOfDayMinutes,
     );
+    for (var i = 0; i < triggers.length; i++) {
+      await _scheduleAt(
+        id: _notifId(_nsEvent, eventId * 100 + i),
+        title: alarmEnabled ? 'Event Alarm' : 'Upcoming Event',
+        body: alarmEnabled ? '$title starts now.' : '$title starts soon.',
+        when: triggers[i],
+        payload: '/calendar',
+        alarmEnabled: alarmEnabled,
+      );
+    }
   }
 
-  Future<void> cancelEventReminder(int eventId) {
-    return _cancelById(_notifId(_nsEvent, eventId));
+  List<DateTime> _computeEventReminderTriggers({
+    required DateTime startAt,
+    required List<int> offsets,
+    required DateTime now,
+    required bool allDay,
+    required int reminderTimeOfDayMinutes,
+  }) {
+    final hour = reminderTimeOfDayMinutes ~/ 60;
+    final minute = reminderTimeOfDayMinutes % 60;
+    final useAllDayStyle = allDay ||
+        startAt.hour == 0 && startAt.minute == 0;
+
+    return offsets.map((offset) {
+      if (useAllDayStyle) {
+        // offset is in days; fire at the configured time of day.
+        final day = startAt.subtract(Duration(days: offset));
+        return DateTime(day.year, day.month, day.day, hour, minute);
+      }
+      return startAt.subtract(Duration(minutes: offset));
+    }).where((trigger) => trigger.isAfter(now)).toList()..sort();
+  }
+
+  Future<void> cancelEventReminder(int eventId) async {
+    for (var i = 0; i < _maxOffsets; i++) {
+      await _cancelById(_notifId(_nsEvent, eventId * 100 + i));
+    }
   }
 
   /// Show a generic notification immediately.
@@ -322,18 +372,35 @@ class LocalNotificationService {
     }
   }
 
+  Future<bool> _ensureExactAlarmPermission() async {
+    if (defaultTargetPlatform != TargetPlatform.android) {
+      return true;
+    }
+    final status = await Permission.scheduleExactAlarm.status;
+    if (status.isGranted) {
+      return true;
+    }
+    final result = await Permission.scheduleExactAlarm.request();
+    return result.isGranted;
+  }
+
   Future<void> _scheduleAt({
     required int id,
     required String title,
     required String body,
     required DateTime when,
     String? payload,
+    bool alarmEnabled = false,
   }) async {
     final enabled = await isNotificationsEnabled();
     if (!enabled) {
       return;
     }
     if (!when.isAfter(DateTime.now())) {
+      return;
+    }
+    final canScheduleExact = await _ensureExactAlarmPermission();
+    if (!canScheduleExact) {
       return;
     }
     await _ensureInitialized();
@@ -343,7 +410,9 @@ class LocalNotificationService {
       body: body,
       scheduledDate: tz.TZDateTime.from(when, tz.local),
       notificationDetails: _details,
-      androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+      androidScheduleMode: alarmEnabled
+          ? AndroidScheduleMode.alarmClock
+          : AndroidScheduleMode.exactAllowWhileIdle,
       payload: payload,
     );
   }

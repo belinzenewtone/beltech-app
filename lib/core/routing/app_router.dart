@@ -2,9 +2,12 @@ import 'package:beltech/features/auth/presentation/auth_gate.dart';
 import 'package:beltech/features/analytics/presentation/analytics_screen.dart';
 import 'package:beltech/features/bills/presentation/screens/bills_screen.dart';
 import 'package:beltech/features/budget/presentation/budget_screen.dart';
+import 'package:beltech/features/calendar/presentation/calendar_add_screen.dart';
+import 'package:beltech/features/calendar/presentation/calendar_add_screen_models.dart';
 import 'package:beltech/features/changelog/presentation/screens/changelog_screen.dart';
 import 'package:beltech/features/events/presentation/events_screen.dart';
 import 'package:beltech/features/export/presentation/export_screen.dart';
+import 'package:beltech/features/finance_hub/presentation/finance_hub_screen.dart';
 import 'package:beltech/features/insights/presentation/screens/insights_screen.dart';
 import 'package:beltech/features/income/presentation/income_screen.dart';
 import 'package:beltech/features/loans/presentation/screens/loans_screen.dart';
@@ -14,6 +17,7 @@ import 'package:beltech/features/expenses/presentation/screens/fee_analytics_scr
 import 'package:beltech/features/expenses/presentation/screens/csv_import_screen.dart';
 import 'package:beltech/features/expenses/presentation/screens/import_health_screen.dart';
 import 'package:beltech/features/expenses/presentation/screens/merchant_detail_screen.dart';
+import 'package:beltech/features/expenses/presentation/screens/quarantine_queue_screen.dart';
 import 'package:beltech/features/learning/presentation/screens/learning_screen.dart';
 import 'package:beltech/features/planner/presentation/screens/planner_screen.dart';
 import 'package:beltech/features/recurring/presentation/recurring_screen.dart';
@@ -32,6 +36,14 @@ final appRouterProvider = Provider<GoRouter>(
         path: '/',
         name: 'root',
         builder: (context, state) => const AuthGate(),
+      ),
+      GoRoute(
+        path: '/calendar-add',
+        name: 'calendar-add',
+        builder: (context, state) {
+          final args = state.extra as CalendarAddInitialArgs?;
+          return CalendarAddScreen(args: args);
+        },
       ),
       GoRoute(
         path: '/settings',
@@ -62,6 +74,11 @@ final appRouterProvider = Provider<GoRouter>(
         path: '/export',
         name: 'export',
         builder: (context, state) => const ExportScreen(),
+      ),
+      GoRoute(
+        path: '/finance-hub',
+        name: 'finance-hub',
+        builder: (context, state) => const FinanceHubScreen(),
       ),
       GoRoute(
         path: '/analytics',
@@ -145,6 +162,11 @@ final appRouterProvider = Provider<GoRouter>(
         path: '/import-health',
         name: 'import-health',
         builder: (context, state) => const ImportHealthScreen(),
+      ),
+      GoRoute(
+        path: '/quarantine-queue',
+        name: 'quarantine-queue',
+        builder: (context, state) => const QuarantineQueueScreen(),
       ),
     ],
   ),

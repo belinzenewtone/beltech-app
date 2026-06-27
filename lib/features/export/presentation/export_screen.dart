@@ -1,21 +1,23 @@
 import 'dart:async';
 
 import 'package:beltech/core/theme/app_colors.dart';
+import 'package:beltech/core/theme/app_radius.dart';
 import 'package:beltech/core/theme/app_spacing.dart';
 import 'package:beltech/core/theme/app_typography.dart';
 import 'package:beltech/core/widgets/app_button.dart';
-import 'package:beltech/core/widgets/app_dialog.dart';
-import 'package:beltech/core/widgets/app_feedback.dart';
 import 'package:beltech/core/widgets/app_card.dart';
+import 'package:beltech/core/widgets/app_feedback.dart';
 import 'package:beltech/core/widgets/secondary_page_shell.dart';
+import 'package:beltech/features/export/domain/entities/export_format.dart';
 import 'package:beltech/features/export/domain/entities/export_result.dart';
 import 'package:beltech/features/export/presentation/providers/export_providers.dart';
-import 'package:beltech/features/export/presentation/widgets/export_cards.dart';
+import 'package:beltech/features/export/presentation/widgets/export_dropdown_field.dart';
+import 'package:beltech/features/export/presentation/widgets/export_format_selector.dart';
+import 'package:beltech/features/export/presentation/widgets/export_history_list.dart';
+import 'package:beltech/features/export/presentation/widgets/export_preview_grid.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:share_plus/share_plus.dart';
-
-// ── Screen ────────────────────────────────────────────────────────────────────
 
 class ExportScreen extends ConsumerStatefulWidget {
   const ExportScreen({super.key});
@@ -25,9 +27,12 @@ class ExportScreen extends ConsumerStatefulWidget {
 }
 
 class _ExportScreenState extends ConsumerState<ExportScreen> {
+  ExportFormat _format = ExportFormat.csv;
+  ExportScope _domain = ExportScope.all;
+  ExportDateWindow _window = ExportDateWindow.allTime;
   bool _encrypt = false;
-  DateTime? _startDate;
-  DateTime? _endDate;
+  DateTime? _customStart;
+  DateTime? _customEnd;
   final _passwordCtrl = TextEditingController();
 
   @override
@@ -39,7 +44,8 @@ class _ExportScreenState extends ConsumerState<ExportScreen> {
   @override
   Widget build(BuildContext context) {
     final exportState = ref.watch(exportControllerProvider);
-    final latestResult = exportState.valueOrNull;
+    final previewAsync = ref.watch(exportPreviewCountsProvider);
+    final historyAsync = ref.watch(exportHistoryProvider);
 
     ref.listen<AsyncValue<ExportResult?>>(exportControllerProvider, (
       previous,
@@ -57,209 +63,233 @@ class _ExportScreenState extends ConsumerState<ExportScreen> {
             context,
             'Export complete: ${result.rowsExported} row(s).${result.isEncrypted ? ' Encrypted.' : ''}',
           );
+          ref.invalidate(exportHistoryProvider);
           unawaited(_shareExportFile(result));
         }
       }
     });
 
     return SecondaryPageShell(
-      title: 'Export Data',
+      title: '',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          PdfStatementCard(
-            isLoading: exportState.isLoading,
-            result: latestResult,
-            onGenerate: () async {
-              final confirmed = await _confirmExport(
-                context,
-                scope: ExportScope.all,
-              );
-              if (confirmed != true) return;
-              await ref
-                  .read(exportControllerProvider.notifier)
-                  .exportPdfStatement(startDate: _startDate, endDate: _endDate);
-            },
-          ),
-          const SizedBox(height: AppSpacing.md),
-          AppCard(
-            tone: AppCardTone.accent,
-            accentColor: AppColors.accent,
-            child: Row(
-              children: [
-                const Icon(
-                  Icons.download_rounded,
-                  color: AppColors.accentLight,
-                ),
-                const SizedBox(width: AppSpacing.md),
-                Expanded(
-                  child: Text(
-                    'Export All',
-                    style: AppTypography.bodyMd(
-                      context,
-                    ).copyWith(fontWeight: FontWeight.w600),
-                  ),
-                ),
-                AppButton(
-                  size: AppButtonSize.sm,
-                  onPressed: exportState.isLoading
-                      ? null
-                      : () async {
-                          final confirmed = await _confirmExport(
-                            context,
-                            scope: ExportScope.all,
-                          );
-                          if (confirmed != true) return;
-                          await ref
-                              .read(exportControllerProvider.notifier)
-                              .export(
-                                ExportScope.all,
-                                password: _passwordCtrl.text.isNotEmpty
-                                    ? _passwordCtrl.text
-                                    : null,
-                                startDate: _startDate,
-                                endDate: _endDate,
-                              );
-                        },
-                  label: 'Export',
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: AppSpacing.md),
-          AppCard(
-            tone: AppCardTone.muted,
-            child: SwitchListTile(
-              title: Text(
-                'Encrypt export',
+          // Header
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Data Portability',
+                style: AppTypography.eyebrow(
+                  context,
+                ).copyWith(color: AppColors.accent),
+              ),
+              const SizedBox(height: AppSpacing.xs),
+              Text('Export Center', style: AppTypography.pageTitle(context)),
+              const SizedBox(height: AppSpacing.xs),
+              Text(
+                'Export or backup your data',
                 style: AppTypography.bodyMd(context),
               ),
-              value: _encrypt,
-              onChanged: (v) => setState(() => _encrypt = v),
-              activeThumbColor: AppColors.accent,
-              contentPadding: EdgeInsets.zero,
-            ),
+            ],
           ),
-          if (_encrypt) ...[
-            const SizedBox(height: AppSpacing.sm),
-            TextField(
-              controller: _passwordCtrl,
-              obscureText: true,
-              decoration: const InputDecoration(
-                labelText: 'Password',
-                prefixIcon: Icon(Icons.lock_outline, size: 18),
-              ),
-            ),
-          ],
-          const SizedBox(height: AppSpacing.md),
+          const SizedBox(height: AppSpacing.lg),
+
+          // Form card
           AppCard(
-            tone: AppCardTone.muted,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                Text(
+                  'Choose a format, scope, and date window before generating the export.',
+                  style: AppTypography.bodySm(context),
+                ),
+                const SizedBox(height: AppSpacing.md),
+                Text('Format', style: AppTypography.label(context)),
+                const SizedBox(height: AppSpacing.sm),
+                ExportFormatSelector(
+                  selected: _format,
+                  onChanged: (f) => setState(() => _format = f),
+                ),
+                const SizedBox(height: AppSpacing.md),
+                Text('Domain', style: AppTypography.label(context)),
+                const SizedBox(height: AppSpacing.sm),
+                ExportDropdownField<ExportScope>(
+                  value: _domain,
+                  items: ExportScope.values
+                      .map(
+                        (s) => ExportDropdownItem(
+                          value: s,
+                          label: exportScopeLabel(s),
+                        ),
+                      )
+                      .toList(),
+                  onChanged: (s) => setState(() => _domain = s),
+                ),
+                const SizedBox(height: AppSpacing.md),
+                Text('Date window', style: AppTypography.label(context)),
+                const SizedBox(height: AppSpacing.sm),
+                ExportDropdownField<ExportDateWindow>(
+                  value: _window,
+                  items: const [
+                    ExportDropdownItem(
+                      value: ExportDateWindow.allTime,
+                      label: 'all time',
+                    ),
+                    ExportDropdownItem(
+                      value: ExportDateWindow.last7Days,
+                      label: 'last 7 days',
+                    ),
+                    ExportDropdownItem(
+                      value: ExportDateWindow.last30Days,
+                      label: 'last 30 days',
+                    ),
+                    ExportDropdownItem(
+                      value: ExportDateWindow.thisMonth,
+                      label: 'this month',
+                    ),
+                    ExportDropdownItem(
+                      value: ExportDateWindow.custom,
+                      label: 'custom',
+                    ),
+                  ],
+                  onChanged: (w) => setState(() => _window = w),
+                ),
+                if (_window == ExportDateWindow.custom) ...[
+                  const SizedBox(height: AppSpacing.md),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _DateField(
+                          label: 'Start',
+                          date: _customStart,
+                          lastDate: _customEnd,
+                          onChanged: (d) => setState(() => _customStart = d),
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: AppSpacing.sm,
+                        ),
+                        child: Text(
+                          'to',
+                          style: AppTypography.bodySm(
+                            context,
+                          ).copyWith(color: AppColors.textSecondary),
+                        ),
+                      ),
+                      Expanded(
+                        child: _DateField(
+                          label: 'End',
+                          date: _customEnd,
+                          firstDate: _customStart,
+                          onChanged: (d) => setState(() => _customEnd = d),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+                const SizedBox(height: AppSpacing.md),
                 Row(
                   children: [
-                    Text('Date range', style: AppTypography.bodyMd(context)),
-                    const Spacer(),
-                    if (_startDate != null || _endDate != null)
-                      TextButton(
-                        onPressed: () => setState(() {
-                          _startDate = null;
-                          _endDate = null;
-                        }),
-                        child: const Text('Clear'),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Encrypt file',
+                            style: AppTypography.bodyMd(
+                              context,
+                            ).copyWith(fontWeight: FontWeight.w600),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            'Protect the export with a passphrase when the file is leaving your device.',
+                            style: AppTypography.bodySm(context),
+                          ),
+                        ],
                       ),
+                    ),
+                    Switch.adaptive(
+                      value: _encrypt,
+                      onChanged: (v) => setState(() => _encrypt = v),
+                      activeThumbColor: AppColors.accent,
+                      activeTrackColor: AppColors.accent.withValues(alpha: 0.4),
+                    ),
                   ],
                 ),
-                const SizedBox(height: AppSpacing.sm),
-                Row(
-                  children: [
-                    Expanded(
-                      child: _DateField(
-                        label: 'Start',
-                        date: _startDate,
-                        lastDate: _endDate,
-                        onChanged: (d) => setState(() => _startDate = d),
-                      ),
+                if (_encrypt) ...[
+                  const SizedBox(height: AppSpacing.sm),
+                  TextField(
+                    controller: _passwordCtrl,
+                    obscureText: true,
+                    decoration: const InputDecoration(
+                      labelText: 'Password',
+                      prefixIcon: Icon(Icons.lock_outline, size: 18),
                     ),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: AppSpacing.sm,
-                      ),
-                      child: Text(
-                        'to',
-                        style: AppTypography.bodySm(
-                          context,
-                        ).copyWith(color: AppColors.textSecondary),
-                      ),
-                    ),
-                    Expanded(
-                      child: _DateField(
-                        label: 'End',
-                        date: _endDate,
-                        firstDate: _startDate,
-                        onChanged: (d) => setState(() => _endDate = d),
-                      ),
-                    ),
-                  ],
+                  ),
+                ],
+                const SizedBox(height: AppSpacing.md),
+                AppButton(
+                  label: _format == ExportFormat.pdf
+                      ? 'Export PDF'
+                      : 'Export now',
+                  fullWidth: true,
+                  loading: exportState.isLoading,
+                  onPressed: exportState.isLoading ? null : _onExport,
                 ),
               ],
             ),
           ),
-          const SizedBox(height: AppSpacing.md),
-          Text(
-            'By Category',
-            style: AppTypography.bodySm(
-              context,
-            ).copyWith(color: AppColors.textSecondary),
+          const SizedBox(height: AppSpacing.sectionGap),
+
+          // Preview card
+          AppCard(
+            child: ExportPreviewGrid(
+              counts: previewAsync.valueOrNull,
+              isLoading: previewAsync.isLoading,
+            ),
           ),
-          const SizedBox(height: AppSpacing.sm),
-          for (final meta in exportScopeMetas) ...[
-            ExportScopeCard(
-              meta: meta,
-              isLoading: exportState.isLoading,
-              isActive: latestResult?.scope == meta.scope,
-              rowsExported: latestResult?.scope == meta.scope
-                  ? latestResult!.rowsExported
-                  : null,
-              onExport: () async {
-                final confirmed = await _confirmExport(
-                  context,
-                  scope: meta.scope,
-                );
-                if (confirmed != true) return;
-                await ref
-                    .read(exportControllerProvider.notifier)
-                    .export(
-                      meta.scope,
-                      password: _passwordCtrl.text.isNotEmpty
-                          ? _passwordCtrl.text
-                          : null,
-                      startDate: _startDate,
-                      endDate: _endDate,
-                    );
-              },
+          const SizedBox(height: AppSpacing.sectionGap),
+
+          // History card
+          AppCard(
+            child: ExportHistoryList(
+              entries: historyAsync.valueOrNull,
+              isLoading: historyAsync.isLoading,
             ),
-            const SizedBox(height: AppSpacing.sm),
-          ],
-          if (latestResult != null) ...[
-            LatestExportCard(
-              result: latestResult,
-              isLoading: exportState.isLoading,
-            ),
-          ],
+          ),
+          const SizedBox(height: AppSpacing.sectionGap),
         ],
       ),
     );
   }
 
+  Future<void> _onExport() async {
+    await ref
+        .read(exportControllerProvider.notifier)
+        .export(
+          scope: _domain,
+          format: _format,
+          window: _window,
+          password: _encrypt && _passwordCtrl.text.isNotEmpty
+              ? _passwordCtrl.text
+              : null,
+          customStart: _customStart,
+          customEnd: _customEnd,
+        );
+  }
+
   Future<void> _shareExportFile(ExportResult result) async {
     try {
-      await Share.shareXFiles([
-        XFile(result.filePath),
-      ], subject: 'BELTECH Export - ${exportScopeLabel(result.scope)}');
+      await SharePlus.instance.share(
+        ShareParams(
+          files: [XFile(result.filePath)],
+          subject: 'BELTECH Export - ${exportScopeLabel(result.scope)}',
+        ),
+      );
     } catch (_) {
-      // Best-effort share trigger: export remains available via the card.
+      // Best-effort share trigger: export remains available via history.
     }
   }
 }
@@ -281,6 +311,7 @@ class _DateField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final brightness = Theme.of(context).brightness;
     return GestureDetector(
       onTap: () async {
         final picked = await showDatePicker(
@@ -293,7 +324,7 @@ class _DateField extends StatelessWidget {
               colorScheme: Theme.of(context).colorScheme.copyWith(
                 primary: AppColors.accent,
                 onPrimary: Colors.white,
-                surface: AppColors.surfaceElevated,
+                surface: AppColors.surfaceFor(brightness),
               ),
             ),
             child: child!,
@@ -305,16 +336,16 @@ class _DateField extends StatelessWidget {
       },
       child: Container(
         padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.md,
+          horizontal: AppSpacing.sm,
           vertical: AppSpacing.sm,
         ),
         decoration: BoxDecoration(
-          color: AppColors.surfaceMuted,
-          borderRadius: BorderRadius.circular(8),
+          color: AppColors.surfaceMutedFor(brightness),
+          borderRadius: BorderRadius.circular(AppRadius.md),
           border: Border.all(
             color: date != null
                 ? AppColors.accent.withValues(alpha: 0.40)
-                : AppColors.border,
+                : AppColors.borderFor(brightness),
           ),
         ),
         child: Row(
@@ -354,35 +385,4 @@ class _DateField extends StatelessWidget {
   String _fmt(DateTime d) {
     return '${d.day}/${d.month}/${d.year}';
   }
-}
-
-Future<bool?> _confirmExport(
-  BuildContext context, {
-  required ExportScope scope,
-}) {
-  final label = exportScopeLabel(scope);
-  return showAppDialog<bool>(
-    context: context,
-    builder: (dialogContext) => AlertDialog(
-      title: Text(
-        'Export $label?',
-        style: AppTypography.sectionTitle(dialogContext),
-      ),
-      content: Text(
-        'This creates a CSV file for $label in the app documents directory.',
-        style: AppTypography.bodyMd(dialogContext),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(dialogContext).pop(false),
-          child: const Text('Cancel'),
-        ),
-        AppButton(
-          label: 'Export',
-          size: AppButtonSize.sm,
-          onPressed: () => Navigator.of(dialogContext).pop(true),
-        ),
-      ],
-    ),
-  );
 }

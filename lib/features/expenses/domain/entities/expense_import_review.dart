@@ -73,6 +73,34 @@ class ExpenseQuarantineItem {
       Object.hash(id, reason, confidence, rawMessage, createdAt);
 }
 
+/// A single day's import-quality snapshot, used for trend charts.
+class DailyImportTrend {
+  const DailyImportTrend({
+    required this.date,
+    required this.total,
+    required this.quarantineCount,
+    required this.averageConfidence,
+  });
+
+  final DateTime date;
+  final int total;
+  final int quarantineCount;
+  final double averageConfidence;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is DailyImportTrend &&
+          runtimeType == other.runtimeType &&
+          date == other.date &&
+          total == other.total &&
+          quarantineCount == other.quarantineCount &&
+          averageConfidence == other.averageConfidence;
+
+  @override
+  int get hashCode => Object.hash(date, total, quarantineCount, averageConfidence);
+}
+
 class ExpenseImportMetrics {
   const ExpenseImportMetrics({
     required this.reviewQueueCount,
@@ -82,6 +110,10 @@ class ExpenseImportMetrics {
     this.lastImportAt,
     this.lastMpesaCode,
     this.lastError,
+    this.quarantineReasonBreakdown = const {},
+    this.duplicateSkipCount = 0,
+    this.dailyTrends = const [],
+    this.alerts = const [],
   });
 
   final int reviewQueueCount;
@@ -99,6 +131,18 @@ class ExpenseImportMetrics {
   /// The last recorded import error, if any.
   final String? lastError;
 
+  /// How many quarantined items exist for each quarantine reason.
+  final Map<String, int> quarantineReasonBreakdown;
+
+  /// How many messages were skipped because their source_hash already existed.
+  final int duplicateSkipCount;
+
+  /// Daily import-quality trend for the last 30 days.
+  final List<DailyImportTrend> dailyTrends;
+
+  /// Pre-computed anomaly alerts for the current import state.
+  final List<String> alerts;
+
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -110,7 +154,11 @@ class ExpenseImportMetrics {
           failedQueueCount == other.failedQueueCount &&
           lastImportAt == other.lastImportAt &&
           lastMpesaCode == other.lastMpesaCode &&
-          lastError == other.lastError;
+          lastError == other.lastError &&
+          quarantineReasonBreakdown == other.quarantineReasonBreakdown &&
+          duplicateSkipCount == other.duplicateSkipCount &&
+          dailyTrends == other.dailyTrends &&
+          alerts == other.alerts;
 
   @override
   int get hashCode => Object.hash(
@@ -121,5 +169,9 @@ class ExpenseImportMetrics {
     lastImportAt,
     lastMpesaCode,
     lastError,
+    quarantineReasonBreakdown,
+    duplicateSkipCount,
+    dailyTrends,
+    alerts,
   );
 }

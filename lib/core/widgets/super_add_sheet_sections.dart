@@ -321,42 +321,56 @@ class SuperAddRemind3DaysToggle extends StatelessWidget {
   }
 }
 
-class SuperAddReminderMinutesSelector extends StatelessWidget {
-  const SuperAddReminderMinutesSelector({
+class SuperAddReminderOffsetsSelector extends StatelessWidget {
+  const SuperAddReminderOffsetsSelector({
     super.key,
-    required this.selectedMinutes,
-    required this.onChanged,
+    required this.selectedOffsets,
+    required this.onToggle,
   });
 
-  final int? selectedMinutes;
-  final ValueChanged<int> onChanged;
+  final List<int> selectedOffsets;
+  final ValueChanged<int> onToggle;
 
-  static const List<int> _presetMinutes = [0, 5, 15, 30, 60];
+  static const List<int> _presetMinutes = [
+    0,
+    5,
+    10,
+    15,
+    30,
+    60,
+    60 * 24,
+    60 * 24 * 2,
+    60 * 24 * 7,
+  ];
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text('Reminder lead time', style: AppTypography.sectionTitle(context)),
-        const SizedBox(height: 10),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: _presetMinutes.map((minutes) {
-            final selected = minutes == selectedMinutes;
-            final label = minutes == 0 ? 'At time' : '${minutes}m before';
-            return AppButton(
-              label: label,
-              size: AppButtonSize.sm,
-              variant: selected
-                  ? AppButtonVariant.primary
-                  : AppButtonVariant.secondary,
-              onPressed: () => onChanged(minutes),
-            );
-          }).toList(),
-        ),
-      ],
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: _presetMinutes.map((minutes) {
+        final selected = selectedOffsets.contains(minutes);
+        final label = switch (minutes) {
+          0 => 'At time',
+          5 => '5 min before',
+          10 => '10 min before',
+          15 => '15 min before',
+          30 => '30 min before',
+          60 => '1 hour before',
+          1440 => '1 day before',
+          2880 => '2 days before',
+          10080 => '1 week before',
+          _ => '${minutes}m before',
+        };
+        return AppButton(
+          label: label,
+          size: AppButtonSize.sm,
+          variant: selected
+              ? AppButtonVariant.primary
+              : AppButtonVariant.secondary,
+          onPressed: () => onToggle(minutes),
+        );
+      }).toList(),
     );
   }
 }

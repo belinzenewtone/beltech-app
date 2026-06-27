@@ -26,6 +26,7 @@ class SecondaryPageShell extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final brightness = Theme.of(context).brightness;
+    final bottomSafe = MediaQuery.paddingOf(context).bottom;
     return Container(
       color: AppColors.backgroundFor(brightness),
       child: SafeArea(
@@ -56,20 +57,20 @@ class SecondaryPageShell extends StatelessWidget {
           ),
           body: scrollable
               ? SingleChildScrollView(
-                  padding: const EdgeInsets.fromLTRB(
+                  padding: EdgeInsets.fromLTRB(
                     AppSpacing.screenHorizontal,
                     8,
                     AppSpacing.screenHorizontal,
-                    AppSpacing.contentBottomSafe,
+                    AppSpacing.contentBottomSafe + bottomSafe,
                   ),
                   child: child,
                 )
               : Padding(
-                  padding: const EdgeInsets.fromLTRB(
+                  padding: EdgeInsets.fromLTRB(
                     AppSpacing.screenHorizontal,
                     8,
                     AppSpacing.screenHorizontal,
-                    0,
+                    bottomSafe,
                   ),
                   child: child,
                 ),

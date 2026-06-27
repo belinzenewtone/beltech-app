@@ -22,6 +22,7 @@ class BudgetTargetProgressCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final brightness = Theme.of(context).brightness;
     final accent = item.isOverLimit
         ? AppColors.danger
         : item.isNearLimit
@@ -72,7 +73,7 @@ class BudgetTargetProgressCard extends StatelessWidget {
             child: LinearProgressIndicator(
               value: item.usageRatio,
               minHeight: 6,
-              backgroundColor: AppColors.surfaceMuted,
+              backgroundColor: AppColors.surfaceMutedFor(brightness),
               valueColor: AlwaysStoppedAnimation<Color>(accent),
             ),
           ),

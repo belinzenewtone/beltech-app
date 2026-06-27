@@ -51,7 +51,6 @@ class NetCashflowCard extends StatelessWidget {
           const Divider(height: 24, thickness: 1),
           Row(
             children: [
-              const Expanded(child: SizedBox.shrink()),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -62,7 +61,9 @@ class NetCashflowCard extends StatelessWidget {
                       CurrencyFormatter.money(net),
                       style: AppTypography.bodyMd(context).copyWith(
                         fontWeight: FontWeight.w700,
-                        color: isPositive ? AppColors.success : AppColors.danger,
+                        color: isPositive
+                            ? AppColors.success
+                            : AppColors.danger,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -70,6 +71,7 @@ class NetCashflowCard extends StatelessWidget {
                   ],
                 ),
               ),
+              const Expanded(child: SizedBox.shrink()),
             ],
           ),
         ],

@@ -9,6 +9,7 @@ class AnalyticsSnapshot {
     required this.weeklySpending,
     required this.monthlySpending,
     required this.categoryBreakdown,
+    required this.topMerchants,
   });
 
   final double totalSpentThisMonthKes;
@@ -20,6 +21,7 @@ class AnalyticsSnapshot {
   final List<AnalyticsPoint> weeklySpending;
   final List<AnalyticsPoint> monthlySpending;
   final List<AnalyticsCategoryShare> categoryBreakdown;
+  final List<AnalyticsMerchantShare> topMerchants;
 
   @override
   bool operator ==(Object other) =>
@@ -34,7 +36,8 @@ class AnalyticsSnapshot {
           productivityScore == other.productivityScore &&
           _listEquals(weeklySpending, other.weeklySpending) &&
           _listEquals(monthlySpending, other.monthlySpending) &&
-          _listEquals(categoryBreakdown, other.categoryBreakdown);
+          _listEquals(categoryBreakdown, other.categoryBreakdown) &&
+          _listEquals(topMerchants, other.topMerchants);
 
   @override
   int get hashCode => Object.hash(
@@ -47,6 +50,7 @@ class AnalyticsSnapshot {
     Object.hashAll(weeklySpending),
     Object.hashAll(monthlySpending),
     Object.hashAll(categoryBreakdown),
+    Object.hashAll(topMerchants),
   );
 }
 
@@ -90,6 +94,30 @@ class AnalyticsCategoryShare {
 
   @override
   int get hashCode => Object.hash(category, totalKes, percentage);
+}
+
+class AnalyticsMerchantShare {
+  const AnalyticsMerchantShare({
+    required this.merchant,
+    required this.totalKes,
+    required this.transactionCount,
+  });
+
+  final String merchant;
+  final double totalKes;
+  final int transactionCount;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is AnalyticsMerchantShare &&
+          runtimeType == other.runtimeType &&
+          merchant == other.merchant &&
+          totalKes == other.totalKes &&
+          transactionCount == other.transactionCount;
+
+  @override
+  int get hashCode => Object.hash(merchant, totalKes, transactionCount);
 }
 
 enum AnalyticsPeriod { week, month }

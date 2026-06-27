@@ -338,13 +338,13 @@ class _CsvImportScreenState extends ConsumerState<CsvImportScreen> {
 
   Future<void> _pickFile() async {
     try {
-      final result = await FilePicker.platform.pickFiles(
+      final platformFile = await FilePicker.pickFile(
         type: FileType.custom,
         allowedExtensions: ['csv'],
       );
-      if (result == null || result.files.isEmpty) return;
+      if (platformFile == null) return;
 
-      final path = result.files.single.path;
+      final path = platformFile.path;
       if (path == null) return;
 
       setState(() => _filePath = path);

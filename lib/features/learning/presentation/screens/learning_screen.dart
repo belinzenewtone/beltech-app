@@ -4,6 +4,7 @@ import 'package:beltech/core/theme/app_spacing.dart';
 import 'package:beltech/core/theme/app_typography.dart';
 import 'package:beltech/core/widgets/app_card.dart';
 import 'package:beltech/core/widgets/app_empty_state.dart';
+import 'package:beltech/core/widgets/app_icon_pill_button.dart';
 import 'package:beltech/core/widgets/app_skeleton.dart';
 import 'package:beltech/core/widgets/secondary_page_shell.dart';
 import 'package:beltech/features/learning/domain/entities/learning_session.dart';
@@ -34,67 +35,73 @@ class LearningScreen extends ConsumerWidget {
     return SecondaryPageShell(
       title: 'Learning',
       scrollable: false,
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _showForm(context, ref),
-        icon: const Icon(Icons.add),
-        label: const Text('Session'),
-      ),
+      actions: [
+        AppIconPillButton(
+          icon: Icons.add_rounded,
+          label: 'Add',
+          tone: AppIconPillTone.accent,
+          onPressed: () => _showForm(context, ref),
+        ),
+      ],
       child: Column(
         children: [
           IntrinsicHeight(
             child: Row(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Expanded(
-                child: AppCard(
-                  child: Row(
-                    children: [
-                      const Icon(
-                        Icons.local_fire_department,
-                        color: AppColors.warning,
-                      ),
-                      const SizedBox(width: AppSpacing.sm),
-                      Expanded(
-                        child: Text(
-                          streakAsync.when(
-                            data: (v) => '$v-day streak',
-                            loading: () => '— streak',
-                            error: (_, __) => '0-day streak',
-                          ),
-                          style: AppTypography.bodyMd(
-                            context,
-                          ).copyWith(fontWeight: FontWeight.w600),
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Expanded(
+                  child: AppCard(
+                    child: Row(
+                      children: [
+                        const Icon(
+                          Icons.local_fire_department,
+                          color: AppColors.warning,
                         ),
-                      ),
-                    ],
+                        const SizedBox(width: AppSpacing.sm),
+                        Expanded(
+                          child: Text(
+                            streakAsync.when(
+                              data: (v) => '$v-day streak',
+                              loading: () => '— streak',
+                              error: (_, __) => '0-day streak',
+                            ),
+                            style: AppTypography.bodyMd(
+                              context,
+                            ).copyWith(fontWeight: FontWeight.w600),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
-              ),
-              const SizedBox(width: AppSpacing.sm),
-              Expanded(
-                child: AppCard(
-                  child: Row(
-                    children: [
-                      const Icon(Icons.timer_outlined, color: AppColors.accent),
-                      const SizedBox(width: AppSpacing.sm),
-                      Expanded(
-                        child: Text(
-                          monthlyAsync.when(
-                            data: (v) => '$v min this month',
-                            loading: () => '— min this month',
-                            error: (_, __) => '0 min this month',
-                          ),
-                          style: AppTypography.bodyMd(
-                            context,
-                          ).copyWith(fontWeight: FontWeight.w600),
+                const SizedBox(width: AppSpacing.sm),
+                Expanded(
+                  child: AppCard(
+                    child: Row(
+                      children: [
+                        const Icon(
+                          Icons.timer_outlined,
+                          color: AppColors.accent,
                         ),
-                      ),
-                    ],
+                        const SizedBox(width: AppSpacing.sm),
+                        Expanded(
+                          child: Text(
+                            monthlyAsync.when(
+                              data: (v) => '$v min this month',
+                              loading: () => '— min this month',
+                              error: (_, __) => '0 min this month',
+                            ),
+                            style: AppTypography.bodyMd(
+                              context,
+                            ).copyWith(fontWeight: FontWeight.w600),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
-              ),
-            ],
-          ),
+              ],
+            ),
           ),
           const SizedBox(height: AppSpacing.md),
           Expanded(
@@ -204,10 +211,13 @@ class LearningScreen extends ConsumerWidget {
                 );
               },
               loading: () => Column(
-                children: List.generate(4, (_) => Padding(
-                  padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-                  child: AppSkeleton.card(context),
-                )),
+                children: List.generate(
+                  4,
+                  (_) => Padding(
+                    padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+                    child: AppSkeleton.card(context),
+                  ),
+                ),
               ),
               error: (e, _) => Center(
                 child: Text(

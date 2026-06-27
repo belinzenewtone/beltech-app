@@ -17,8 +17,8 @@ class SuperEntryInput {
     this.year,
     this.repeatYearly = false,
     this.remind3DaysBefore = false,
-    this.reminderEnabled = false,
-    this.reminderMinutesBefore = 30,
+    this.reminderOffsets,
+    this.alarmEnabled = false,
   });
 
   final SuperEntryKind kind;
@@ -32,6 +32,6 @@ class SuperEntryInput {
   final int? year;
   final bool repeatYearly;
   final bool remind3DaysBefore;
-  final bool reminderEnabled;
-  final int reminderMinutesBefore;
+  final List<int>? reminderOffsets;
+  final bool alarmEnabled;
 }

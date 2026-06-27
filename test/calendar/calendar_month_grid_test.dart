@@ -40,7 +40,7 @@ void main() {
       return decoration is BoxDecoration && decoration.shape == BoxShape.circle;
     });
 
-    expect(markerDots, findsNWidgets(3));
+    expect(markerDots, findsNWidgets(1));
 
     await tester.tap(find.text('4'));
     expect(selected, DateTime(2026, 4, 4));

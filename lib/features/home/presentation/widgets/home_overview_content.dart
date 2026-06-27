@@ -118,14 +118,15 @@ class HomeInfoCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final brightness = Theme.of(context).brightness;
     return AppCard(
       child: Row(
         children: [
           Container(
             width: 40,
             height: 40,
-            decoration: const BoxDecoration(
-              color: AppColors.surfaceMuted,
+            decoration: BoxDecoration(
+              color: AppColors.surfaceMutedFor(brightness),
               shape: BoxShape.circle,
             ),
             child: Icon(icon, color: AppColors.accent, size: 20),
@@ -181,14 +182,15 @@ class HomeTransactionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final brightness = Theme.of(context).brightness;
     return AppCard(
       child: Row(
         children: [
           Container(
             width: 40,
             height: 40,
-            decoration: const BoxDecoration(
-              color: AppColors.surfaceMuted,
+            decoration: BoxDecoration(
+              color: AppColors.surfaceMutedFor(brightness),
               shape: BoxShape.circle,
             ),
             child: const Icon(

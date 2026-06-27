@@ -41,8 +41,8 @@ Future<NewTaskInput?> _showTaskDialog(
   final descriptionController = TextEditingController(
     text: initialTask?.description ?? '',
   );
-  var selectedPriority = initialTask?.priority ?? TaskPriority.medium;
-  DateTime? selectedDate = initialTask?.dueDate;
+  var selectedPriority = initialTask?.priority ?? TaskPriority.neutral;
+  DateTime? selectedDate = initialTask?.deadline;
 
   return showModalBottomSheet<NewTaskInput>(
     context: context,
@@ -117,7 +117,7 @@ Future<NewTaskInput?> _showTaskDialog(
                   return Expanded(
                     child: Padding(
                       padding: EdgeInsets.only(
-                        right: priority == TaskPriority.low ? 0 : 8,
+                        right: priority == TaskPriority.neutral ? 0 : 8,
                       ),
                       child: AppButton(
                         label: _priorityLabel(priority),
@@ -226,9 +226,5 @@ String _formatDueLabel(BuildContext context, DateTime dueAt) {
 }
 
 String _priorityLabel(TaskPriority priority) {
-  return switch (priority) {
-    TaskPriority.high => 'Urgent',
-    TaskPriority.medium => 'Important',
-    TaskPriority.low => 'Neutral',
-  };
+  return priority.label;
 }

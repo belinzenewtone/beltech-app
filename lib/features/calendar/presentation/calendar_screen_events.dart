@@ -43,13 +43,15 @@ class _CalendarEventsPane extends StatelessWidget {
               .toList(growable: false);
 
           if (visibleEvents.isEmpty) {
-            return AppEmptyState(
-              icon: Icons.event_outlined,
-              title: sortedEvents.isEmpty ? 'No events' : 'Nothing found',
-              subtitle: sortedEvents.isEmpty
-                  ? 'Tap the Add button to create one.'
-                  : 'Try a different search or tap Show done.',
-              cardWrapped: false,
+            return Center(
+              child: AppEmptyState(
+                icon: Icons.event_outlined,
+                title: sortedEvents.isEmpty ? 'No events' : 'Nothing found',
+                subtitle: sortedEvents.isEmpty
+                    ? 'Tap the Add button to create one.'
+                    : 'Try a different search or tap Show done.',
+                cardWrapped: false,
+              ),
             );
           }
           return CalendarEventsCard(

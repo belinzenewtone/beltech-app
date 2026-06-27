@@ -146,6 +146,13 @@ class _AppShellState extends ConsumerState<AppShell>
     final keyboardVisible = MediaQuery.viewInsetsOf(context).bottom > 0;
 
     final brightness = Theme.of(context).brightness;
+    final mediaQuery = MediaQuery.of(context);
+    final originalNavBottom = AppSpacing.navBottom(context);
+    final textScale = mediaQuery.textScaler.scale(1);
+    final tabBarHeight = 72.0 + ((textScale - 1) * 12).clamp(0.0, 10.0);
+    final bodyBottomPadding = keyboardVisible
+        ? mediaQuery.padding.bottom
+        : originalNavBottom + tabBarHeight;
 
     return Container(
       color: AppColors.backgroundFor(brightness),
@@ -153,31 +160,37 @@ class _AppShellState extends ConsumerState<AppShell>
         children: [
           IgnorePointer(
             ignoring: _appLocked,
-            child: Scaffold(
-              backgroundColor: Colors.transparent,
-              body: ShellBodySwitcher(
-                currentIndex: currentIndex,
-                reduceMotion: reduceMotion,
-                children: AppShell._screens,
+            child: MediaQuery(
+              data: mediaQuery.copyWith(
+                padding: mediaQuery.padding.copyWith(bottom: bodyBottomPadding),
               ),
-              bottomNavigationBar: keyboardVisible
-                  ? null
-                  : Padding(
-                      padding: EdgeInsets.fromLTRB(
-                        AppSpacing.screenHorizontal,
-                        0,
-                        AppSpacing.screenHorizontal,
-                        AppSpacing.navBottom(context),
+              child: Scaffold(
+                extendBody: true,
+                backgroundColor: Colors.transparent,
+                body: ShellBodySwitcher(
+                  currentIndex: currentIndex,
+                  reduceMotion: reduceMotion,
+                  children: AppShell._screens,
+                ),
+                bottomNavigationBar: keyboardVisible
+                    ? null
+                    : Padding(
+                        padding: EdgeInsets.fromLTRB(
+                          AppSpacing.screenHorizontal,
+                          0,
+                          AppSpacing.screenHorizontal,
+                          originalNavBottom,
+                        ),
+                        child: AppTabBar(
+                          selectedIndex: currentIndex,
+                          items: AppShell._tabs,
+                          onTap: (index) {
+                            ref.read(shellTabIndexProvider.notifier).state =
+                                index;
+                          },
+                        ),
                       ),
-                      child: AppTabBar(
-                        selectedIndex: currentIndex,
-                        items: AppShell._tabs,
-                        onTap: (index) {
-                          ref.read(shellTabIndexProvider.notifier).state =
-                              index;
-                        },
-                      ),
-                    ),
+              ),
             ),
           ),
           const Positioned(top: 0, left: 0, right: 0, child: OfflineBanner()),

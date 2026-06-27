@@ -10,94 +10,53 @@ class CalendarRepositoryImpl implements CalendarRepository {
 
   @override
   Stream<List<CalendarEvent>> watchEventsForDay(DateTime day) {
-    return _store
-        .watchEventsForDay(day)
-        .map(
-          (rows) => rows
-              .map(
-                (row) => CalendarEvent(
-                  id: row.id,
-                  title: row.title,
-                  startAt: row.startAt,
-                  completed: row.completed,
-                  priority: _priorityFrom(row.priority),
-                  type: calendarEventTypeFromRaw(row.eventType),
-                  endAt: row.endAt,
-                  note: row.note,
-                  reminderEnabled: row.reminderEnabled,
-                  reminderMinutesBefore: row.reminderMinutesBefore,
-                ),
-              )
-              .toList(),
-        );
+    return _store.watchEventsForDay(day).map((rows) => rows.map(_toEvent).toList());
   }
 
   @override
   Stream<List<CalendarEvent>> watchEventsInRange(DateTime start, DateTime end) {
     return _store
         .watchEventsInRange(start, end)
-        .map(
-          (rows) => rows
-              .map(
-                (row) => CalendarEvent(
-                  id: row.id,
-                  title: row.title,
-                  startAt: row.startAt,
-                  completed: row.completed,
-                  priority: _priorityFrom(row.priority),
-                  type: calendarEventTypeFromRaw(row.eventType),
-                  endAt: row.endAt,
-                  note: row.note,
-                  reminderEnabled: row.reminderEnabled,
-                  reminderMinutesBefore: row.reminderMinutesBefore,
-                ),
-              )
-              .toList(),
-        );
+        .map((rows) => rows.map(_toEvent).toList());
   }
 
   @override
   Stream<List<CalendarEvent>> watchAllEvents() {
-    return _store.watchAllEvents().map(
-      (rows) => rows
-          .map(
-            (row) => CalendarEvent(
-              id: row.id,
-              title: row.title,
-              startAt: row.startAt,
-              completed: row.completed,
-              priority: _priorityFrom(row.priority),
-              type: calendarEventTypeFromRaw(row.eventType),
-              endAt: row.endAt,
-              note: row.note,
-              reminderEnabled: row.reminderEnabled,
-              reminderMinutesBefore: row.reminderMinutesBefore,
-            ),
-          )
-          .toList(),
-    );
+    return _store.watchAllEvents().map((rows) => rows.map(_toEvent).toList());
   }
 
   @override
   Future<void> addEvent({
     required String title,
     required DateTime startAt,
-    CalendarEventPriority priority = CalendarEventPriority.medium,
-    CalendarEventType type = CalendarEventType.general,
+    CalendarEventPriority priority = CalendarEventPriority.neutral,
+    CalendarEventType type = CalendarEventType.personal,
+    CalendarEventKind kind = CalendarEventKind.event,
     DateTime? endAt,
     String? note,
-    bool reminderEnabled = true,
-    int reminderMinutesBefore = 15,
+    List<int> reminderOffsets = const [],
+    bool alarmEnabled = false,
+    bool allDay = false,
+    RepeatRule repeatRule = RepeatRule.never,
+    String guests = '',
+    String timeZoneId = '',
+    int reminderTimeOfDayMinutes = 480,
   }) async {
     await _store.addEvent(
       title: title,
       startAt: startAt,
-      priority: priority.name,
+      priority: calendarEventPriorityToRaw(priority),
       eventType: calendarEventTypeToRaw(type),
+      eventKind: calendarEventKindToRaw(kind),
       endAt: endAt,
       note: note,
-      reminderEnabled: reminderEnabled,
-      reminderMinutesBefore: reminderMinutesBefore,
+      reminderOffsets: reminderOffsets,
+      alarmEnabled: alarmEnabled,
+      allDay: allDay,
+      repeatRule: repeatRuleToRaw(repeatRule),
+      guests: guests,
+      timeZoneId: timeZoneId,
+      reminderTimeOfDayMinutes: reminderTimeOfDayMinutes,
     );
   }
 
@@ -108,21 +67,33 @@ class CalendarRepositoryImpl implements CalendarRepository {
     required DateTime startAt,
     required CalendarEventPriority priority,
     required CalendarEventType type,
+    required CalendarEventKind kind,
     DateTime? endAt,
     String? note,
-    bool reminderEnabled = true,
-    int reminderMinutesBefore = 15,
+    List<int> reminderOffsets = const [],
+    bool alarmEnabled = false,
+    bool allDay = false,
+    RepeatRule repeatRule = RepeatRule.never,
+    String guests = '',
+    String timeZoneId = '',
+    int reminderTimeOfDayMinutes = 480,
   }) {
     return _store.updateEvent(
       id: eventId,
       title: title,
       startAt: startAt,
-      priority: priority.name,
+      priority: calendarEventPriorityToRaw(priority),
       eventType: calendarEventTypeToRaw(type),
+      eventKind: calendarEventKindToRaw(kind),
       endAt: endAt,
       note: note,
-      reminderEnabled: reminderEnabled,
-      reminderMinutesBefore: reminderMinutesBefore,
+      reminderOffsets: reminderOffsets,
+      alarmEnabled: alarmEnabled,
+      allDay: allDay,
+      repeatRule: repeatRuleToRaw(repeatRule),
+      guests: guests,
+      timeZoneId: timeZoneId,
+      reminderTimeOfDayMinutes: reminderTimeOfDayMinutes,
     );
   }
 
@@ -136,11 +107,24 @@ class CalendarRepositoryImpl implements CalendarRepository {
     return _store.deleteEvent(eventId);
   }
 
-  CalendarEventPriority _priorityFrom(String raw) {
-    return switch (raw.toLowerCase()) {
-      'high' => CalendarEventPriority.high,
-      'low' => CalendarEventPriority.low,
-      _ => CalendarEventPriority.medium,
-    };
+  CalendarEvent _toEvent(dynamic row) {
+    return CalendarEvent(
+      id: row.id,
+      title: row.title,
+      startAt: row.startAt,
+      completed: row.completed,
+      priority: calendarEventPriorityFromRaw(row.priority),
+      kind: calendarEventKindFromRaw(row.eventKind),
+      type: calendarEventTypeFromRaw(row.eventType),
+      endAt: row.endAt,
+      note: row.note,
+      reminderOffsets: row.reminderOffsets,
+      alarmEnabled: row.alarmEnabled,
+      allDay: row.allDay,
+      repeatRule: repeatRuleFromRaw(row.repeatRule),
+      guests: row.guests,
+      timeZoneId: row.timeZoneId,
+      reminderTimeOfDayMinutes: row.reminderTimeOfDayMinutes,
+    );
   }
 }

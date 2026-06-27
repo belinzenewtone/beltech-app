@@ -46,7 +46,7 @@ class CalendarEventsCard extends StatelessWidget {
         final end = event.endAt == null
             ? null
             : '${event.endAt!.hour.toString().padLeft(2, '0')}:${event.endAt!.minute.toString().padLeft(2, '0')}';
-        final typeColor = _typeColor(event.type);
+        final typeColor = _eventColor(event);
         final timeLabel = end == null ? start : '$start – $end';
 
         return Dismissible(
@@ -97,7 +97,7 @@ class CalendarEventsCard extends StatelessWidget {
                   Icon(
                     event.completed
                         ? Icons.check_circle
-                        : _typeIcon(event.type),
+                        : _eventIcon(event),
                     color: event.completed ? AppColors.success : typeColor,
                     size: 20,
                   ),
@@ -150,29 +150,39 @@ class CalendarEventsCard extends StatelessWidget {
   }
 }
 
-Color _typeColor(CalendarEventType type) {
-  return switch (type) {
+Color _eventColor(CalendarEvent event) {
+  if (event.kind != CalendarEventKind.event) {
+    return switch (event.kind) {
+      CalendarEventKind.birthday => AppColors.warning,
+      CalendarEventKind.anniversary => AppColors.danger,
+      CalendarEventKind.countdown => AppColors.accent,
+      CalendarEventKind.event => AppColors.slate,
+    };
+  }
+  return switch (event.type) {
     CalendarEventType.work => AppColors.accent,
     CalendarEventType.personal => AppColors.violet,
     CalendarEventType.finance => AppColors.teal,
     CalendarEventType.health => AppColors.warning,
-    CalendarEventType.general => AppColors.slate,
-    CalendarEventType.birthday => AppColors.warning,
-    CalendarEventType.anniversary => AppColors.danger,
-    CalendarEventType.countdown => AppColors.accent,
+    CalendarEventType.other => AppColors.slate,
   };
 }
 
-IconData _typeIcon(CalendarEventType type) {
-  return switch (type) {
+IconData _eventIcon(CalendarEvent event) {
+  if (event.kind != CalendarEventKind.event) {
+    return switch (event.kind) {
+      CalendarEventKind.birthday => Icons.cake_outlined,
+      CalendarEventKind.anniversary => Icons.celebration_outlined,
+      CalendarEventKind.countdown => Icons.timer_outlined,
+      CalendarEventKind.event => Icons.event_note_outlined,
+    };
+  }
+  return switch (event.type) {
     CalendarEventType.work => Icons.work_outline,
     CalendarEventType.personal => Icons.person_outline,
     CalendarEventType.finance => Icons.account_balance_wallet_outlined,
     CalendarEventType.health => Icons.favorite_outline,
-    CalendarEventType.general => Icons.event_note_outlined,
-    CalendarEventType.birthday => Icons.cake_outlined,
-    CalendarEventType.anniversary => Icons.celebration_outlined,
-    CalendarEventType.countdown => Icons.timer_outlined,
+    CalendarEventType.other => Icons.event_note_outlined,
   };
 }
 

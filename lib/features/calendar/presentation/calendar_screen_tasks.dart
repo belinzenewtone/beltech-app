@@ -20,13 +20,13 @@ class _CalendarTasksPane extends StatelessWidget {
             tasks
                 .where(
                   (task) =>
-                      task.dueDate != null &&
-                      _isSameDate(task.dueDate!, selectedDay),
+                      task.deadline != null &&
+                      _isSameDate(task.deadline!, selectedDay),
                 )
                 .toList(growable: false)
               ..sort((left, right) {
-                final dueCompare = (left.dueDate ?? selectedDay).compareTo(
-                  right.dueDate ?? selectedDay,
+                final dueCompare = (left.deadline ?? selectedDay).compareTo(
+                  right.deadline ?? selectedDay,
                 );
                 if (dueCompare != 0) {
                   return dueCompare;
@@ -51,13 +51,15 @@ class _CalendarTasksPane extends StatelessWidget {
             .toList(growable: false);
 
         if (visibleTasks.isEmpty) {
-          return AppEmptyState(
-            icon: Icons.task_alt_outlined,
-            title: dayTasks.isEmpty ? 'No tasks' : 'Nothing found',
-            subtitle: dayTasks.isEmpty
-                ? 'Tap the Add button to create one.'
-                : 'Try a different search or tap Show done.',
-            cardWrapped: false,
+          return Center(
+            child: AppEmptyState(
+              icon: Icons.task_alt_outlined,
+              title: dayTasks.isEmpty ? 'No tasks' : 'Nothing found',
+              subtitle: dayTasks.isEmpty
+                  ? 'Tap the Add button to create one.'
+                  : 'Try a different search or tap Show done.',
+              cardWrapped: false,
+            ),
           );
         }
 

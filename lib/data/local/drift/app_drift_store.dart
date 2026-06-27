@@ -3,7 +3,8 @@ import 'dart:async';
 import 'package:beltech/data/local/drift/app_drift_records.dart';
 import 'package:beltech/data/local/drift/drift_executor_factory.dart';
 import 'package:drift/backends.dart';
-import 'package:drift/drift.dart' show OpeningDetails;
+import 'package:drift/drift.dart'
+    show ArgumentsForBatchedStatement, BatchedStatements, OpeningDetails;
 
 part 'app_drift_store_queries.dart';
 part 'app_drift_store_schema.dart';
@@ -77,8 +78,7 @@ class AppDriftStore {
   Stream<List<DriftEventRecord>> watchEventsInRange(
     DateTime start,
     DateTime end,
-  ) =>
-      _watch(() => _loadEventsInRange(start, end));
+  ) => _watch(() => _loadEventsInRange(start, end));
   Stream<List<DriftEventRecord>> watchAllEvents() => _watch(_loadAllEvents);
 
   Future<void> addTransaction({
@@ -109,55 +109,188 @@ class AppDriftStore {
     _emitChange();
   }
 
-  Future<void> addTask({
+  /// Efficiently insert many transaction rows in a single batched statement.
+  /// Callers must emit their own change event(s).
+  Future<void> addTransactionsBatch(List<List<Object?>> rows) async {
+    await _ensureInitialized();
+    if (rows.isEmpty) return;
+    await _db.runBatched(
+      BatchedStatements(
+        const [
+          'INSERT INTO transactions(title, category, amount, occurred_at, source, source_hash, transaction_type, balance_after) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+        ],
+        rows.map((r) => ArgumentsForBatchedStatement(0, r)).toList(),
+      ),
+    );
+  }
+
+  Future<void> insertSmsReviewBatch(List<List<Object?>> rows) async {
+    await _ensureInitialized();
+    if (rows.isEmpty) return;
+    await _db.runBatched(
+      BatchedStatements(
+        const [
+          'INSERT OR IGNORE INTO sms_review_queue('
+          'scope, source_hash, semantic_hash, title, category, amount, occurred_at, raw_message, confidence, status, created_at'
+          ') VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+        ],
+        rows.map((r) => ArgumentsForBatchedStatement(0, r)).toList(),
+      ),
+    );
+  }
+
+  Future<void> insertSmsQuarantineBatch(List<List<Object?>> rows) async {
+    await _ensureInitialized();
+    if (rows.isEmpty) return;
+    await _db.runBatched(
+      BatchedStatements(
+        const [
+          'INSERT OR IGNORE INTO sms_quarantine('
+          'scope, source_hash, semantic_hash, raw_message, reason, confidence, status, created_at'
+          ') VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+        ],
+        rows.map((r) => ArgumentsForBatchedStatement(0, r)).toList(),
+      ),
+    );
+  }
+
+  Future<void> insertSmsImportAuditBatch(List<List<Object?>> rows) async {
+    await _ensureInitialized();
+    if (rows.isEmpty) return;
+    await _db.runBatched(
+      BatchedStatements(
+        const [
+          'INSERT INTO sms_import_audit('
+          'scope, source_hash, semantic_hash, route, confidence, decision, status, payload, created_at'
+          ') VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+        ],
+        rows.map((r) => ArgumentsForBatchedStatement(0, r)).toList(),
+      ),
+    );
+  }
+
+  Future<void> updateSmsImportQueueStatusBatch(List<List<Object?>> rows) async {
+    await _ensureInitialized();
+    if (rows.isEmpty) return;
+    await _db.runBatched(
+      BatchedStatements(
+        const [
+          'UPDATE sms_import_queue SET status = ?, updated_at = ?, last_error = ? WHERE id = ?',
+        ],
+        rows.map((r) => ArgumentsForBatchedStatement(0, r)).toList(),
+      ),
+    );
+  }
+
+  Future<void> insertSmsImportQueueBatch(List<List<Object?>> rows) async {
+    await _ensureInitialized();
+    if (rows.isEmpty) return;
+    await _db.runBatched(
+      BatchedStatements(
+        const [
+          'INSERT OR IGNORE INTO sms_import_queue('
+          'scope, raw_message, source_hash, semantic_hash, source_timestamp, status, route, confidence, created_at, updated_at'
+          ') VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+        ],
+        rows.map((r) => ArgumentsForBatchedStatement(0, r)).toList(),
+      ),
+    );
+  }
+
+  /// Refreshes an existing queue row with the latest parse metadata and resets
+  /// retry/failed status so the message will be reprocessed.
+  Future<void> refreshSmsImportQueueBatch(List<List<Object?>> rows) async {
+    await _ensureInitialized();
+    if (rows.isEmpty) return;
+    await _db.runBatched(
+      BatchedStatements(
+        const [
+          'UPDATE sms_import_queue SET '
+          'raw_message = ?, '
+          'semantic_hash = ?, '
+          'source_timestamp = CASE '
+          '  WHEN ? IS NULL THEN source_timestamp '
+          '  WHEN source_timestamp IS NULL OR ? > source_timestamp THEN ? '
+          '  ELSE source_timestamp '
+          'END, '
+          'route = ?, '
+          'confidence = ?, '
+          'status = CASE WHEN status IN (?, ?) THEN ? ELSE status END, '
+          'attempt = CASE WHEN status IN (?, ?) THEN 0 ELSE attempt END, '
+          'next_retry_at = CASE WHEN status IN (?, ?) THEN NULL ELSE next_retry_at END, '
+          'last_error = CASE WHEN status IN (?, ?) THEN NULL ELSE last_error END, '
+          'updated_at = ? '
+          'WHERE scope = ? AND source_hash = ?',
+        ],
+        rows.map((r) => ArgumentsForBatchedStatement(0, r)).toList(),
+      ),
+    );
+  }
+
+  Future<int> addTask({
     required String title,
     String? description,
-    DateTime? dueDate,
-    String priority = 'medium',
-    bool reminderEnabled = true,
-    int reminderMinutesBefore = 30,
+    DateTime? deadline,
+    String priority = 'neutral',
+    List<int> reminderOffsets = const [],
+    bool alarmEnabled = false,
   }) async {
     await _ensureInitialized();
-    await _db.runInsert(
-      'INSERT INTO tasks(title, description, completed, due_at, priority, reminder_enabled, reminder_minutes_before) VALUES (?, ?, ?, ?, ?, ?, ?)',
+    final id = await _db.runInsert(
+      'INSERT INTO tasks(title, description, status, priority, deadline, reminder_offsets, alarm_enabled, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
       [
         title,
         description,
-        0,
-        dueDate?.millisecondsSinceEpoch,
+        'pending',
         priority,
-        reminderEnabled ? 1 : 0,
-        reminderMinutesBefore,
+        deadline?.millisecondsSinceEpoch,
+        reminderOffsets.join(','),
+        alarmEnabled ? 1 : 0,
+        DateTime.now().millisecondsSinceEpoch,
       ],
     );
     _emitChange();
+    return id;
   }
 
-  Future<void> toggleTaskCompletion({
+  Future<void> setTaskCompletion({
     required int taskId,
     required bool completed,
   }) async {
     await _ensureInitialized();
-    await _db.runUpdate('UPDATE tasks SET completed = ? WHERE id = ?', [
-      completed ? 1 : 0,
-      taskId,
-    ]);
+    if (completed) {
+      await _db.runUpdate(
+        "UPDATE tasks SET status = 'completed', completed_at = ? WHERE id = ?",
+        [DateTime.now().millisecondsSinceEpoch, taskId],
+      );
+    } else {
+      await _db.runUpdate(
+        "UPDATE tasks SET status = 'pending', completed_at = NULL WHERE id = ?",
+        [taskId],
+      );
+    }
     _emitChange();
   }
 
   Future<void> addEvent({
     required String title,
     required DateTime startAt,
-    String priority = 'medium',
-    String eventType = 'general',
+    String priority = 'neutral',
+    String eventType = 'personal',
+    String eventKind = 'event',
     DateTime? endAt,
     String? note,
-    bool reminderEnabled = true,
-    int reminderMinutesBefore = 15,
+    List<int> reminderOffsets = const [],
+    bool alarmEnabled = false,
+    bool allDay = false,
+    String repeatRule = 'never',
+    String guests = '',
+    String timeZoneId = '',
+    int reminderTimeOfDayMinutes = 480,
   }) async {
     await _ensureInitialized();
     await _db.runInsert(
-      'INSERT INTO events(title, start_at, end_at, note, completed, priority, event_type, reminder_enabled, reminder_minutes_before) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      'INSERT INTO events(title, start_at, end_at, note, completed, priority, event_type, event_kind, all_day, repeat_rule, reminder_offsets, alarm_enabled, guests, time_zone_id, reminder_time_of_day_minutes) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
       [
         title,
         startAt.millisecondsSinceEpoch,
@@ -166,8 +299,14 @@ class AppDriftStore {
         0,
         priority,
         eventType,
-        reminderEnabled ? 1 : 0,
-        reminderMinutesBefore,
+        eventKind,
+        allDay ? 1 : 0,
+        repeatRule,
+        reminderOffsets.join(','),
+        alarmEnabled ? 1 : 0,
+        guests,
+        timeZoneId,
+        reminderTimeOfDayMinutes,
       ],
     );
     _emitChange();
@@ -223,14 +362,15 @@ class AppDriftStore {
   Future<List<DriftEventRecord>> _loadEventsInRange(
     DateTime start,
     DateTime end,
-  ) =>
-      _AppDriftQueries.loadEventsInRange(this, start, end);
+  ) => _AppDriftQueries.loadEventsInRange(this, start, end);
 
   Future<List<DriftEventRecord>> _loadAllEvents() =>
       _AppDriftQueries.loadAllEvents(this);
 
   Future<int> _countRows(String tableName) =>
       _AppDriftQueries.countRows(this, tableName);
+
+  Future<int> countRows(String tableName) => _countRows(tableName);
 
   void _emitChange() => _AppDriftUtils.emitChange(this);
 

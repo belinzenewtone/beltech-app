@@ -185,6 +185,9 @@ class _GlobalSearchScreenState extends ConsumerState<GlobalSearchScreen> {
       case GlobalSearchKind.recurring:
         context.pushNamed('recurring');
         return;
+      case GlobalSearchKind.merchant:
+        context.pushNamed('merchant-detail', extra: result.primaryText);
+        return;
     }
   }
 }

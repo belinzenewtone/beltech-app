@@ -1,10 +1,13 @@
 import 'dart:async';
 
+import 'package:beltech/core/di/database_providers.dart';
 import 'package:beltech/core/di/repository_providers.dart';
+import 'package:beltech/features/expenses/data/services/balance_reconciliation_service.dart';
 import 'package:beltech/features/expenses/domain/entities/expense_import_window.dart';
 import 'package:beltech/features/expenses/domain/entities/expense_import_intelligence.dart';
 import 'package:beltech/features/expenses/domain/entities/expense_import_review.dart';
 import 'package:beltech/features/expenses/domain/entities/expense_item.dart';
+import 'package:beltech/features/expenses/domain/entities/merchant_registry_entry.dart';
 import 'package:beltech/features/expenses/domain/usecases/import_expenses_use_case.dart';
 import 'package:beltech/features/expenses/domain/usecases/manage_expense_import_review_use_case.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -69,6 +72,32 @@ final expenseFulizaLifecycleProvider =
           .watch(expensesRepositoryProvider)
           .fetchFulizaLifecycle(limit: 8);
     });
+
+final merchantRegistrySearchProvider = FutureProvider.family<
+  List<MerchantRegistryEntry>,
+  String
+>((ref, query) async {
+  ref.watch(expensesSnapshotProvider);
+  if (query.trim().isEmpty) return const [];
+  return ref.watch(expensesRepositoryProvider).searchMerchantRegistry(query);
+});
+
+final topMerchantsProvider = FutureProvider<List<MerchantRegistryEntry>>(
+  (ref) async {
+    ref.watch(expensesSnapshotProvider);
+    return ref.watch(expensesRepositoryProvider).fetchTopMerchants(limit: 10);
+  },
+);
+
+final balanceReconciliationProvider =
+    FutureProvider<List<BalanceReconciliationResult>>(
+  (ref) async {
+    ref.watch(expensesSnapshotProvider);
+    return BalanceReconciliationService(
+      ref.watch(appDriftStoreProvider),
+    ).reconcile(limit: 20);
+  },
+);
 
 /// Computes the current outstanding Fuliza balance from all recorded events.
 /// Positive = money owed; 0 = fully repaid or no activity.

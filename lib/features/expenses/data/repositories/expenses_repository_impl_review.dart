@@ -45,6 +45,19 @@ Future<ExpenseImportMetrics> _fetchImportMetricsImpl(
     lastMpesaCode = MpesaParserService.extractMpesaCode(rawMessage);
   }
 
+  final quarantineReasonBreakdown = await _fetchQuarantineBreakdown(repo);
+  final duplicateSkipCount = await _fetchDuplicateSkipCount(repo);
+  final dailyTrends = await _fetchDailyImportTrends(repo);
+  final alerts = _generateImportAlerts(
+    review: review,
+    quarantine: quarantine,
+    retry: retry,
+    failed: failed,
+    breakdown: quarantineReasonBreakdown,
+    duplicateSkipCount: duplicateSkipCount,
+    dailyTrends: dailyTrends,
+  );
+
   return ExpenseImportMetrics(
     reviewQueueCount: review,
     quarantineCount: quarantine,
@@ -53,7 +66,113 @@ Future<ExpenseImportMetrics> _fetchImportMetricsImpl(
     lastImportAt: lastImportAt,
     lastMpesaCode: lastMpesaCode,
     lastError: lastError,
+    quarantineReasonBreakdown: quarantineReasonBreakdown,
+    duplicateSkipCount: duplicateSkipCount,
+    dailyTrends: dailyTrends,
+    alerts: alerts,
   );
+}
+
+Future<Map<String, int>> _fetchQuarantineBreakdown(
+  ExpensesRepositoryImpl repo,
+) async {
+  final rows = await repo._store.executor.runSelect(
+    'SELECT reason, COUNT(*) AS c '
+    'FROM sms_quarantine '
+    'WHERE scope = ? AND status = ? '
+    'GROUP BY reason',
+    ['local', 'pending'],
+  );
+  final result = <String, int>{};
+  for (final row in rows) {
+    final reason = '${row['reason'] ?? 'Unknown'}'.trim();
+    result[reason.isEmpty ? 'Unknown' : reason] = repo._asInt(row['c']);
+  }
+  return result;
+}
+
+Future<int> _fetchDuplicateSkipCount(ExpensesRepositoryImpl repo) async {
+  final rows = await repo._store.executor.runSelect(
+    "SELECT COUNT(*) AS c FROM sms_import_audit WHERE scope = ? AND decision = ?",
+    ['local', 'duplicate'],
+  );
+  if (rows.isEmpty) return 0;
+  return repo._asInt(rows.first['c']);
+}
+
+Future<List<DailyImportTrend>> _fetchDailyImportTrends(
+  ExpensesRepositoryImpl repo,
+) async {
+  final since = DateTime.now()
+      .subtract(const Duration(days: 30))
+      .millisecondsSinceEpoch;
+  final rows = await repo._store.executor.runSelect(
+    "SELECT date(created_at/1000, 'unixepoch') AS day, "
+    "COUNT(*) AS total, "
+    "SUM(CASE WHEN decision = ? THEN 1 ELSE 0 END) AS quarantine, "
+    "AVG(confidence) AS avg_conf "
+    "FROM sms_import_audit "
+    "WHERE scope = ? AND created_at >= ? "
+    "GROUP BY day "
+    "ORDER BY day DESC "
+    "LIMIT ?",
+    ['quarantined', 'local', since, 30],
+  );
+  return rows.map((row) {
+    final dayStr = '${row['day'] ?? ''}';
+    final parsedDate = DateTime.tryParse(dayStr) ?? DateTime.now();
+    return DailyImportTrend(
+      date: parsedDate,
+      total: repo._asInt(row['total']),
+      quarantineCount: repo._asInt(row['quarantine']),
+      averageConfidence: repo._asDouble(row['avg_conf']),
+    );
+  }).toList(growable: false);
+}
+
+List<String> _generateImportAlerts({
+  required int review,
+  required int quarantine,
+  required int retry,
+  required int failed,
+  required Map<String, int> breakdown,
+  required int duplicateSkipCount,
+  required List<DailyImportTrend> dailyTrends,
+}) {
+  final alerts = <String>[];
+  final totalIssues = review + quarantine + retry + failed;
+  final totalItems = totalIssues + duplicateSkipCount;
+
+  if (totalItems > 0 && quarantine / totalItems > 0.3) {
+    alerts.add(
+      'Warning: ${(quarantine / totalItems * 100).toStringAsFixed(0)}% of recent imports are quarantined.',
+    );
+  }
+
+  final missingAmount = breakdown['Missing amount'] ?? 0;
+  if (missingAmount > 5) {
+    alerts.add(
+      'Parser issue suspected: $missingAmount messages have a valid code but no amount.',
+    );
+  }
+
+  if (dailyTrends.length >= 2) {
+    final latestUnknown = dailyTrends.first.quarantineCount;
+    final previousUnknown = dailyTrends[1].quarantineCount;
+    if (previousUnknown > 0 && latestUnknown > previousUnknown * 2) {
+      alerts.add(
+        'Sudden spike in unknown/low-confidence messages ($previousUnknown → $latestUnknown).',
+      );
+    }
+  }
+
+  if (duplicateSkipCount > 0) {
+    alerts.add(
+      '$duplicateSkipCount duplicate message${duplicateSkipCount == 1 ? '' : 's'} skipped.',
+    );
+  }
+
+  return alerts;
 }
 
 Future<List<ExpenseReviewItem>> _fetchReviewQueueImpl(

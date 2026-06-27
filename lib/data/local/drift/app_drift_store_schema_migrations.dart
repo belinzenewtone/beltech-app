@@ -55,23 +55,26 @@ class _AppDriftSchemaMigrations {
     if (taskCount == 0) {
       final nowMs = DateTime.now().millisecondsSinceEpoch;
       await store._db.runInsert(
-        'INSERT INTO tasks(title, description, completed, due_at, priority) VALUES (?, ?, ?, ?, ?)',
+        'INSERT INTO tasks(title, description, status, deadline, priority, reminder_offsets) VALUES (?, ?, ?, ?, ?, ?)',
         [
           'Prepare monthly spending review',
           'Review top spending categories and action items.',
-          0,
+          'pending',
           nowMs,
-          'high',
+          'urgent',
+          '30',
         ],
       );
       await store._db.runInsert(
-        'INSERT INTO tasks(title, description, completed, due_at, priority) VALUES (?, ?, ?, ?, ?)',
+        'INSERT INTO tasks(title, description, status, deadline, priority, completed_at, reminder_offsets) VALUES (?, ?, ?, ?, ?, ?, ?)',
         [
           'Submit transport expense report',
           'Send final report to finance.',
-          1,
+          'completed',
           nowMs,
-          'medium',
+          'important',
+          nowMs,
+          '',
         ],
       );
     }
@@ -129,28 +132,76 @@ class _AppDriftSchemaMigrations {
     }
   }
 
-  static Future<void> tryAddTaskReminderEnabledColumn(
-    AppDriftStore store,
-  ) async {
+  static Future<void> migrateTaskPriorityColumn(AppDriftStore store) async {
+    // Ensure legacy 'high'/'medium'/'low' values map to Kotlin parity names.
     try {
       await store._db.runCustom(
-        'ALTER TABLE tasks ADD COLUMN reminder_enabled INTEGER NOT NULL DEFAULT 1',
+        "UPDATE tasks SET priority = 'urgent' WHERE priority = 'high'",
+      );
+      await store._db.runCustom(
+        "UPDATE tasks SET priority = 'important' WHERE priority = 'medium'",
+      );
+      await store._db.runCustom(
+        "UPDATE tasks SET priority = 'neutral' WHERE priority = 'low' OR priority IS NULL OR priority = ''",
       );
     } catch (_) {
       return;
     }
   }
 
-  static Future<void> tryAddTaskReminderMinutesColumn(
-    AppDriftStore store,
-  ) async {
+  static Future<void> migrateTaskStatusColumns(AppDriftStore store) async {
     try {
       await store._db.runCustom(
-        'ALTER TABLE tasks ADD COLUMN reminder_minutes_before INTEGER NOT NULL DEFAULT 30',
+        'ALTER TABLE tasks ADD COLUMN status TEXT NOT NULL DEFAULT \'pending\'',
       );
-    } catch (_) {
-      return;
-    }
+    } catch (_) {}
+    try {
+      await store._db.runCustom(
+        'ALTER TABLE tasks ADD COLUMN deadline INTEGER',
+      );
+    } catch (_) {}
+    try {
+      await store._db.runCustom(
+        'UPDATE tasks SET deadline = due_at WHERE deadline IS NULL AND due_at IS NOT NULL',
+      );
+    } catch (_) {}
+    try {
+      await store._db.runCustom(
+        'ALTER TABLE tasks ADD COLUMN completed_at INTEGER',
+      );
+    } catch (_) {}
+    try {
+      await store._db.runCustom(
+        "UPDATE tasks SET status = 'completed', completed_at = ? WHERE completed = 1 OR completed = '1'",
+        [DateTime.now().millisecondsSinceEpoch],
+      );
+    } catch (_) {}
+    try {
+      await store._db.runCustom(
+        "UPDATE tasks SET status = 'pending' WHERE status IS NULL OR status = ''",
+      );
+    } catch (_) {}
+  }
+
+  static Future<void> migrateTaskReminderColumns(AppDriftStore store) async {
+    try {
+      await store._db.runCustom(
+        'ALTER TABLE tasks ADD COLUMN reminder_offsets TEXT NOT NULL DEFAULT \'\'',
+      );
+    } catch (_) {}
+    try {
+      await store._db.runCustom(
+        "UPDATE tasks SET reminder_offsets = reminder_minutes_before WHERE reminder_enabled = 1 AND (reminder_offsets IS NULL OR reminder_offsets = '')",
+      );
+    } catch (_) {}
+  }
+
+  static Future<void> migrateTaskAlarmColumn(AppDriftStore store) async {
+    try {
+      await store._db.runCustom(
+        'ALTER TABLE tasks ADD COLUMN alarm_enabled INTEGER NOT NULL DEFAULT 0',
+      );
+    } catch (_) {}
   }
 
   static Future<void> tryAddIncomesSourceColumn(AppDriftStore store) async {
@@ -237,5 +288,74 @@ class _AppDriftSchemaMigrations {
     } catch (_) {
       return;
     }
+  }
+
+  static Future<void> migrateEventReminderColumns(AppDriftStore store) async {
+    try {
+      await store._db.runCustom(
+        'ALTER TABLE events ADD COLUMN reminder_offsets TEXT NOT NULL DEFAULT \'15\'',
+      );
+    } catch (_) {}
+    try {
+      await store._db.runCustom(
+        "UPDATE events SET reminder_offsets = reminder_minutes_before WHERE (reminder_offsets IS NULL OR reminder_offsets = '') AND reminder_minutes_before IS NOT NULL",
+      );
+    } catch (_) {}
+  }
+
+  static Future<void> migrateEventAlarmColumn(AppDriftStore store) async {
+    try {
+      await store._db.runCustom(
+        'ALTER TABLE events ADD COLUMN alarm_enabled INTEGER NOT NULL DEFAULT 0',
+      );
+    } catch (_) {}
+  }
+
+  static Future<void> tryAddEventKindColumn(AppDriftStore store) async {
+    try {
+      await store._db.runCustom(
+        "ALTER TABLE events ADD COLUMN event_kind TEXT NOT NULL DEFAULT 'event'",
+      );
+    } catch (_) {}
+  }
+
+  static Future<void> tryAddEventAllDayColumn(AppDriftStore store) async {
+    try {
+      await store._db.runCustom(
+        'ALTER TABLE events ADD COLUMN all_day INTEGER NOT NULL DEFAULT 0',
+      );
+    } catch (_) {}
+  }
+
+  static Future<void> tryAddEventRepeatRuleColumn(AppDriftStore store) async {
+    try {
+      await store._db.runCustom(
+        "ALTER TABLE events ADD COLUMN repeat_rule TEXT NOT NULL DEFAULT 'never'",
+      );
+    } catch (_) {}
+  }
+
+  static Future<void> tryAddEventGuestsColumn(AppDriftStore store) async {
+    try {
+      await store._db.runCustom(
+        "ALTER TABLE events ADD COLUMN guests TEXT NOT NULL DEFAULT ''",
+      );
+    } catch (_) {}
+  }
+
+  static Future<void> tryAddEventTimeZoneColumn(AppDriftStore store) async {
+    try {
+      await store._db.runCustom(
+        "ALTER TABLE events ADD COLUMN time_zone_id TEXT NOT NULL DEFAULT ''",
+      );
+    } catch (_) {}
+  }
+
+  static Future<void> tryAddEventReminderTimeColumn(AppDriftStore store) async {
+    try {
+      await store._db.runCustom(
+        'ALTER TABLE events ADD COLUMN reminder_time_of_day_minutes INTEGER NOT NULL DEFAULT 480',
+      );
+    } catch (_) {}
   }
 }

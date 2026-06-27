@@ -66,7 +66,7 @@ class AnalyticsRepositoryImpl implements AnalyticsRepository {
       [weekStart.millisecondsSinceEpoch, weekEnd.millisecondsSinceEpoch],
     );
     final taskRows = await _store.executor.runSelect(
-      'SELECT completed FROM tasks',
+      "SELECT status FROM tasks",
       const [],
     );
     final eventCountRows = await _store.executor.runSelect(
@@ -86,7 +86,7 @@ class AnalyticsRepositoryImpl implements AnalyticsRepository {
     final averageDaily = periodTotal / (elapsedDays <= 0 ? 1 : elapsedDays);
 
     final completed = taskRows
-        .where((row) => _asInt(row['completed']) == 1)
+        .where((row) => '${row['status']}' == 'completed')
         .length;
     final pending = taskRows.length - completed;
     final eventsThisMonth = eventCountRows.isEmpty
@@ -142,6 +142,25 @@ class AnalyticsRepositoryImpl implements AnalyticsRepository {
         .toList()
       ..sort((a, b) => b.totalKes.compareTo(a.totalKes));
 
+    final merchantRows = await _store.executor.runSelect(
+      'SELECT title, SUM(amount) AS total, COUNT(*) AS c '
+      'FROM transactions '
+      'WHERE occurred_at >= ? AND occurred_at < ? '
+      'GROUP BY title '
+      'ORDER BY total DESC '
+      'LIMIT 5',
+      [rangeStart.millisecondsSinceEpoch, rangeEnd.millisecondsSinceEpoch],
+    );
+    final topMerchants = merchantRows
+        .map(
+          (row) => AnalyticsMerchantShare(
+            merchant: '${row['title'] ?? ''}',
+            totalKes: _asDouble(row['total']),
+            transactionCount: _asInt(row['c']),
+          ),
+        )
+        .toList();
+
     return AnalyticsSnapshot(
       totalSpentThisMonthKes: periodTotal,
       averageDailySpendingKes: averageDaily,
@@ -160,6 +179,7 @@ class AnalyticsRepositoryImpl implements AnalyticsRepository {
           )
           .toList(),
       categoryBreakdown: categoryBreakdown,
+      topMerchants: topMerchants,
     );
   }
 

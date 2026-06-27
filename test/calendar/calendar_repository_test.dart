@@ -23,8 +23,8 @@ void main() {
       startAt: startAt,
       endAt: startAt.add(const Duration(hours: 1)),
       note: 'before update',
-      reminderEnabled: false,
-      reminderMinutesBefore: 5,
+      reminderOffsets: const [5],
+      alarmEnabled: true,
     );
 
     final created = await repository
@@ -40,10 +40,11 @@ void main() {
       startAt: event.startAt,
       priority: event.priority,
       type: event.type,
+      kind: event.kind,
       endAt: event.endAt,
       note: 'after update',
-      reminderEnabled: true,
-      reminderMinutesBefore: 60,
+      reminderOffsets: const [60],
+      alarmEnabled: true,
     );
 
     final updated = await repository
@@ -53,8 +54,8 @@ void main() {
             (item) =>
                 item.id == event.id &&
                 item.title == 'Calendar CRUD Updated' &&
-                item.reminderEnabled &&
-                item.reminderMinutesBefore == 60,
+                item.alarmEnabled &&
+                item.reminderOffsets.contains(60),
           ),
         );
     expect(updated.any((item) => item.id == event.id), isTrue);

@@ -13,15 +13,15 @@ void main() {
         title: 'Standup',
         startAt: DateTime(2026, 4, 3, 9),
         completed: false,
-        priority: CalendarEventPriority.medium,
-        type: CalendarEventType.general,
+        priority: CalendarEventPriority.important,
+        type: CalendarEventType.other,
       ),
       CalendarEvent(
         id: 2,
         title: 'Sprint Review',
         startAt: DateTime(2026, 4, 3, 15),
         completed: false,
-        priority: CalendarEventPriority.high,
+        priority: CalendarEventPriority.urgent,
         type: CalendarEventType.work,
       ),
       CalendarEvent(
@@ -29,7 +29,7 @@ void main() {
         title: 'Doctor',
         startAt: DateTime(2026, 4, 9, 10),
         completed: false,
-        priority: CalendarEventPriority.low,
+        priority: CalendarEventPriority.neutral,
         type: CalendarEventType.health,
       ),
       CalendarEvent(
@@ -37,7 +37,7 @@ void main() {
         title: 'Outside month',
         startAt: DateTime(2026, 5, 1, 10),
         completed: false,
-        priority: CalendarEventPriority.low,
+        priority: CalendarEventPriority.neutral,
         type: CalendarEventType.personal,
       ),
     ]);
@@ -66,12 +66,18 @@ class _FakeCalendarRepository implements CalendarRepository {
   Future<void> addEvent({
     required String title,
     required DateTime startAt,
-    CalendarEventPriority priority = CalendarEventPriority.medium,
-    CalendarEventType type = CalendarEventType.general,
+    CalendarEventPriority priority = CalendarEventPriority.neutral,
+    CalendarEventType type = CalendarEventType.personal,
+    CalendarEventKind kind = CalendarEventKind.event,
     DateTime? endAt,
     String? note,
-    bool reminderEnabled = true,
-    int reminderMinutesBefore = 15,
+    List<int> reminderOffsets = const [],
+    bool alarmEnabled = false,
+    bool allDay = false,
+    RepeatRule repeatRule = RepeatRule.never,
+    String guests = '',
+    String timeZoneId = '',
+    int reminderTimeOfDayMinutes = 480,
   }) async {}
 
   @override
@@ -90,10 +96,16 @@ class _FakeCalendarRepository implements CalendarRepository {
     required DateTime startAt,
     required CalendarEventPriority priority,
     required CalendarEventType type,
+    required CalendarEventKind kind,
     DateTime? endAt,
     String? note,
-    bool reminderEnabled = true,
-    int reminderMinutesBefore = 15,
+    List<int> reminderOffsets = const [],
+    bool alarmEnabled = false,
+    bool allDay = false,
+    RepeatRule repeatRule = RepeatRule.never,
+    String guests = '',
+    String timeZoneId = '',
+    int reminderTimeOfDayMinutes = 480,
   }) async {}
 
   @override

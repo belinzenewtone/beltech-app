@@ -19,6 +19,11 @@ final List<RegExp> _ignoreSmsPatterns = [
   ),
   // USSD-prompt / "dial *XXX#" service messages (no money moved)
   RegExp(r'dial\s*\*\d{2,4}#', caseSensitive: false),
+  // Pure balance-notification messages (no transaction keywords).
+  RegExp(
+    r'^(?!.*\b(?:confirmed|sent|received|paid)\b).*your m-?pesa balance (?:is|was)',
+    caseSensitive: false,
+  ),
 ];
 
 final List<RegExp> _ambiguousSuccessPatterns = [

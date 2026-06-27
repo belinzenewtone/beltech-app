@@ -19,10 +19,10 @@ void main() {
   test('updateTask and deleteTask persist task changes', () async {
     await repository.addTask(
       title: 'Task CRUD',
-      dueDate: DateTime.now().add(const Duration(days: 2)),
-      priority: TaskPriority.low,
-      reminderEnabled: false,
-      reminderMinutesBefore: 5,
+      deadline: DateTime.now().add(const Duration(days: 2)),
+      priority: TaskPriority.neutral,
+      reminderOffsets: const [],
+      alarmEnabled: false,
     );
 
     final created = await repository.watchTasks().firstWhere(
@@ -33,10 +33,11 @@ void main() {
     await repository.updateTask(
       taskId: task.id,
       title: 'Task CRUD Updated',
-      dueDate: task.dueDate,
-      priority: TaskPriority.high,
-      reminderEnabled: true,
-      reminderMinutesBefore: 45,
+      deadline: task.deadline,
+      priority: TaskPriority.urgent,
+      status: TaskStatus.pending,
+      reminderOffsets: const [45],
+      alarmEnabled: true,
     );
 
     final updated = await repository.watchTasks().firstWhere(
@@ -44,9 +45,9 @@ void main() {
         (item) =>
             item.id == task.id &&
             item.title == 'Task CRUD Updated' &&
-            item.priority == TaskPriority.high &&
-            item.reminderEnabled &&
-            item.reminderMinutesBefore == 45,
+            item.priority == TaskPriority.urgent &&
+            item.alarmEnabled &&
+            item.reminderOffsets.contains(45),
       ),
     );
     expect(updated.any((item) => item.id == task.id), isTrue);
