@@ -15,7 +15,7 @@ import 'package:beltech/features/recurring/domain/entities/recurring_template.da
 import 'package:beltech/features/search/domain/entities/global_search_result.dart';
 import 'package:beltech/features/search/presentation/providers/global_search_providers.dart';
 import 'package:intl/intl.dart';
-import 'package:beltech/features/recurring/data/services/recurring_suggestion_service.dart';
+import 'package:beltech/features/recurring/domain/services/recurring_suggestion_service.dart';
 import 'package:beltech/features/recurring/presentation/providers/recurring_providers.dart';
 import 'package:beltech/features/recurring/presentation/widgets/recurring_dialogs.dart';
 import 'package:beltech/features/recurring/presentation/widgets/recurring_suggestions.dart';

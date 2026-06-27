@@ -11,11 +11,9 @@ void main() {
   SharedPreferences.setMockInitialValues(const {});
 
   late AppDriftStore store;
-  late ExpensesRepositoryImpl repository;
 
   setUp(() {
     store = AppDriftStore();
-    repository = ExpensesRepositoryImpl(store, const MpesaParserService());
   });
 
   tearDown(() async {

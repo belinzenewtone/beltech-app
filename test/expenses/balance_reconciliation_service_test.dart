@@ -1,5 +1,5 @@
 import 'package:beltech/data/local/drift/app_drift_store.dart';
-import 'package:beltech/features/expenses/data/services/balance_reconciliation_service.dart';
+import 'package:beltech/features/expenses/domain/services/balance_reconciliation_service.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -19,7 +19,7 @@ void main() {
     await store.dispose();
   });
 
-  Future<void> _insertSmsTransaction({
+  Future<void> insertSmsTransaction({
     required double amount,
     required double balanceAfter,
     required DateTime occurredAt,
@@ -39,13 +39,13 @@ void main() {
 
   test('reconcile returns empty when balances align', () async {
     final base = DateTime(2025, 1, 1, 10, 0);
-    await _insertSmsTransaction(
+    await insertSmsTransaction(
       amount: 1000,
       balanceAfter: 9000,
       occurredAt: base,
       type: 'sent',
     );
-    await _insertSmsTransaction(
+    await insertSmsTransaction(
       amount: 500,
       balanceAfter: 8500,
       occurredAt: base.add(const Duration(hours: 1)),
@@ -58,14 +58,14 @@ void main() {
 
   test('reconcile flags mismatched reported balance', () async {
     final base = DateTime(2025, 1, 1, 10, 0);
-    await _insertSmsTransaction(
+    await insertSmsTransaction(
       amount: 1000,
       balanceAfter: 9000,
       occurredAt: base,
       type: 'sent',
     );
     // Reported balance dropped by 1500 but recorded amount is 500.
-    await _insertSmsTransaction(
+    await insertSmsTransaction(
       amount: 500,
       balanceAfter: 7500,
       occurredAt: base.add(const Duration(hours: 1)),

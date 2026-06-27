@@ -20,7 +20,7 @@ jobs:
 
       - uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.44.3'
+          flutter-version: '3.44.4'
           channel: stable
           cache: true
 
@@ -29,8 +29,8 @@ jobs:
           set -e
           flutter --version
           dart --version
-          flutter --version | head -n 1 | grep -E "Flutter 3\.44\.3"
-          dart --version 2>&1 | grep -E "Dart SDK version: 3\.12\.2"
+          flutter --version | head -n 1 | grep -E "Flutter 3\.44\.4"
+          dart --version 2>&1 | grep -E "Dart SDK version: 3\.12\.3"
 
       - name: Install dependencies
         run: flutter pub get

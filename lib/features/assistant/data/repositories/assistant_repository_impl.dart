@@ -16,14 +16,11 @@ class AssistantRepositoryImpl implements AssistantRepository {
     this._store,
     this._appStore, {
     Object? proxyService,
-    BillsRepository? billsRepository,
-    LoansRepository? loansRepository,
-    GoalsRepository? goalsRepository,
-    LearningRepository? learningRepository,
-  })  : _billsRepository = billsRepository,
-        _loansRepository = loansRepository,
-        _goalsRepository = goalsRepository,
-        _learningRepository = learningRepository;
+    this._billsRepository,
+    this._loansRepository,
+    this._goalsRepository,
+    this._learningRepository,
+  });
 
   final AssistantProfileStore _store;
   final AppDriftStore _appStore;

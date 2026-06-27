@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:beltech/core/di/database_providers.dart';
 import 'package:beltech/core/di/repository_providers.dart';
-import 'package:beltech/features/expenses/data/services/balance_reconciliation_service.dart';
+import 'package:beltech/features/expenses/domain/services/balance_reconciliation_service.dart';
 import 'package:beltech/features/expenses/domain/entities/expense_import_window.dart';
 import 'package:beltech/features/expenses/domain/entities/expense_import_intelligence.dart';
 import 'package:beltech/features/expenses/domain/entities/expense_import_review.dart';

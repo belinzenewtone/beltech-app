@@ -17,7 +17,6 @@ abstract final class DbEncryptionKeyStore {
   static const _storageKey = 'beltech_db_encryption_key_v1';
 
   static final _storage = const FlutterSecureStorage(
-    aOptions: AndroidOptions(encryptedSharedPreferences: true),
     iOptions: IOSOptions(
       accessibility: KeychainAccessibility.first_unlock_this_device,
     ),

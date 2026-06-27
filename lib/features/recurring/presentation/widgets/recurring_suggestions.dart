@@ -5,7 +5,7 @@ import 'package:beltech/core/theme/app_typography.dart';
 import 'package:beltech/core/utils/currency_formatter.dart';
 import 'package:beltech/core/widgets/app_button.dart';
 import 'package:beltech/core/widgets/app_card.dart';
-import 'package:beltech/features/recurring/data/services/recurring_suggestion_service.dart';
+import 'package:beltech/features/recurring/domain/services/recurring_suggestion_service.dart';
 import 'package:flutter/material.dart';
 
 class RecurringSuggestions extends StatelessWidget {
