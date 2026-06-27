@@ -105,16 +105,25 @@ const defaultToolShortcuts = [
 ];
 
 class ToolShortcutGrid extends ConsumerWidget {
-  const ToolShortcutGrid({super.key, this.shortcuts = defaultToolShortcuts});
+  const ToolShortcutGrid({
+    super.key,
+    this.shortcuts = defaultToolShortcuts,
+    this.childAspectRatio,
+  });
 
   final List<ToolShortcut> shortcuts;
+
+  /// Optional override for the tile width-to-height ratio. Higher values make
+  /// tiles shorter (more horizontal). Defaults to near-square tiles.
+  final double? childAspectRatio;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return LayoutBuilder(
       builder: (context, constraints) {
         final crossAxisCount = constraints.maxWidth < 260 ? 2 : 3;
-        final aspectRatio = crossAxisCount == 3 ? 1.02 : 1.08;
+        final aspectRatio = childAspectRatio ??
+            (crossAxisCount == 3 ? 1.02 : 1.08);
 
         return GridView.builder(
           shrinkWrap: true,
