@@ -7,13 +7,11 @@ import 'package:flutter/material.dart';
 class ProfileSecuritySection extends StatelessWidget {
   const ProfileSecuritySection({
     super.key,
-    required this.onChangePassword,
     required this.onSignOut,
     this.showSignOut = true,
     this.signingOut = false,
   });
 
-  final VoidCallback onChangePassword;
   final VoidCallback onSignOut;
   final bool showSignOut;
   final bool signingOut;
@@ -26,38 +24,24 @@ class ProfileSecuritySection extends StatelessWidget {
       child: Column(
         children: [
           _SecurityRow(
-            icon: Icons.lock_outline_rounded,
-            title: 'Password',
-            iconColor: AppColors.accent,
-            onTap: onChangePassword,
-            position:
-                showSignOut ? _SecurityRowPosition.top : _SecurityRowPosition.single,
+            icon: Icons.logout_rounded,
+            title: 'Sign Out',
+            iconColor: AppColors.danger,
+            textColor: AppColors.danger,
+            onTap: signingOut ? null : onSignOut,
+            position: _SecurityRowPosition.single,
+            trailing: signingOut
+                ? const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(
+                    Icons.chevron_right_rounded,
+                    color: AppColors.danger,
+                    size: 20,
+                  ),
           ),
-          if (showSignOut) ...[
-            Divider(
-              height: 1,
-              color: AppColors.border.withValues(alpha: 0.3),
-            ),
-            _SecurityRow(
-              icon: Icons.logout_rounded,
-              title: 'Sign Out',
-              iconColor: AppColors.danger,
-              textColor: AppColors.danger,
-              onTap: signingOut ? null : onSignOut,
-              position: _SecurityRowPosition.bottom,
-              trailing: signingOut
-                  ? const SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Icon(
-                      Icons.chevron_right_rounded,
-                      color: AppColors.danger,
-                      size: 20,
-                    ),
-            ),
-          ],
         ],
       ),
     );

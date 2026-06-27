@@ -30,21 +30,6 @@ class ProfileWriteController extends AsyncNotifier<void> {
     });
   }
 
-  Future<void> changePassword({
-    required String currentPassword,
-    required String newPassword,
-  }) async {
-    state = const AsyncLoading();
-    state = await AsyncValue.guard(() async {
-      await ref
-          .read(profileRepositoryProvider)
-          .changePassword(
-            currentPassword: currentPassword,
-            newPassword: newPassword,
-          );
-    });
-  }
-
   Future<void> updateAvatar({
     required Uint8List bytes,
     required String fileExtension,

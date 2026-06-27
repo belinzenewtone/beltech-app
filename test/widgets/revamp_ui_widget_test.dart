@@ -1,4 +1,3 @@
-import 'package:beltech/core/di/notification_providers.dart';
 import 'package:beltech/core/security/session_lock_settings_repository.dart';
 import 'package:beltech/features/auth/domain/entities/auth_state.dart';
 import 'package:beltech/features/auth/presentation/providers/auth_providers.dart';
@@ -10,8 +9,6 @@ import 'package:beltech/features/review/domain/entities/week_review_ritual.dart'
 import 'package:beltech/features/review/presentation/providers/review_providers.dart';
 import 'package:beltech/features/review/presentation/providers/review_ritual_providers.dart';
 import 'package:beltech/features/review/presentation/week_review_screen.dart';
-import 'package:beltech/features/settings/presentation/widgets/notification_preferences_section.dart';
-import 'package:beltech/features/settings/presentation/widgets/settings_row.dart';
 import 'package:beltech/features/settings/presentation/widgets/settings_security_card.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -100,7 +97,7 @@ void main() {
     expect(find.text('Budget'), findsOneWidget);
   });
 
-  testWidgets('security and notification settings expose revamp controls', (
+  testWidgets('security settings expose revamp controls', (
     tester,
   ) async {
     await tester.pumpWidget(
@@ -109,26 +106,13 @@ void main() {
           sessionLockSettingsProvider.overrideWith(
             (ref) async => const SessionLockSettings(gracePeriodSeconds: 30),
           ),
-          notificationsEnabledProvider.overrideWith((ref) async => true),
-          budgetAlertsEnabledProvider.overrideWith((ref) async => true),
-          dailyDigestEnabledProvider.overrideWith((ref) async => true),
-          weeklyReviewNotificationsEnabledProvider.overrideWith(
-            (ref) async => true,
-          ),
         ],
         child: _wrap(
-          const SingleChildScrollView(
-            child: Column(
-              children: [
-                SettingsSecurityCard(
-                  state: AuthState(
-                    biometricSupported: true,
-                    biometricEnabled: true,
-                    isAuthenticating: false,
-                  ),
-                ),
-                NotificationPreferencesSection(),
-              ],
+          const SettingsSecurityCard(
+            state: AuthState(
+              biometricSupported: true,
+              biometricEnabled: true,
+              isAuthenticating: false,
             ),
           ),
         ),
@@ -137,45 +121,8 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Relock Delay'), findsOneWidget);
-    expect(find.text('Notifications'), findsOneWidget);
     expect(find.text('Biometric Lock'), findsOneWidget);
-    expect(find.text('Daily Summary'), findsOneWidget);
   });
-
-  testWidgets(
-    'notification child preferences lock when notifications are disabled',
-    (tester) async {
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            notificationsEnabledProvider.overrideWith((ref) async => false),
-            budgetAlertsEnabledProvider.overrideWith((ref) async => true),
-            dailyDigestEnabledProvider.overrideWith((ref) async => true),
-            weeklyReviewNotificationsEnabledProvider.overrideWith(
-              (ref) async => true,
-            ),
-          ],
-          child: _wrap(const NotificationPreferencesSection()),
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      final budgetSwitch = tester.widget<Switch>(
-        find.descendant(
-          of: find.widgetWithText(SettingsRow, 'Budget Alerts'),
-          matching: find.byType(Switch),
-        ),
-      );
-      final digestSwitch = tester.widget<Switch>(
-        find.descendant(
-          of: find.widgetWithText(SettingsRow, 'Daily Summary'),
-          matching: find.byType(Switch),
-        ),
-      );
-      expect(budgetSwitch.onChanged, isNull);
-      expect(digestSwitch.onChanged, isNull);
-    },
-  );
 
   testWidgets(
     'finance snapshot shows summary, budget, and transaction sections',

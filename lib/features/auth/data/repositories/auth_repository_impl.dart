@@ -46,4 +46,26 @@ class AuthRepositoryImpl implements AuthRepository {
       return false;
     }
   }
+
+  @override
+  Future<bool> isPinSet() async {
+    final pin = await _credentialsStore.readPin();
+    return pin != null && pin.isNotEmpty;
+  }
+
+  @override
+  Future<bool> verifyPin(String pin) async {
+    final stored = await _credentialsStore.readPin();
+    return stored == pin;
+  }
+
+  @override
+  Future<void> setPin(String pin) async {
+    await _credentialsStore.writePin(pin);
+  }
+
+  @override
+  Future<void> clearPin() async {
+    await _credentialsStore.deletePin();
+  }
 }

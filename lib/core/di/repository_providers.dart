@@ -115,8 +115,6 @@ final analyticsRepositoryProvider = Provider<AnalyticsRepository>(
 final profileRepositoryProvider = Provider<ProfileRepository>(
   (ref) => ProfileRepositoryImpl(
     ref.watch(assistantProfileStoreProvider),
-    ref.watch(secureCredentialsStoreProvider),
-    ref.watch(passwordHasherProvider),
   ),
 );
 

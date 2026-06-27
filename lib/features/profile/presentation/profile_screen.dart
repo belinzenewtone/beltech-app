@@ -114,7 +114,6 @@ class ProfileScreen extends ConsumerWidget {
                 const ProfileToolHub(),
                 const SizedBox(height: AppSpacing.sectionGap),
                 ProfileSecuritySection(
-                  onChangePassword: () => showPasswordDialog(context, ref),
                   onSignOut: () async {
                     await ref
                         .read(accountAuthControllerProvider.notifier)

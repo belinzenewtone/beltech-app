@@ -1,4 +1,3 @@
-import 'package:beltech/core/di/notification_providers.dart';
 import 'package:beltech/core/security/session_lock_settings_repository.dart';
 import 'package:beltech/core/theme/app_theme.dart';
 import 'package:beltech/features/auth/domain/entities/auth_state.dart';
@@ -11,7 +10,6 @@ import 'package:beltech/features/review/domain/entities/week_review_ritual.dart'
 import 'package:beltech/features/review/presentation/providers/review_providers.dart';
 import 'package:beltech/features/review/presentation/providers/review_ritual_providers.dart';
 import 'package:beltech/features/review/presentation/week_review_screen.dart';
-import 'package:beltech/features/settings/presentation/widgets/notification_preferences_section.dart';
 import 'package:beltech/features/settings/presentation/widgets/settings_security_card.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -85,31 +83,18 @@ void main() {
           sessionLockSettingsProvider.overrideWith(
             (ref) async => const SessionLockSettings(gracePeriodSeconds: 30),
           ),
-          notificationsEnabledProvider.overrideWith((ref) async => true),
-          budgetAlertsEnabledProvider.overrideWith((ref) async => true),
-          dailyDigestEnabledProvider.overrideWith((ref) async => true),
-          weeklyReviewNotificationsEnabledProvider.overrideWith(
-            (ref) async => true,
-          ),
         ],
         child: _wrap(
           const KeyedSubtree(
             key: Key('settings-revamp-controls'),
             child: Padding(
               padding: EdgeInsets.all(20),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  SettingsSecurityCard(
-                    state: AuthState(
-                      biometricSupported: true,
-                      biometricEnabled: true,
-                      isAuthenticating: false,
-                    ),
-                  ),
-                  SizedBox(height: 20),
-                  NotificationPreferencesSection(),
-                ],
+              child: SettingsSecurityCard(
+                state: AuthState(
+                  biometricSupported: true,
+                  biometricEnabled: true,
+                  isAuthenticating: false,
+                ),
               ),
             ),
           ),

@@ -11,11 +11,6 @@ abstract class ProfileRepository {
     required String phone,
   });
 
-  Future<void> changePassword({
-    required String currentPassword,
-    required String newPassword,
-  });
-
   Future<void> updateAvatar({
     required Uint8List bytes,
     required String fileExtension,
