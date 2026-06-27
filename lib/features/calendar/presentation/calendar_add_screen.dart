@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 
 import 'package:beltech/core/logger/app_logger.dart';
 import 'package:beltech/core/theme/app_colors.dart';
+import 'package:beltech/core/theme/app_radius.dart';
 import 'package:beltech/core/theme/app_spacing.dart';
 import 'package:beltech/core/theme/app_typography.dart';
 import 'package:beltech/core/widgets/app_button.dart';
@@ -823,34 +824,58 @@ class _GuestInputState extends State<_GuestInput> {
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Expanded(
-              child: TextField(
-                controller: _inputController,
-                focusNode: _focusNode,
-                textInputAction: TextInputAction.done,
-                style: AppTypography.bodyMd(context),
-                decoration: InputDecoration(
-                  hintText: 'Add guest (press enter or comma)',
-                  hintStyle: AppTypography.bodyMd(context).copyWith(
-                    color: AppColors.textSecondaryFor(brightness).withValues(alpha: 0.55),
-                  ),
-                  border: InputBorder.none,
-                  contentPadding: EdgeInsets.zero,
-                  isDense: true,
+              child: Container(
+                decoration: BoxDecoration(
+                  color: AppColors.surfaceMutedFor(brightness),
+                  borderRadius: BorderRadius.circular(AppRadius.lg),
                 ),
-                onSubmitted: (value) {
-                  _add(value);
-                  _focusNode.requestFocus();
-                },
-                onChanged: (value) {
-                  if (value.contains(',')) {
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.md,
+                  vertical: AppSpacing.md,
+                ),
+                child: TextField(
+                  controller: _inputController,
+                  focusNode: _focusNode,
+                  textInputAction: TextInputAction.done,
+                  style: AppTypography.bodyMd(context),
+                  decoration: InputDecoration(
+                    hintText: 'Add guest (press enter or comma)',
+                    hintStyle: AppTypography.bodyMd(context).copyWith(
+                      color: AppColors.textSecondaryFor(brightness).withValues(alpha: 0.55),
+                    ),
+                    border: InputBorder.none,
+                    contentPadding: EdgeInsets.zero,
+                    isDense: true,
+                  ),
+                  onSubmitted: (value) {
                     _add(value);
-                  }
-                },
+                    _focusNode.requestFocus();
+                  },
+                  onChanged: (value) {
+                    if (value.contains(',')) {
+                      _add(value);
+                    }
+                  },
+                ),
               ),
             ),
-            IconButton(
-              icon: const Icon(Icons.add_rounded, size: 20),
-              onPressed: () => _add(_inputController.text),
+            const SizedBox(width: AppSpacing.sm),
+            GestureDetector(
+              onTap: () => _add(_inputController.text),
+              child: Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: AppColors.accent,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                alignment: Alignment.center,
+                child: const Icon(
+                  Icons.add_rounded,
+                  color: Colors.white,
+                  size: 22,
+                ),
+              ),
             ),
           ],
         ),
