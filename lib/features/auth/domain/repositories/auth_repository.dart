@@ -9,6 +9,10 @@ abstract class AuthRepository {
 
   Future<bool> isPinSet();
 
+  Future<bool> isPinEnabled();
+
+  Future<void> setPinEnabled(bool enabled);
+
   Future<bool> verifyPin(String pin);
 
   Future<void> setPin(String pin);

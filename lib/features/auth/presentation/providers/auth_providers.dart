@@ -13,11 +13,13 @@ class AuthController extends AsyncNotifier<AuthState> {
     final repository = ref.watch(authRepositoryProvider);
     final supported = await repository.isBiometricSupported();
     final enabled = await repository.isBiometricEnabled();
+    final pinEnabled = await repository.isPinEnabled();
     return AuthState(
       biometricSupported: supported,
       biometricEnabled: enabled,
       isAuthenticating: false,
       errorMessage: null,
+      pinEnabled: pinEnabled,
     );
   }
 
@@ -27,11 +29,13 @@ class AuthController extends AsyncNotifier<AuthState> {
       final repository = ref.read(authRepositoryProvider);
       final supported = await repository.isBiometricSupported();
       final enabled = await repository.isBiometricEnabled();
+      final pinEnabled = await repository.isPinEnabled();
       return AuthState(
         biometricSupported: supported,
         biometricEnabled: enabled,
         isAuthenticating: false,
         errorMessage: null,
+        pinEnabled: pinEnabled,
       );
     });
   }
@@ -52,11 +56,35 @@ class AuthController extends AsyncNotifier<AuthState> {
             'biometric_lock_setting_changed',
             attributes: {'enabled': enabled},
           );
+      final pinEnabled = await repository.isPinEnabled();
       return AuthState(
         biometricSupported: supported,
         biometricEnabled: enabled,
         isAuthenticating: false,
         errorMessage: null,
+        pinEnabled: pinEnabled,
+      );
+    });
+  }
+
+  Future<void> setPinEnabled(bool enabled) async {
+    state = await AsyncValue.guard(() async {
+      final repository = ref.read(authRepositoryProvider);
+      await repository.setPinEnabled(enabled);
+      final supported = await repository.isBiometricSupported();
+      final biometricEnabled = await repository.isBiometricEnabled();
+      await ref
+          .read(revampTelemetryServiceProvider)
+          .track(
+            'pin_lock_setting_changed',
+            attributes: {'enabled': enabled},
+          );
+      return AuthState(
+        biometricSupported: supported,
+        biometricEnabled: biometricEnabled,
+        isAuthenticating: false,
+        errorMessage: null,
+        pinEnabled: enabled,
       );
     });
   }
