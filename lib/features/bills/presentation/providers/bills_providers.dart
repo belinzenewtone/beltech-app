@@ -12,7 +12,7 @@ final monthlyCommitmentProvider = FutureProvider<double>((ref) {
   return ref.watch(billsRepositoryProvider).monthlyCommitmentTotal();
 });
 
-class BillsWriteController extends AutoDisposeAsyncNotifier<void> {
+class BillsWriteController extends AsyncNotifier<void> {
   @override
   FutureOr<void> build() {}
 
@@ -77,6 +77,6 @@ class BillsWriteController extends AutoDisposeAsyncNotifier<void> {
 }
 
 final billsWriteControllerProvider =
-    AutoDisposeAsyncNotifierProvider<BillsWriteController, void>(
+    AsyncNotifierProvider<BillsWriteController, void>(
       BillsWriteController.new,
     );

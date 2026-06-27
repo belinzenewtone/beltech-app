@@ -9,7 +9,7 @@ final profileProvider = StreamProvider<UserProfile>(
   (ref) => ref.watch(profileRepositoryProvider).watchProfile(),
 );
 
-class ProfileWriteController extends AutoDisposeAsyncNotifier<void> {
+class ProfileWriteController extends AsyncNotifier<void> {
   @override
   FutureOr<void> build() {}
 
@@ -59,6 +59,6 @@ class ProfileWriteController extends AutoDisposeAsyncNotifier<void> {
 }
 
 final profileWriteControllerProvider =
-    AutoDisposeAsyncNotifierProvider<ProfileWriteController, void>(
+    AsyncNotifierProvider<ProfileWriteController, void>(
       ProfileWriteController.new,
     );

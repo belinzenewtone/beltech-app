@@ -56,7 +56,7 @@ class SettingsScreen extends ConsumerWidget {
                 child: Center(child: LoadingIndicator()),
               ),
             ),
-            error: (_, __) => AppCard(
+            error: (_, _) => AppCard(
               tone: AppCardTone.muted,
               child: Column(
                 mainAxisSize: MainAxisSize.min,

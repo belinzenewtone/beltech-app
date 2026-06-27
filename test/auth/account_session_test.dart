@@ -15,12 +15,16 @@ void main() {
     );
     addTearDown(container.dispose);
 
+    // Keep the StreamProvider alive so Riverpod 3 does not dispose it while
+    // the async future is still resolving.
+    container.listen(accountSessionProvider, (_, _) {});
+
     final first = await container.read(accountSessionProvider.future);
     expect(first.isAuthenticated, isFalse);
 
     await fake.signIn(email: 'user@mail.com', password: '123456');
     await Future<void>.delayed(Duration.zero);
-    final second = container.read(accountSessionProvider).valueOrNull;
+    final second = container.read(accountSessionProvider).value;
     expect(second?.isAuthenticated, isTrue);
     expect(second?.email, 'user@mail.com');
   });

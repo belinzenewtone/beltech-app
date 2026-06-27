@@ -18,8 +18,8 @@ class FulizaLifecycleCard extends ConsumerWidget {
     final balanceAsync = ref.watch(fulizaOutstandingBalanceProvider);
     final eventsAsync = ref.watch(expenseFulizaLifecycleProvider);
 
-    final balance = balanceAsync.valueOrNull ?? 0;
-    final events = eventsAsync.valueOrNull ?? const <FulizaLifecycleEvent>[];
+    final balance = balanceAsync.value ?? 0;
+    final events = eventsAsync.value ?? const <FulizaLifecycleEvent>[];
 
     if (balance <= 0 && events.isEmpty) {
       return const SizedBox.shrink();

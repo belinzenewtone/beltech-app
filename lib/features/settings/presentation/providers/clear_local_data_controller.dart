@@ -18,7 +18,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 /// - Scheduled local notifications
 ///
 /// This is local-only; there is no cloud recovery.
-class ClearLocalDataController extends AutoDisposeAsyncNotifier<void> {
+class ClearLocalDataController extends AsyncNotifier<void> {
   @override
   FutureOr<void> build() async {}
 
@@ -56,6 +56,6 @@ class ClearLocalDataController extends AutoDisposeAsyncNotifier<void> {
 }
 
 final clearLocalDataControllerProvider =
-    AutoDisposeAsyncNotifierProvider<ClearLocalDataController, void>(
+    AsyncNotifierProvider<ClearLocalDataController, void>(
       ClearLocalDataController.new,
     );

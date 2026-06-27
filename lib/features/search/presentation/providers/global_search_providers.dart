@@ -1,6 +1,7 @@
 import 'package:beltech/core/di/repository_providers.dart';
 import 'package:beltech/features/search/domain/entities/global_search_result.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/legacy.dart';
 
 final globalSearchQueryProvider = StateProvider<String>((_) => '');
 

@@ -1,4 +1,4 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/legacy.dart';
 
 /// Single source of truth for shell tab positions.
 /// Matches Kotlin app: Home, Finance, Calendar, AI, Profile.

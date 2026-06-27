@@ -48,10 +48,10 @@ final weekReviewDataProvider = Provider<AsyncValue<WeekReviewData>>((ref) {
     );
   }
 
-  final overview = overviewState.valueOrNull;
-  final expenses = expensesState.valueOrNull;
-  final incomes = incomesState.valueOrNull;
-  final tasks = tasksState.valueOrNull;
+  final overview = overviewState.value;
+  final expenses = expensesState.value;
+  final incomes = incomesState.value;
+  final tasks = tasksState.value;
   if (overview == null ||
       expenses == null ||
       incomes == null ||

@@ -92,7 +92,7 @@ class BudgetScreen extends ConsumerWidget {
           snapshotState.when(
             data: (snapshot) => _BudgetSummaryCard(snapshot: snapshot),
             loading: () => const Center(child: LoadingIndicator()),
-            error: (_, __) => ErrorMessage(
+            error: (_, _) => ErrorMessage(
               label: 'Unable to load budget snapshot',
               onRetry: () => ref.invalidate(budgetSnapshotProvider),
             ),
@@ -174,7 +174,7 @@ class BudgetScreen extends ConsumerWidget {
               );
             },
             loading: () => const Center(child: LoadingIndicator()),
-            error: (_, __) => ErrorMessage(
+            error: (_, _) => ErrorMessage(
               label: 'Unable to load budget targets',
               onRetry: () => ref.invalidate(budgetTargetsProvider),
             ),

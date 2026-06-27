@@ -15,7 +15,7 @@ class FulizaBanner extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final balanceAsync = ref.watch(fulizaOutstandingBalanceProvider);
-    final balance = balanceAsync.valueOrNull ?? 0;
+    final balance = balanceAsync.value ?? 0;
     if (balance <= 0) return const SizedBox.shrink();
 
     final brightness = Theme.of(context).brightness;

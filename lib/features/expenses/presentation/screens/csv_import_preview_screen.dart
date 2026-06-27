@@ -74,7 +74,7 @@ class CsvImportPreviewScreen extends StatelessWidget {
             Expanded(
               child: ListView.separated(
                 itemCount: transactions.length,
-                separatorBuilder: (_, __) =>
+                separatorBuilder: (_, _) =>
                     const SizedBox(height: AppSpacing.sm),
                 itemBuilder: (_, index) =>
                     _CsvTransactionRow(transaction: transactions[index]),

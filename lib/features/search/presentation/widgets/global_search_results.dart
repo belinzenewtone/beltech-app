@@ -98,7 +98,7 @@ class GlobalSearchResultsView extends StatelessWidget {
         }
         return ListView.separated(
           itemCount: results.length,
-          separatorBuilder: (_, __) => const SizedBox(height: 8),
+          separatorBuilder: (_, _) => const SizedBox(height: 8),
           itemBuilder: (context, index) => GlobalSearchResultTile(
             result: results[index],
             onTap: () => onResultTap(results[index]),
@@ -106,7 +106,7 @@ class GlobalSearchResultsView extends StatelessWidget {
         );
       },
       loading: () => const Center(child: LoadingIndicator()),
-      error: (_, __) => ErrorMessage(label: 'Search failed', onRetry: onRetry),
+      error: (_, _) => ErrorMessage(label: 'Search failed', onRetry: onRetry),
     );
   }
 }

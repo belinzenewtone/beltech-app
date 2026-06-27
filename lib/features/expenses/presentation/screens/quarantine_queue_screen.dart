@@ -128,7 +128,7 @@ class _QuarantineQueueScreenState extends ConsumerState<QuarantineQueueScreen> {
                         children: [
                           ListView.separated(
                             itemCount: filteredItems.length,
-                            separatorBuilder: (_, __) =>
+                            separatorBuilder: (_, _) =>
                                 const SizedBox(height: AppSpacing.listGap),
                             itemBuilder: (_, index) {
                               final item = filteredItems[index];
@@ -735,7 +735,7 @@ class _QuarantineEditSheetState extends ConsumerState<_QuarantineEditSheet> {
   @override
   Widget build(BuildContext context) {
     final categoriesAsync = ref.watch(expenseCategoriesProvider);
-    final categories = categoriesAsync.valueOrNull ?? expenseCategoryDefaults;
+    final categories = categoriesAsync.value ?? expenseCategoryDefaults;
     if (!categories.contains(_selectedCategory)) {
       _selectedCategory = categories.first;
     }

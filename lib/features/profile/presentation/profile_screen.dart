@@ -133,7 +133,7 @@ class ProfileScreen extends ConsumerWidget {
               ],
             ),
             loading: () => const Center(child: LoadingIndicator()),
-            error: (_, __) => ErrorMessage(
+            error: (_, _) => ErrorMessage(
               label: 'Unable to load profile',
               onRetry: () => ref.invalidate(profileProvider),
             ),

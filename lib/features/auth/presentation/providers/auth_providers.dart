@@ -7,7 +7,7 @@ import 'package:beltech/core/security/session_lock_settings_repository.dart';
 import 'package:beltech/features/auth/domain/entities/auth_state.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class AuthController extends AutoDisposeAsyncNotifier<AuthState> {
+class AuthController extends AsyncNotifier<AuthState> {
   @override
   FutureOr<AuthState> build() async {
     final repository = ref.watch(authRepositoryProvider);
@@ -62,7 +62,7 @@ class AuthController extends AutoDisposeAsyncNotifier<AuthState> {
   }
 
   Future<bool> authenticateNow() async {
-    final current = state.valueOrNull ?? AuthState.initial;
+    final current = state.value ?? AuthState.initial;
     state = AsyncData(
       current.copyWith(isAuthenticating: true, errorMessage: null),
     );
@@ -74,7 +74,7 @@ class AuthController extends AutoDisposeAsyncNotifier<AuthState> {
           'biometric_auth_attempt',
           attributes: {'result': authenticated ? 'success' : 'failure'},
         );
-    final latest = state.valueOrNull ?? current;
+    final latest = state.value ?? current;
     state = AsyncData(
       latest.copyWith(
         isAuthenticating: false,
@@ -88,7 +88,7 @@ class AuthController extends AutoDisposeAsyncNotifier<AuthState> {
 }
 
 final authProvider =
-    AutoDisposeAsyncNotifierProvider<AuthController, AuthState>(
+    AsyncNotifierProvider<AuthController, AuthState>(
       AuthController.new,
     );
 
@@ -96,7 +96,7 @@ final sessionLockSettingsProvider = FutureProvider<SessionLockSettings>(
   (ref) => ref.watch(sessionLockSettingsRepositoryProvider).read(),
 );
 
-class SessionLockSettingsController extends AutoDisposeAsyncNotifier<void> {
+class SessionLockSettingsController extends AsyncNotifier<void> {
   @override
   Future<void> build() async {}
 
@@ -118,6 +118,6 @@ class SessionLockSettingsController extends AutoDisposeAsyncNotifier<void> {
 }
 
 final sessionLockSettingsControllerProvider =
-    AutoDisposeAsyncNotifierProvider<SessionLockSettingsController, void>(
+    AsyncNotifierProvider<SessionLockSettingsController, void>(
       SessionLockSettingsController.new,
     );

@@ -6,6 +6,7 @@ import 'package:beltech/features/budget/domain/entities/budget_target.dart';
 import 'package:beltech/features/budget/domain/entities/budget_target_progress.dart';
 import 'package:beltech/features/budget/domain/usecases/build_budget_target_progresses_use_case.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/legacy.dart';
 
 final budgetMonthProvider = StateProvider<DateTime>((_) {
   final now = DateTime.now();
@@ -48,15 +49,15 @@ final budgetTargetProgressProvider =
 
       return AsyncData(
         ref.read(buildBudgetTargetProgressesUseCaseProvider)(
-          targets: targetsState.valueOrNull ?? const [],
+          targets: targetsState.value ?? const [],
           snapshot:
-              snapshotState.valueOrNull ??
+              snapshotState.value ??
               BudgetSnapshot(month: DateTime.now(), items: const []),
         ),
       );
     });
 
-class BudgetWriteController extends AutoDisposeAsyncNotifier<void> {
+class BudgetWriteController extends AsyncNotifier<void> {
   @override
   FutureOr<void> build() {}
 
@@ -83,6 +84,6 @@ class BudgetWriteController extends AutoDisposeAsyncNotifier<void> {
 }
 
 final budgetWriteControllerProvider =
-    AutoDisposeAsyncNotifierProvider<BudgetWriteController, void>(
+    AsyncNotifierProvider<BudgetWriteController, void>(
       BudgetWriteController.new,
     );

@@ -97,7 +97,7 @@ class _AuthLoadingScreenState extends State<AuthLoadingScreen>
                     child: Image.asset(
                       'assets/branding/beltech_logo.jpeg',
                       fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => const Icon(
+                      errorBuilder: (_, _, _) => const Icon(
                         Icons.bolt,
                         size: 48,
                         color: AppColors.accent,

@@ -42,7 +42,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     // not on every unrelated profile field update (avatar, bio, phone, etc.).
     final displayName = ref.watch(
       profileProvider.select((s) {
-        final p = s.valueOrNull;
+        final p = s.value;
         // Prefer username (capped at 8 chars). Fall back to first name.
         final rawUsername = p?.username.trim() ?? '';
         if (rawUsername.isNotEmpty) {
@@ -105,7 +105,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           // ── Content ──────────────────────────────────────────────────────────
           overviewState.when(
             loading: () => const HomeSkeletonList(),
-            error: (_, __) => AppEmptyState(
+            error: (_, _) => AppEmptyState(
               icon: Icons.error_outline_rounded,
               title: 'Could not load dashboard',
               subtitle: 'Please try again',

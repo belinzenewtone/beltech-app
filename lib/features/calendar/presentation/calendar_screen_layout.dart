@@ -29,7 +29,7 @@ class _CalendarLayout extends StatelessWidget {
   Widget build(BuildContext context) {
     final viewMode = state.ref.watch(calendarViewModeProvider);
 
-    final monthTaskDays = (tasksState.valueOrNull ?? const <TaskItem>[])
+    final monthTaskDays = (tasksState.value ?? const <TaskItem>[])
         .where((task) {
           final deadline = task.deadline;
           return deadline != null &&
@@ -224,7 +224,7 @@ class _MonthBody extends StatelessWidget {
                   CalendarMonthGrid(
                     visibleMonth: visibleMonth,
                     selectedDay: selectedDay,
-                    eventTypes: monthEventTypesState.valueOrNull ?? const {},
+                    eventTypes: monthEventTypesState.value ?? const {},
                     taskDays: monthTaskDays,
                     maxWidth: _CalendarScreenState._calendarContentMaxWidth,
                     onSelect: (day) {
@@ -352,7 +352,7 @@ class _WeekBody extends StatelessWidget {
                     padding: EdgeInsets.all(AppSpacing.lg),
                     child: Center(child: CircularProgressIndicator()),
                   ),
-                  error: (_, __) => ErrorMessage(
+                  error: (_, _) => ErrorMessage(
                     label: 'Unable to load events',
                     onRetry: () => state.ref.invalidate(weekEventsProvider),
                   ),
@@ -433,7 +433,7 @@ class _DayBody extends StatelessWidget {
                 },
               ),
               loading: () => const Center(child: CircularProgressIndicator()),
-              error: (_, __) => ErrorMessage(
+              error: (_, _) => ErrorMessage(
                 label: 'Unable to load events',
                 onRetry: () => state.ref.invalidate(dayEventsProvider),
               ),

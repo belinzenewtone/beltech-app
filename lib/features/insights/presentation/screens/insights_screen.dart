@@ -38,13 +38,13 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> {
           }
           return ListView.separated(
             itemCount: cards.length,
-            separatorBuilder: (_, __) =>
+            separatorBuilder: (_, _) =>
                 const SizedBox(height: AppSpacing.listGap),
             itemBuilder: (_, i) => _InsightCardWidget(card: cards[i]),
           );
         },
         loading: () => const Center(child: LoadingIndicator()),
-        error: (_, __) => const AppEmptyState(
+        error: (_, _) => const AppEmptyState(
           icon: Icons.error_outline,
           title: 'Unable to load insights',
           subtitle: 'Pull to retry',

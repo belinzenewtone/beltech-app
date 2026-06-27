@@ -52,7 +52,6 @@ void main() {
     'changePassword writes new hashed password when current is valid',
     () async {
       final currentHash = hasher.hash('current-pass');
-      final newHash = hasher.hash('new-pass-123');
       when(
         () => credentialsStore.readPasswordHash(),
       ).thenAnswer((_) async => currentHash);
@@ -65,7 +64,11 @@ void main() {
         newPassword: 'new-pass-123',
       );
 
-      verify(() => credentialsStore.writePasswordHash(newHash)).called(1);
+      final captured = verify(
+        () => credentialsStore.writePasswordHash(captureAny()),
+      ).captured;
+      expect(captured.length, 1);
+      expect(hasher.verify('new-pass-123', captured.single as String), isTrue);
     },
   );
 

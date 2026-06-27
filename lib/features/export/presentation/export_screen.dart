@@ -57,7 +57,7 @@ class _ExportScreenState extends ConsumerState<ExportScreen> {
           '${next.error}'.replaceFirst('Exception: ', ''),
         );
       } else if (previous is AsyncLoading && next.hasValue) {
-        final result = next.valueOrNull;
+        final result = next.value;
         if (result != null) {
           AppFeedback.success(
             context,
@@ -246,7 +246,7 @@ class _ExportScreenState extends ConsumerState<ExportScreen> {
           // Preview card
           AppCard(
             child: ExportPreviewGrid(
-              counts: previewAsync.valueOrNull,
+              counts: previewAsync.value,
               isLoading: previewAsync.isLoading,
             ),
           ),
@@ -255,7 +255,7 @@ class _ExportScreenState extends ConsumerState<ExportScreen> {
           // History card
           AppCard(
             child: ExportHistoryList(
-              entries: historyAsync.valueOrNull,
+              entries: historyAsync.value,
               isLoading: historyAsync.isLoading,
             ),
           ),

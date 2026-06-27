@@ -44,7 +44,7 @@ class AppSearchBar extends StatelessWidget {
         prefixIcon: Icon(Icons.search_rounded, color: hintColor, size: 18),
         suffixIcon: ValueListenableBuilder<TextEditingValue>(
           valueListenable: controller,
-          builder: (_, value, __) => value.text.isEmpty
+          builder: (_, value, _) => value.text.isEmpty
               ? const SizedBox.shrink()
               : IconButton(
                   icon: Icon(Icons.close_rounded, color: hintColor, size: 18),

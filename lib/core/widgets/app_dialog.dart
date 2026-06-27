@@ -30,7 +30,7 @@ Future<T?> showAppDialog<T>({
         MaterialLocalizations.of(context).modalBarrierDismissLabel,
     barrierColor: barrierColor,
     transitionDuration: transitionDuration,
-    pageBuilder: (dialogContext, _, __) {
+    pageBuilder: (dialogContext, _, _) {
       Widget child = Builder(builder: builder);
       if (useSafeArea) {
         child = SafeArea(child: child);

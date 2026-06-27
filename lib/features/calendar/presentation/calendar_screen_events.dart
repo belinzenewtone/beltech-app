@@ -102,7 +102,7 @@ class _CalendarEventsPane extends StatelessWidget {
               )
               .toList(),
         ),
-        error: (_, __) => ErrorMessage(
+        error: (_, _) => ErrorMessage(
           label: 'Unable to load events',
           onRetry: () => state.ref.invalidate(dayEventsProvider),
         ),

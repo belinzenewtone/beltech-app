@@ -90,7 +90,7 @@ class _ExpenseFormSheetState extends ConsumerState<_ExpenseFormSheet> {
   @override
   Widget build(BuildContext context) {
     final categoriesAsync = ref.watch(expenseCategoriesProvider);
-    final categories = categoriesAsync.valueOrNull ?? expenseCategoryDefaults;
+    final categories = categoriesAsync.value ?? expenseCategoryDefaults;
     if (!categories.contains(_selectedCategory)) {
       _selectedCategory = categories.first;
     }

@@ -74,7 +74,7 @@ class HomeWeekReviewRitualCard extends ConsumerWidget {
         );
       },
       loading: () => const SizedBox.shrink(),
-      error: (_, __) => const AppEmptyState(
+      error: (_, _) => const AppEmptyState(
         icon: Icons.date_range_rounded,
         title: 'Weekly ritual unavailable',
         subtitle: 'Pull to refresh and try again.',

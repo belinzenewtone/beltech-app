@@ -66,7 +66,7 @@ final fulizaLimitProvider = FutureProvider<double>(
   (ref) => ref.watch(localNotificationServiceProvider).getFulizaLimit(),
 );
 
-class NotificationPreferenceController extends AutoDisposeAsyncNotifier<void> {
+class NotificationPreferenceController extends AsyncNotifier<void> {
   @override
   Future<void> build() async {}
 
@@ -196,7 +196,7 @@ class NotificationPreferenceController extends AutoDisposeAsyncNotifier<void> {
 }
 
 final notificationPreferenceControllerProvider =
-    AutoDisposeAsyncNotifierProvider<NotificationPreferenceController, void>(
+    AsyncNotifierProvider<NotificationPreferenceController, void>(
       NotificationPreferenceController.new,
     );
 

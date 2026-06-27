@@ -1,5 +1,6 @@
 import 'package:beltech/core/ota/shorebird_patch_service.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/legacy.dart';
 
 /// Singleton service for querying Shorebird patch state.
 final shorebirdPatchServiceProvider = Provider<ShorebirdPatchService>(

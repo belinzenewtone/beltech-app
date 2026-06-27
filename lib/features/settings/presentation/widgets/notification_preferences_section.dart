@@ -20,13 +20,13 @@ class NotificationPreferencesSection extends ConsumerWidget {
       notificationPreferenceControllerProvider,
     );
 
-    final notificationsEnabled = notificationsEnabledState.valueOrNull ?? true;
-    final budgetAlertsEnabled = budgetAlertsState.valueOrNull ?? true;
-    final dailyDigestEnabled = dailyDigestState.valueOrNull ?? true;
+    final notificationsEnabled = notificationsEnabledState.value ?? true;
+    final budgetAlertsEnabled = budgetAlertsState.value ?? true;
+    final dailyDigestEnabled = dailyDigestState.value ?? true;
     final (digestHour, digestMinute) =
-        dailyDigestTimeState.valueOrNull ?? (7, 0);
+        dailyDigestTimeState.value ?? (7, 0);
     final (budgetHigh, budgetMedium, budgetLow) =
-        budgetThresholdsState.valueOrNull ?? (90.0, 70.0, 50.0);
+        budgetThresholdsState.value ?? (90.0, 70.0, 50.0);
 
     final readOnly =
         notificationsEnabledState.isLoading ||

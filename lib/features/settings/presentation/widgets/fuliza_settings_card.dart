@@ -20,8 +20,8 @@ class FulizaSettingsCard extends ConsumerWidget {
     final limitAsync = ref.watch(fulizaLimitProvider);
     final brightness = Theme.of(context).brightness;
 
-    final balance = balanceAsync.valueOrNull ?? 0;
-    final limit = limitAsync.valueOrNull ?? 0;
+    final balance = balanceAsync.value ?? 0;
+    final limit = limitAsync.value ?? 0;
     final hasActivity = balance > 0;
 
     return AppCard(
@@ -75,7 +75,7 @@ class FulizaSettingsCard extends ConsumerWidget {
                     value: balanceAsync.when(
                       data: (v) => v > 0 ? CurrencyFormatter.formatKes(v) : '—',
                       loading: () => '…',
-                      error: (_, __) => '—',
+                      error: (_, _) => '—',
                     ),
                     valueColor: hasActivity ? AppColors.danger : AppColors.textSecondaryFor(brightness),
                   ),
@@ -87,7 +87,7 @@ class FulizaSettingsCard extends ConsumerWidget {
                     value: limitAsync.when(
                       data: (v) => v > 0 ? CurrencyFormatter.formatKes(v) : 'Not set',
                       loading: () => '…',
-                      error: (_, __) => '—',
+                      error: (_, _) => '—',
                     ),
                     valueColor: AppColors.textPrimaryFor(brightness),
                   ),

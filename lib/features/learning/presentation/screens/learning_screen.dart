@@ -63,7 +63,7 @@ class LearningScreen extends ConsumerWidget {
                             streakAsync.when(
                               data: (v) => '$v-day streak',
                               loading: () => '— streak',
-                              error: (_, __) => '0-day streak',
+                              error: (_, _) => '0-day streak',
                             ),
                             style: AppTypography.bodyMd(
                               context,
@@ -89,7 +89,7 @@ class LearningScreen extends ConsumerWidget {
                             monthlyAsync.when(
                               data: (v) => '$v min this month',
                               loading: () => '— min this month',
-                              error: (_, __) => '0 min this month',
+                              error: (_, _) => '0 min this month',
                             ),
                             style: AppTypography.bodyMd(
                               context,

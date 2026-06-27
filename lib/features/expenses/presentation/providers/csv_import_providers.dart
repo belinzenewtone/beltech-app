@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:beltech/core/di/database_providers.dart';
 import 'package:beltech/features/expenses/domain/services/csv_import_service.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/legacy.dart';
 
 final csvImportServiceProvider = Provider<CsvImportService>(
   (_) => const CsvImportService(),
@@ -28,7 +29,7 @@ final csvImportStatusProvider = StateProvider<CsvImportStatus>(
 
 final csvImportErrorProvider = StateProvider<String?>((_) => null);
 
-class CsvImportController extends AutoDisposeAsyncNotifier<int> {
+class CsvImportController extends AsyncNotifier<int> {
   @override
   FutureOr<int> build() => 0;
 
@@ -100,6 +101,6 @@ class CsvImportController extends AutoDisposeAsyncNotifier<int> {
 }
 
 final csvImportControllerProvider =
-    AutoDisposeAsyncNotifierProvider<CsvImportController, int>(
+    AsyncNotifierProvider<CsvImportController, int>(
       CsvImportController.new,
     );

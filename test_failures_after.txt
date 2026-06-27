@@ -1,0 +1,485 @@
+
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/assistant/ai_engine/anomaly_detector_test.dart: AnomalyDetector detects duplicate transactions
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/assistant/ai_engine/anomaly_detector_test.dart: AnomalyDetector detects daily spending surges
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/assistant/ai_engine/anomaly_detector_test.dart: AnomalyDetector detects category spikes
+::group::❌ C:/Users/BELINZE NEWTONE/Music/DART/test/assistant/ai_engine/anomaly_detector_test.dart: AnomalyDetector detects unusual amounts (failed)
+Expected: <true>
+  Actual: <false>
+
+package:matcher                                           expect
+package:flutter_test/src/widget_tester.dart 473:18        expect
+test\assistant\ai_engine\anomaly_detector_test.dart 99:7  main.<fn>.<fn>
+::endgroup::
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/assistant/ai_engine/anomaly_detector_test.dart: AnomalyDetector returns empty when no anomalies
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/assistant/ai_engine/cash_flow_projector_test.dart: CashFlowProjector projects declining balance with bills
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/assistant/ai_engine/cash_flow_projector_test.dart: CashFlowProjector finds lowest point
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/assistant/ai_engine/expense_anomaly_scorer_test.dart: ExpenseAnomalyScorer placeholder: deterministic insight generation
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/assistant/ai_engine/financial_health_calculator_test.dart: FinancialHealthCalculator excellent health with high savings and no issues
+::group::❌ C:/Users/BELINZE NEWTONE/Music/DART/test/assistant/ai_engine/financial_health_calculator_test.dart: FinancialHealthCalculator poor health with overspending and overdue tasks (failed)
+Expected: 'Poor'
+  Actual: 'Critical'
+   Which: is different.
+          Expected: Poor
+            Actual: Critical
+                    ^
+           Differ at offset 0
+
+package:matcher                                                      expect
+package:flutter_test/src/widget_tester.dart 473:18                   expect
+test\assistant\ai_engine\financial_health_calculator_test.dart 53:7  main.<fn>.<fn>
+::endgroup::
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/assistant/ai_engine/financial_health_calculator_test.dart: FinancialHealthCalculator  clamps score between 0 and 100
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/assistant/ai_engine/intent_classifier_test.dart: IntentClassifier classifies spending queries
+::group::❌ C:/Users/BELINZE NEWTONE/Music/DART/test/assistant/ai_engine/intent_classifier_test.dart: IntentClassifier classifies income queries (failed)
+Expected: Intent:<Intent.incomeSummary>
+  Actual: Intent:<Intent.spendingSummary>
+
+package:matcher                                            expect
+package:flutter_test/src/widget_tester.dart 473:18         expect
+test\assistant\ai_engine\intent_classifier_test.dart 22:7  main.<fn>.<fn>
+::endgroup::
+::group::❌ C:/Users/BELINZE NEWTONE/Music/DART/test/assistant/ai_engine/intent_classifier_test.dart: IntentClassifier classifies balance queries (failed)
+Expected: Intent:<Intent.balanceCheck>
+  Actual: Intent:<Intent.spendingSummary>
+
+package:matcher                                            expect
+package:flutter_test/src/widget_tester.dart 473:18         expect
+test\assistant\ai_engine\intent_classifier_test.dart 27:7  main.<fn>.<fn>
+::endgroup::
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/assistant/ai_engine/intent_classifier_test.dart: IntentClassifier classifies task queries
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/assistant/ai_engine/intent_classifier_test.dart: IntentClassifier classifies health queries
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/assistant/ai_engine/intent_classifier_test.dart: IntentClassifier classifies anomaly queries
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/assistant/ai_engine/intent_classifier_test.dart: IntentClassifier classifies cash flow queries
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/assistant/ai_engine/intent_classifier_test.dart: IntentClassifier classifies goal queries
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/assistant/ai_engine/intent_classifier_test.dart: IntentClassifier classifies loan queries
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/assistant/ai_engine/intent_classifier_test.dart: IntentClassifier classifies bill queries
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/assistant/ai_engine/intent_classifier_test.dart: IntentClassifier classifies learning queries
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/assistant/ai_engine/intent_classifier_test.dart: IntentClassifier classifies advice queries
+::group::❌ C:/Users/BELINZE NEWTONE/Music/DART/test/assistant/ai_engine/intent_classifier_test.dart: IntentClassifier returns unknown for unrecognized queries (failed)
+Expected: Intent:<Intent.unknown>
+  Actual: Intent:<Intent.merchantSummary>
+
+package:matcher                                             expect
+package:flutter_test/src/widget_tester.dart 473:18          expect
+test\assistant\ai_engine\intent_classifier_test.dart 101:7  main.<fn>.<fn>
+::endgroup::
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/assistant/ai_engine/offline_ai_engine_test.dart: OfflineAiEngine replies to spending query
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/assistant/ai_engine/offline_ai_engine_test.dart: OfflineAiEngine replies to health check
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/assistant/ai_engine/offline_ai_engine_test.dart: OfflineAiEngine replies to anomaly query with no anomalies
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/assistant/ai_engine/offline_ai_engine_test.dart: OfflineAiEngine replies to unknown query with fallback
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/assistant/assistant_repository_test.dart: sendMessage appends user and assistant response
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/assistant/assistant_repository_test.dart: suggestions return expected prompts
+::group::❌ C:/Users/BELINZE NEWTONE/Music/DART/test/app_smoke_test.dart: renders bottom navigation tabs (failed)
+══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following TestFailure was thrown running a test:
+Expected: exactly one matching candidate
+  Actual: _IconWidgetFinder:<Found 0 widgets with icon "IconData(U+0F428)": []>
+   Which: means none were found but one was expected
+
+When the exception was thrown, this was the stack:
+#4      main.<anonymous closure> (file:///C:/Users/BELINZE%20NEWTONE/Music/DART/test/app_smoke_test.dart:30:5)
+<asynchronous suspension>
+#5      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:192:15)
+<asynchronous suspension>
+#6      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1952:5)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided one frame from package:stack_trace)
+
+This was caught by the test expectation on the following line:
+  file:///C:/Users/BELINZE%20NEWTONE/Music/DART/test/app_smoke_test.dart line 30
+The test description was:
+  renders bottom navigation tabs
+════════════════════════════════════════════════════════════════════════════════════════════════════
+Test failed. See exception logs above.
+The test description was: renders bottom navigation tabs
+
+::endgroup::
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/auth/account_session_test.dart: accountSessionProvider reflects repository session stream
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/auth/account_session_test.dart: account auth controller calls repository signOut
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/auth/auth_repository_test.dart: isBiometricSupported returns true when device supports biometrics
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/auth/auth_repository_test.dart: setBiometricEnabled persists preference
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/auth/auth_repository_test.dart: authenticate returns false when biometric lock is disabled
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/auth/auth_repository_test.dart: authenticate calls local auth when enabled and supported
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/auth/local_account_repository_impl_test.dart: starts unauthenticated by default
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/auth/local_account_repository_impl_test.dart: sign up authenticates local session
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/auth/local_account_repository_impl_test.dart: session persists across repository instances
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/auth/local_account_repository_impl_test.dart: sign out clears persisted session
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/auth/local_account_repository_impl_test.dart: expired session is not restored
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/bills/bills_repository_test.dart: addBill and loadBills persist correctly
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/bills/bills_repository_test.dart: updateBill and deleteBill work correctly
+::group::❌ C:/Users/BELINZE NEWTONE/Music/DART/test/bills/bills_repository_test.dart: overdueCount returns correct number (failed)
+Expected: <1>
+  Actual: <0>
+
+package:matcher                                     expect
+package:flutter_test/src/widget_tester.dart 473:18  expect
+test\bills\bills_repository_test.dart 68:5          main.<fn>
+::endgroup::
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/budget/budget_repository_test.dart: upsertTarget and snapshot include category spending
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/budget/build_budget_target_progresses_use_case_test.dart: maps targets to spent progress and sorts highest pressure first
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/calendar/calendar_agenda_provider_test.dart: month event types prefer higher-priority type for each day
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/calendar/calendar_repository_test.dart: updateEvent and deleteEvent persist event changes
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/core/feature_flag_store_test.dart: returns defaults and applies remote values
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/core/feature_flag_store_test.dart: supports rollout percentages and deterministic user targeting
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/core/revamp_telemetry_service_test.dart: stores only privacy-safe telemetry attributes
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/calendar/calendar_month_grid_test.dart: month grid renders event and task markers and supports tap
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/core/sync/background_sync_coordinator_test.dart: syncNow skips when background sync rollout disables this user
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/core/sync/background_sync_coordinator_test.dart: syncNow runs when background sync rollout enables this user
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/core/sync/background_sync_coordinator_test.dart: runNotificationSweep skips when smart notifications rollout disables user
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/core/sync/background_sync_coordinator_test.dart: runNotificationSweep runs when smart notifications is enabled
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/core/sync/background_sync_coordinator_test.dart: android strategy uses near-real-time sms cadence
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/core/sync/background_sync_coordinator_test.dart: non-android strategy keeps conservative cadence
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/core/sync/data_integrity_service_test.dart: DataIntegrityService placeholder: quarantine logic & repair workflows
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/core/sync/mpesa_historical_import_scanner_test.dart: runs historical import once per user scope
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/core/sync/mpesa_historical_import_scanner_test.dart: does not mark scan complete when import fails
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/core/sync/sync_conflict_state_machine_test.dart: SyncConflictResolver resolve() both deleted → tombstoned
+::group::❌ C:/Users/BELINZE NEWTONE/Music/DART/test/core/sync/sync_conflict_state_machine_test.dart: SyncConflictResolver resolve() local deleted, remote exists → conflict (failed)
+Expected: <false>
+  Actual: <true>
+
+package:matcher                                            expect
+package:flutter_test/src/widget_tester.dart 473:18         expect
+test\core\sync\sync_conflict_state_machine_test.dart 38:9  main.<fn>.<fn>.<fn>
+::endgroup::
+::group::❌ C:/Users/BELINZE NEWTONE/Music/DART/test/core/sync/sync_conflict_state_machine_test.dart: SyncConflictResolver resolve() remote deleted, local exists → conflict (local wins) (failed)
+Expected: <true>
+  Actual: <false>
+
+package:matcher                                            expect
+package:flutter_test/src/widget_tester.dart 473:18         expect
+test\core\sync\sync_conflict_state_machine_test.dart 52:9  main.<fn>.<fn>.<fn>
+::endgroup::
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/core/sync/sync_conflict_state_machine_test.dart: SyncConflictResolver resolve() user scope key mismatch → conflict
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/core/sync/sync_conflict_state_machine_test.dart: SyncConflictResolver resolve() local newer → local wins
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/core/sync/sync_conflict_state_machine_test.dart: SyncConflictResolver resolve() remote newer → remote wins
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/core/sync/sync_conflict_state_machine_test.dart: SyncConflictResolver resolve() same timestamp → local wins (tie-breaker)
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/core/sync/sync_conflict_state_machine_test.dart: SyncConflictResolver nextState() localOnly + network available → queued
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/core/sync/sync_conflict_state_machine_test.dart: SyncConflictResolver nextState() localOnly + no network → stays localOnly
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/core/sync/sync_conflict_state_machine_test.dart: SyncConflictResolver nextState() queued + network → syncing
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/core/sync/sync_conflict_state_machine_test.dart: SyncConflictResolver nextState() syncing + success → synced
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/core/sync/sync_conflict_state_machine_test.dart: SyncConflictResolver nextState() syncing + failure → failed
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/core/sync/sync_conflict_state_machine_test.dart: SyncConflictResolver nextState() failed + network → queued (retry)
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/core/sync/sync_conflict_state_machine_test.dart: SyncConflictResolver nextState() any state + deleted → tombstoned
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/core/theme/theme_transition_controller_test.dart: ThemeTransitionController placeholder: theme animation state machine
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/data/app_drift_store_test.dart: addTransaction updates expenses snapshot stream
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/data/app_drift_store_test.dart: addTask and setTaskCompletion publish updated tasks
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/data/app_drift_store_test.dart: addEvent updates selected-day event stream
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/domain/entity_value_equality_test.dart: AssistantMessage uses value equality
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/domain/entity_value_equality_test.dart: BudgetSnapshot compares nested lists by value
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/domain/entity_value_equality_test.dart: AnalyticsSnapshot compares trend/category lists by value
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/domain/entity_value_equality_test.dart: WeekReviewData compares insight list by value
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/domain/entity_value_equality_test.dart: GlobalSearchResult uses value equality
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/expenses/balance_reconciliation_service_test.dart: reconcile returns empty when balances align
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/expenses/balance_reconciliation_service_test.dart: reconcile flags mismatched reported balance
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/expenses/balance_reconciliation_service_test.dart: reconcile ignores non-sms transactions
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/expenses/category_inference_engine_test.dart: keyword-based inference detects supermarkets as Food & Dining
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/expenses/category_inference_engine_test.dart: keyword-based inference detects fuel stations as Transport
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/expenses/category_inference_engine_test.dart: keyword-based inference detects KPLC as Bills & Utilities
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/expenses/category_inference_engine_test.dart: keyword-based inference detects delivery apps as Food & Dining
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/expenses/category_inference_engine_test.dart: keyword-based inference returns null for unrecognised merchants
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/expenses/category_inference_engine_test.dart: amount-aware overrides airtime keyword with small amount → Airtime
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/expenses/category_inference_engine_test.dart: amount-aware overrides airtime keyword with large amount is not forced to Airtime
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/expenses/category_inference_engine_test.dart: amount-aware overrides fuel keyword always → Transport regardless of amount
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/expenses/category_inference_engine_test.dart: amount-aware overrides rent keyword with large amount → Rent
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/expenses/category_inference_engine_test.dart: amount-aware overrides rent keyword with small amount falls through to keyword/null
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/expenses/category_inference_engine_test.dart: amount-aware overrides small amount heuristic → Food & Dining
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/expenses/category_inference_engine_test.dart: amount-aware overrides large amount heuristic → Rent
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/expenses/csv_import_preview_validation_test.dart: CsvImportValidation placeholder: CSV validation & row-level error detection
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/expenses/device_sms_data_source_test.dart: returns empty list when platform is not Android
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/expenses/device_sms_data_source_test.dart: filters MPESA-like inbox messages by date window
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/expenses/device_sms_data_source_test.dart: returns timestamped inbox entries for parser fallback
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/expenses/device_sms_data_source_test.dart: filters Fuliza notice noise even when sender is MPESA
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/expenses/expenses_repository_test.dart: addManualTransaction updates snapshot totals and transactions
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/expenses/expenses_repository_test.dart: importSmsMessages parses valid mpesa rows
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/expenses/expenses_repository_test.dart: importFromDevice uses SMS receive timestamp when message has no date
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/expenses/expenses_repository_test.dart: updateTransaction and deleteTransaction persist expense changes
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/expenses/expenses_repository_test.dart: merchant_categories learning is applied to future SMS imports
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/expenses/expenses_repository_test.dart: category inference overrides type-based fallback for known merchants
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/expenses/expenses_repository_test.dart: updateTransaction learns corrected category for future imports
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/expenses/expenses_repository_test.dart: fuzzy dedupe skips same-day near-amount duplicate imports
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/expenses/expenses_repository_test.dart: re-importing same SMS revives retry queue rows for immediate processing
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/expenses/expense_import_intelligence_test.dart: paybill registry and fuliza lifecycle are tracked after import
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/expenses/expense_import_intelligence_test.dart: replay import queue retries previously failed rows
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/expenses/expense_import_routing_test.dart: medium confidence imports land in review queue and can be approved
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/expenses/expense_import_routing_test.dart: low confidence imports are quarantined and can be dismissed
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/expenses/expense_import_routing_test.dart: audit logs omit raw SMS payloads
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/expenses/expense_import_routing_test.dart: duplicate SMS does not create duplicate ledger rows
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/expenses/merchant_registry_test.dart: searchMerchantRegistry returns learned merchants
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/expenses/merchant_registry_test.dart: fetchTopMerchants orders by usage count
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/expenses/merchant_registry_test.dart: getMerchantRegistryEntry returns matching category
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/expenses/merchant_registry_test.dart: getMerchantRegistryEntry returns null for unknown merchant
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/expenses/import_health_banner_test.dart: ImportHealthBanner hides itself when there is nothing to report
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/expenses/mpesa_parser_accuracy_test.dart: sender-aware confidence MPESA sender keeps high confidence
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/expenses/mpesa_parser_accuracy_test.dart: sender-aware confidence numeric shortcode sender downgrades confidence
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/expenses/mpesa_parser_accuracy_test.dart: sender-aware confidence bank sender downgrades confidence
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/expenses/mpesa_parser_accuracy_test.dart: sender-aware confidence null sender leaves confidence unchanged
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/expenses/mpesa_parser_accuracy_test.dart: message variant detection "You have received Ksh..." from MPESA is parsed as received
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/expenses/mpesa_parser_accuracy_test.dart: message variant detection balance notification without transaction keywords is ignored
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/expenses/mpesa_parser_accuracy_test.dart: paybill vs buyGoods vs sent "sent to ... account ..." is paybill
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/expenses/mpesa_parser_accuracy_test.dart: paybill vs buyGoods vs sent "paid to ... acc#..." is paybill
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/expenses/mpesa_parser_accuracy_test.dart: paybill vs buyGoods vs sent "paid to ... on ..." without account remains buyGoods
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/expenses/mpesa_parser_accuracy_test.dart: paybill vs buyGoods vs sent "sent to ... on ..." without account remains sent
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/expenses/mpesa_parser_accuracy_test.dart: isolate parsing preserves sender-aware accuracy parseJobsInIsolate applies sender downgrades
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/expenses/import_health_banner_test.dart: ImportHealthBanner shows pending, duplicates and parse failures
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/expenses/mpesa_parser_service_test.dart: normalizeParserText trims leading and trailing whitespace
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/expenses/mpesa_parser_service_test.dart: normalizeParserText collapses internal runs of spaces
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/expenses/mpesa_parser_service_test.dart: normalizeParserText collapses newlines and tabs
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/expenses/mpesa_parser_service_test.dart: normalizeParserText replaces non-breaking space with regular space
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/expenses/mpesa_parser_service_test.dart: normalizeParserText replaces zero-width chars
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/expenses/mpesa_parser_service_test.dart: normalizeParserText normalizes curly single quotes
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/expenses/mpesa_parser_service_test.dart: normalizeParserText normalizes em dash and en dash
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/expenses/mpesa_parser_service_test.dart: normalizeParserText handles empty string
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/expenses/mpesa_parser_service_test.dart: looksLikeMpesaMessage matches "mpesa" keyword
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/expenses/mpesa_parser_service_test.dart: looksLikeMpesaMessage matches "m-pesa" keyword
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/expenses/mpesa_parser_service_test.dart: looksLikeMpesaMessage matches "confirmed" + "ksh" combination
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/expenses/mpesa_parser_service_test.dart: looksLikeMpesaMessage rejects unrelated SMS
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/expenses/mpesa_parser_service_test.dart: looksLikeMpesaMessage rejects empty string
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/expenses/mpesa_parser_service_test.dart: looksLikeMpesaMessage case-insensitive match on MPESA
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/expenses/mpesa_parser_service_test.dart: noise filters ignores fuliza service notice before parsing
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/expenses/mpesa_parser_service_test.dart: noise filters ignores ambiguous success receipt stubs
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/expenses/mpesa_parser_service_test.dart: parseSingleDetailed routing sent transaction → high confidence → directLedger
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/expenses/mpesa_parser_service_test.dart: parseSingleDetailed routing withdrawal → medium confidence → reviewQueue
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/expenses/mpesa_parser_service_test.dart: parseSingleDetailed routing unknown type → low confidence → quarantine
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/expenses/mpesa_parser_service_test.dart: parseSingleDetailed transaction types sent to person
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/expenses/mpesa_parser_service_test.dart: parseSingleDetailed transaction types received from person
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/expenses/mpesa_parser_service_test.dart: parseSingleDetailed transaction types paybill payment
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/expenses/mpesa_parser_service_test.dart: parseSingleDetailed transaction types buy goods (paid to)
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/expenses/mpesa_parser_service_test.dart: parseSingleDetailed transaction types cash withdrawal
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/expenses/mpesa_parser_service_test.dart: parseSingleDetailed transaction types airtime purchase
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/expenses/mpesa_parser_service_test.dart: parseSingleDetailed transaction types fuliza draw
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/expenses/mpesa_parser_service_test.dart: parseSingleDetailed transaction types fuliza repayment
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/expenses/mpesa_parser_service_test.dart: parseSingleDetailed transaction types reversal
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/expenses/mpesa_parser_service_test.dart: parseSingleDetailed transaction types deposit
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/expenses/mpesa_parser_service_test.dart: parseSingleDetailed amount extraction integer amount without decimals
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/expenses/mpesa_parser_service_test.dart: parseSingleDetailed amount extraction amount with comma thousand separator
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/expenses/mpesa_parser_service_test.dart: parseSingleDetailed amount extraction large amount with multiple commas
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/expenses/mpesa_parser_service_test.dart: parseSingleDetailed amount extraction amount with KES instead of Ksh
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/expenses/mpesa_parser_service_test.dart: parseSingleDetailed amount extraction amount with single decimal place
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/expenses/mpesa_parser_service_test.dart: parseSingleDetailed amount extraction zero amount routes to quarantine
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/expenses/mpesa_parser_service_test.dart: parseSingleDetailed amount extraction missing amount routes to quarantine
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/expenses/mpesa_parser_service_test.dart: parseSingleDetailed amount extraction small amount parsed correctly
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/expenses/mpesa_parser_service_test.dart: parseSingleDetailed amount extraction extracts post-transaction mpesa balance
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/expenses/mpesa_parser_service_test.dart: parseSingleDetailed date/time parsing 4-digit year
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/expenses/mpesa_parser_service_test.dart: parseSingleDetailed date/time parsing 2-digit year → normalized to 2000+
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/expenses/mpesa_parser_service_test.dart: parseSingleDetailed date/time parsing 12-hour AM time
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/expenses/mpesa_parser_service_test.dart: parseSingleDetailed date/time parsing 12-hour PM time
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/expenses/mpesa_parser_service_test.dart: parseSingleDetailed date/time parsing noon (12:00 PM) parsed correctly
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/expenses/mpesa_parser_service_test.dart: parseSingleDetailed date/time parsing midnight (12:00 AM) parsed correctly
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/expenses/mpesa_parser_service_test.dart: parseSingleDetailed date/time parsing missing date falls back to DateTime.now() (year matches)
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/expenses/mpesa_parser_service_test.dart: parseSingleDetailed date/time parsing uses provided fallback timestamp when date is missing
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/expenses/mpesa_parser_service_test.dart: parseSingleDetailed date/time parsing supports 24-hour clock timestamps
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/expenses/mpesa_parser_service_test.dart: parseSingleDetailed date/time parsing invalid calendar date falls back to provided timestamp
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/expenses/mpesa_parser_service_test.dart: parseSingleDetailed quarantine missing MPESA code → quarantine
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/expenses/mpesa_parser_service_test.dart: parseSingleDetailed quarantine amount of 0 → quarantine
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/expenses/mpesa_parser_service_test.dart: parseSingleDetailed quarantine quarantine record has mpesaCode UNKNOWN
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/expenses/mpesa_parser_service_test.dart: parseSingleDetailed quarantine quarantine record has amountKes of 0
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/expenses/mpesa_parser_service_test.dart: parseSingleDetailed quarantine non-mpesa text returns null
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/expenses/mpesa_parser_service_test.dart: parseSingleDetailed quarantine empty string returns null
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/expenses/mpesa_parser_service_test.dart: parseSingleDetailed quarantine whitespace-only string returns null
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/expenses/mpesa_parser_service_test.dart: parseSingleDetailed counterparty extraction extracts counterparty from sent transaction
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/expenses/mpesa_parser_service_test.dart: parseSingleDetailed counterparty extraction extracts counterparty from received transaction
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/expenses/mpesa_parser_service_test.dart: parseSingleDetailed counterparty extraction extracts merchant from buy goods transaction
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/expenses/mpesa_parser_service_test.dart: parseSingleDetailed counterparty extraction extracts paybill merchant name
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/expenses/mpesa_parser_service_test.dart: parseSingleDetailed counterparty extraction extracts paybill merchant when sms uses acc shorthand
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/expenses/mpesa_parser_service_test.dart: parseSingleDetailed counterparty extraction title case applied to single-word counterparty
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/expenses/mpesa_parser_service_test.dart: parseSingleDetailed counterparty extraction strips trailing phone digits from counterparty name
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/expenses/mpesa_parser_service_test.dart: parseSingleDetailed counterparty extraction no counterparty falls back to type label
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/expenses/mpesa_parser_service_test.dart: parseSingleDetailed title building sent with counterparty uses counterparty as title
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/expenses/mpesa_parser_service_test.dart: parseSingleDetailed title building withdrawal fallback title
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/expenses/mpesa_parser_service_test.dart: parseSingleDetailed title building airtime fallback title
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/expenses/mpesa_parser_service_test.dart: parseSingleDetailed title building reversal fallback title
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/expenses/mpesa_parser_service_test.dart: parseSingleDetailed title building strips "via Kopo Kopo" from merchant title
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/expenses/mpesa_parser_service_test.dart: parseSingleDetailed category assignment received → Income
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/expenses/mpesa_parser_service_test.dart: parseSingleDetailed category assignment paybill → Bills
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/expenses/mpesa_parser_service_test.dart: parseSingleDetailed category assignment buyGoods → Food
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/expenses/mpesa_parser_service_test.dart: parseSingleDetailed category assignment withdrawal → Cash
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/expenses/mpesa_parser_service_test.dart: parseSingleDetailed category assignment deposit → Cash
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/expenses/mpesa_parser_service_test.dart: parseSingleDetailed category assignment airtime → Airtime
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/expenses/mpesa_parser_service_test.dart: parseSingleDetailed category assignment fulizaDraw → Loan
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/expenses/mpesa_parser_service_test.dart: parseSingleDetailed category assignment fulizaRepayment → Loan
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/expenses/mpesa_parser_service_test.dart: parseSingleDetailed category assignment reversal of sent payment is refined to Income
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/expenses/mpesa_parser_service_test.dart: parseSingleDetailed category assignment reversal of received payment stays non-income
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/expenses/mpesa_parser_service_test.dart: parseSingleDetailed paybill account extracts paybill account number
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/expenses/mpesa_parser_service_test.dart: parseSingleDetailed paybill account extracts alphanumeric account reference
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/expenses/mpesa_parser_service_test.dart: parseSingleDetailed paybill account extracts account when message uses for acc shorthand
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/expenses/mpesa_parser_service_test.dart: parseSingleDetailed paybill account null paybill account for non-paybill transaction
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/expenses/mpesa_parser_service_test.dart: hash determinism sourceHash is deterministic for identical messages
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/expenses/mpesa_parser_service_test.dart: hash determinism semanticHash is deterministic for identical messages
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/expenses/mpesa_parser_service_test.dart: hash determinism sourceHash differs for different messages
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/expenses/mpesa_parser_service_test.dart: hash determinism semanticHash differs for different amounts
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/expenses/mpesa_parser_service_test.dart: hash determinism semanticHash differs for different dates
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/expenses/mpesa_parser_service_test.dart: hash determinism sourceHash is 64 hex chars (SHA-256)
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/expenses/mpesa_parser_service_test.dart: hash determinism semanticHash is 64 hex chars (SHA-256)
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/expenses/mpesa_parser_service_test.dart: parseMany filters out quarantined results
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/expenses/mpesa_parser_service_test.dart: parseMany returns all candidates including quarantine via parseManyDetailed
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/expenses/mpesa_parser_service_test.dart: parseMany empty list returns empty list
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/expenses/mpesa_parser_service_test.dart: parseMany single valid message returns single result
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/expenses/mpesa_parser_service_test.dart: parseMany non-mpesa messages are filtered completely
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/expenses/mpesa_parser_service_test.dart: parseBulkText splits on blank lines and parses each chunk
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/expenses/mpesa_parser_service_test.dart: parseBulkText handles extra blank lines gracefully
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/expenses/mpesa_parser_service_test.dart: parseBulkText empty string returns empty list
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/expenses/quarantine_queue_notifier_test.dart: QuarantineQueueNotifier load parses repository items and exposes them
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/expenses/mpesa_parser_service_test.dart: parseSingle returns null for quarantine candidates
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/expenses/mpesa_parser_service_test.dart: parseSingle returns ParsedMpesaTransaction for valid high-confidence message
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/expenses/quarantine_queue_notifier_test.dart: QuarantineQueueNotifier load returns empty list when repository has no items
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/expenses/mpesa_parser_service_test.dart: parseSingle returned object has correct rawMessage
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/expenses/mpesa_parser_service_test.dart: confidenceScore high confidence → score >= 0.9
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/expenses/mpesa_parser_service_test.dart: confidenceScore medium confidence → score between 0.5 and 0.9
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/expenses/quarantine_queue_notifier_test.dart: QuarantineQueueNotifier approve uses quarantine id and removes item from state
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/expenses/mpesa_parser_service_test.dart: confidenceScore low confidence → score < 0.5
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/expenses/mpesa_parser_service_test.dart: edge cases multiline SMS with embedded newlines is parsed
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/expenses/quarantine_queue_notifier_test.dart: QuarantineQueueNotifier reject uses quarantine id and removes item from state
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/expenses/mpesa_parser_service_test.dart: edge cases message with non-breaking space is normalized
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/expenses/mpesa_parser_service_test.dart: edge cases very short M-Pesa-like message returns null or quarantine
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/expenses/quarantine_queue_notifier_test.dart: QuarantineQueueNotifier approveWithEdits uses quarantine id and removes item from state
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/expenses/mpesa_parser_service_test.dart: edge cases mpesa code must be exactly 10 alphanumeric chars
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/expenses/quarantine_queue_notifier_test.dart: QuarantineQueueNotifier load surfaces errors as AsyncError
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/expenses/mpesa_parser_service_test.dart: edge cases KES and Ksh are treated equivalently
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/expenses/mpesa_parser_service_test.dart: edge cases salary keyword in unknown transaction → Income category
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/expenses/mpesa_parser_service_test.dart: edge cases fuliza draw and repayment both parsed in single batch
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/expenses/sms_import_batch_and_isolate_test.dart: MpesaParserService isolate parsing parseJobsInIsolate returns the same candidates as sync parsing
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/expenses/sms_import_batch_and_isolate_test.dart: MpesaParserService isolate parsing parseJobsInIsolate handles an empty list
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/expenses/sms_import_batch_and_isolate_test.dart: ExpensesRepositoryImpl early source-hash dedup re-enqueueing the same SMS does not create a second queue row
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/expenses/sms_import_batch_and_isolate_test.dart: ExpensesRepositoryImpl early source-hash dedup importing an already-ledgered SMS skips enqueue entirely
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/expenses/sms_import_batch_and_isolate_test.dart: AppDriftStore SMS batch helpers addTransactionsBatch inserts multiple rows
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/expenses/sms_import_batch_and_isolate_test.dart: AppDriftStore SMS batch helpers insertSmsImportQueueBatch inserts multiple rows
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/expenses/sms_import_batch_and_isolate_test.dart: AppDriftStore SMS batch helpers updateSmsImportQueueStatusBatch updates status for multiple rows
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/expenses/sms_import_batch_and_isolate_test.dart: AppDriftStore SMS batch helpers insertSmsImportAuditBatch inserts multiple audit rows
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/expenses/sms_import_batch_and_isolate_test.dart: AppDriftStore SMS batch helpers insertSmsReviewBatch and insertSmsQuarantineBatch insert rows
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/expenses/sms_income_detection_test.dart: importFromDevice creates income records for received payments
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/expenses/sms_income_detection_test.dart: duplicate received SMS does not create duplicate income
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/export/csv_builder_test.dart: CsvBuilder escapes quotes and commas
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/expenses/quarantine_queue_screen_test.dart: shows empty state when queue is empty
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/expenses/quarantine_queue_screen_test.dart: shows quarantine item title and amount
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/features/expenses/import_health_worker_test.dart: ImportHealthWorker reports healthy when confidence is high and quarantine low
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/features/expenses/import_health_worker_test.dart: ImportHealthWorker reports degraded when quarantine exceeds 30%
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/features/expenses/import_health_worker_test.dart: ImportHealthWorker generates alert for critical quarantine depth
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/features/expenses/import_health_worker_test.dart: ImportHealthWorker handles empty confidence scores
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/features/expenses/import_health_worker_test.dart: ImportHealthWorker counts confidence levels correctly
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/features/expenses/import_health_worker_test.dart: ImportHealthWorker exposes all generated alerts
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/features/expenses/import_health_worker_test.dart: ImportHealthWorker flags anomaly when no high-confidence imports exist
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/export/encrypted_export_service_test.dart: EncryptedExportService encrypt produces non-empty output different from plaintext
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/features/expenses/presentation/csv_import_preview_test.dart: CsvImportPreviewScreen placeholder: CSV preview & validation UI
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/features/expenses/presentation/fee_analytics_screen_test.dart: FeeAnalyticsScreen placeholder: fee analytics screen state & filters
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/features/assistant/presentation/assistant_action_widgets_test.dart: AssistantSendButton exposes accessibility labels
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/features/expenses/presentation/merchant_detail_screen_test.dart: MerchantDetailScreen placeholder: merchant analytics rendering
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/features/assistant/presentation/assistant_action_widgets_test.dart: AssistantSendButton loading state updates label
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/features/assistant/presentation/assistant_action_widgets_test.dart: AssistantPillButton exposes tooltip text
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/export/encrypted_export_service_test.dart: EncryptedExportService decrypt with correct password returns original plaintext
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/features/expenses/presentation/quarantine_queue_screen_test.dart: QuarantineQueueScreen placeholder: quarantine queue UI & workflows
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/features/home/presentation/home_screen_test.dart: HomeScreen placeholder: greeting, summary cards, loading states
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/features/insights/presentation/insights_screen_test.dart: InsightsScreen placeholder: insight card generation & display
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/export/encrypted_export_service_test.dart: EncryptedExportService decrypt with wrong password throws
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/features/recurring/recurring_materializer_service_test.dart: RecurringMaterializerService materializes due rules
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/features/recurring/recurring_materializer_service_test.dart: RecurringMaterializerService syncNow handles errors gracefully
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/export/encrypted_export_service_test.dart: EncryptedExportService encrypting same plaintext twice produces different ciphertexts
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/goals/goals_repository_test.dart: addGoal and loadGoals persist correctly
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/goals/goals_repository_test.dart: updateGoal and deleteGoal work correctly
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/goals/goals_repository_test.dart: isAtRisk detects behind-schedule goals
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/home/home_repository_test.dart: watchOverview reflects newly added same-day transaction
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/features/tasks/presentation/task_item_card_test.dart: TaskItemCard — rendering shows task title
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/income/build_income_overview_use_case_test.dart: builds totals, month cashflow, and six-month trend
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/features/tasks/presentation/task_item_card_test.dart: TaskItemCard — rendering shows description when provided
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/features/tasks/presentation/task_item_card_test.dart: TaskItemCard — rendering does not show description widget when null
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/export/encrypted_export_service_test.dart: EncryptedExportService handles empty plaintext
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/features/tasks/presentation/task_item_card_test.dart: TaskItemCard — rendering shows formatted deadline when no description
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/features/tasks/presentation/task_item_card_test.dart: TaskItemCard — rendering shows No deadline when nothing else to display
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/features/tasks/presentation/task_item_card_test.dart: TaskItemCard — rendering completed task title has strikethrough
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/features/tasks/presentation/task_item_card_test.dart: TaskItemCard — status circle tooltips pending task tooltip is Mark complete
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/features/tasks/presentation/task_item_card_test.dart: TaskItemCard — status circle tooltips completed task tooltip is Mark incomplete
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/features/tasks/presentation/task_item_card_test.dart: TaskItemCard — status circle tooltips selection mode unselected keeps Mark complete tooltip
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/income/income_repository_test.dart: add/update/delete income works
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/features/tasks/presentation/task_item_card_test.dart: TaskItemCard — status circle tooltips selection mode selected tooltip is Deselect
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/features/tasks/presentation/task_item_card_test.dart: TaskItemCard — swipe backgrounds complete swipe background uses successMuted colour
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/features/tasks/presentation/task_item_card_test.dart: TaskItemCard — swipe backgrounds delete swipe background uses dangerMuted colour
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/features/tasks/presentation/task_item_card_test.dart: TaskItemCard — swipe backgrounds swipe is disabled in selection mode
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/features/tasks/presentation/task_item_card_test.dart: TaskItemCard — swipe backgrounds swipe is disabled when busy
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/learning/learning_repository_test.dart: addSession and loadSessions persist correctly
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/learning/learning_repository_test.dart: deleteSession removes session
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/learning/learning_repository_test.dart: currentStreak returns 0 when no sessions
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/learning/learning_repository_test.dart: monthlyMinutes sums current month correctly
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/features/tasks/presentation/task_item_card_test.dart: TaskItemCard — interactions tapping status circle calls onToggle
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/features/tasks/presentation/task_item_card_test.dart: TaskItemCard — interactions tapping card calls onEdit
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/features/tasks/presentation/task_item_card_test.dart: TaskItemCard — interactions busy state disables status circle
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/notifications/daily_digest_worker_test.dart: DailyDigestWorker placeholder: daily summary scheduling & composition
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/features/tasks/presentation/task_item_card_test.dart: TaskItemCard — interactions selection mode tapping status circle calls onSelectToggle
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/export/encrypted_export_service_test.dart: EncryptedExportService handles large plaintext
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/features/tasks/presentation/task_item_card_test.dart: TaskItemCard — due date display shows today for deadline matching today
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/loans/loans_repository_test.dart: addLoan and loadLoans persist correctly
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/loans/loans_repository_test.dart: updateLoan and deleteLoan work correctly
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/features/tasks/presentation/task_item_card_test.dart: TaskItemCard — due date display shows date string for future task beyond tomorrow
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/loans/loans_repository_test.dart: totalOutstanding sums active loans only
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/notifications/reminder_integration_test.dart: task add/update triggers schedule and cancel hooks
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/notifications/reminder_integration_test.dart: task add/update skips scheduling when reminder offsets are empty
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/notifications/reminder_integration_test.dart: event add/delete triggers schedule and cancel hooks
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/notifications/reminder_integration_test.dart: event add/update skips scheduling when reminder offsets are empty
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/profile/profile_repository_test.dart: updateProfile writes and publishes updated profile
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/recurring/recurring_materializer_service_test.dart: RecurringMaterializerService placeholder: hourly due-entry materialization
+::group::❌ C:/Users/BELINZE NEWTONE/Music/DART/test/profile/profile_repository_test.dart: changePassword writes new hashed password when current is valid (failed)
+Exception: Current password is incorrect.
+package:beltech/features/profile/data/repositories/profile_repository_impl.dart 62:7  ProfileRepositoryImpl.changePassword
+::endgroup::
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/profile/profile_repository_test.dart: changePassword throws when current password is incorrect
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/recurring/recurring_repository_test.dart: materializeDue creates concrete records
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/recurring/recurring_suggestion_service_test.dart: detects monthly pattern from three occurrences
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/recurring/recurring_suggestion_service_test.dart: detects weekly pattern
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/recurring/recurring_suggestion_service_test.dart: returns empty when pattern is irregular
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/recurring/recurring_suggestion_service_test.dart: returns empty with fewer than two occurrences
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/review/build_week_review_data_use_case_test.dart: builds weekly review totals from finance and task signals
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/review/build_week_review_ritual_use_case_test.dart: returns positive ritual when momentum is strong
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/review/build_week_review_ritual_use_case_test.dart: returns spending reset ritual for negative net weeks
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/review/build_week_review_ritual_use_case_test.dart: returns task cadence ritual when completion lags
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/search/global_search_repository_test.dart: search returns task and expense matches
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/security/biometric_relock_policy_test.dart: requires relock when grace period has elapsed
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/security/biometric_relock_policy_test.dart: skips relock while still inside grace period
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/security/biometric_relock_policy_test.dart: skips relock when disabled or unlock is already in progress
+::group::❌ C:/Users/BELINZE NEWTONE/Music/DART/test/security/password_hasher_test.dart: hash is deterministic for same input (failed)
+Expected: 'sjjKXJGLXFZ5R8dywqS/zA==:c999d426ab96f5013b9999f6a590f011ea6476db34ce778ea3187af09cfd0f7b'
+  Actual: 'F59w6t/tX/DitBnK0nPWLw==:dcec694e145f7d4c1f56aa46857fe3aa8ac26b9ad59d31a1c2d2b87ad8e6d08f'
+   Which: is different.
+          Expected: sjjKXJGLXF ...
+            Actual: F59w6t/tX/ ...
+                    ^
+           Differ at offset 0
+
+package:matcher                                     expect
+package:flutter_test/src/widget_tester.dart 473:18  expect
+test\security\password_hasher_test.dart 11:5        main.<fn>
+::endgroup::
+::group::❌ C:/Users/BELINZE NEWTONE/Music/DART/test/security/password_hasher_test.dart: hash is not equal to plain text (failed)
+Expected: <64>
+  Actual: <89>
+
+package:matcher                                     expect
+package:flutter_test/src/widget_tester.dart 473:18  expect
+test\security\password_hasher_test.dart 17:5        main.<fn>
+::endgroup::
+::group::❌ C:/Users/BELINZE NEWTONE/Music/DART/test/security/screen_capture_protection_service_test.dart: protects finance and profile tabs only (failed)
+Expected: true
+  Actual: <false>
+
+package:matcher                                                 expect
+package:flutter_test/src/widget_tester.dart 473:18              expect
+test\security\screen_capture_protection_service_test.dart 10:5  main.<fn>
+::endgroup::
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/security/session_lock_settings_repository_test.dart: reads the default grace period when unset
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/security/session_lock_settings_repository_test.dart: persists a supported grace period
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/tasks/tasks_repository_test.dart: updateTask and deleteTask persist task changes
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/update/version_utils_test.dart: compareVersions returns 0 for equal versions
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/update/version_utils_test.dart: compareVersions returns positive when left is newer
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/update/version_utils_test.dart: compareVersions returns negative when right is newer
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/update/version_utils_test.dart: compareVersions handles short and long semantic versions
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/widgets/revamp_ui_golden_test.dart: weekly ritual card matches revamp baseline
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/widgets/revamp_ui_widget_test.dart: home ritual card renders the ritual content
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/widgets/revamp_ui_golden_test.dart: security and notification controls match baseline
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/widgets/style_token_regression_test.dart: Style token regressions AppButton primary uses shared accent in light mode
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/widgets/revamp_ui_widget_test.dart: week review screen shows ritual and upcoming events
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/widgets/revamp_ui_golden_test.dart: finance import intelligence card matches baseline
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/widgets/style_token_regression_test.dart: Style token regressions Profile security InkWell radii follow app card radius
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/widgets/revamp_ui_golden_test.dart: week review screen matches baseline
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/widgets/revamp_ui_widget_test.dart: security and notification settings expose revamp controls
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/widgets/revamp_ui_widget_test.dart: notification child preferences lock when notifications are disabled
+✅ C:/Users/BELINZE NEWTONE/Music/DART/test/widgets/revamp_ui_widget_test.dart: finance snapshot shows summary, budget, and transaction sections
+
+::error::354 tests passed, 13 failed.

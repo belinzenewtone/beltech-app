@@ -56,9 +56,9 @@ class ProfileRepositoryImpl implements ProfileRepository {
     required String newPassword,
   }) async {
     await _ensurePasswordBootstrap();
-    final currentHash = _passwordHasher.hash(currentPassword);
     final savedHash = await _credentialsStore.readPasswordHash();
-    if (savedHash != null && savedHash != currentHash) {
+    if (savedHash != null &&
+        !_passwordHasher.verify(currentPassword, savedHash)) {
       throw Exception('Current password is incorrect.');
     }
     final newHash = _passwordHasher.hash(newPassword);

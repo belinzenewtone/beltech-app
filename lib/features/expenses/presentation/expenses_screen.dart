@@ -140,7 +140,7 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
             selectedFilter: selectedFilter,
             busy: writeBusy,
             searchQuery: _searchQuery,
-            budgetSnapshot: budgetSnapshotState.valueOrNull,
+            budgetSnapshot: budgetSnapshotState.value,
             headerItems: headerItems,
             searchController: _searchController,
             onFilterChanged: (filter) {
@@ -181,7 +181,7 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
         key: ValueKey<String>('expenses-loading'),
         child: FinanceSkeletonList(),
       ),
-      error: (_, __) => KeyedSubtree(
+      error: (_, _) => KeyedSubtree(
         key: const ValueKey<String>('expenses-error'),
         child: ErrorMessage(
           label: 'Unable to load expenses',
@@ -205,7 +205,7 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
 
     // Resolve import metrics for the health banner (safe fallback to zeros).
     final importMetrics =
-        ref.watch(expenseImportMetricsProvider).valueOrNull ??
+        ref.watch(expenseImportMetricsProvider).value ??
         const ExpenseImportMetrics(
           reviewQueueCount: 0,
           quarantineCount: 0,
