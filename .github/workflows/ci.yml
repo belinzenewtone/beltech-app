@@ -1,0 +1,158 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ── Analyze + Test ────────────────────────────────────────────────────────────
+  test:
+    name: Analyze & Test
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.44.4'
+          channel: stable
+          cache: true
+
+      - name: Verify Flutter and Dart baselines
+        run: |
+          set -e
+          flutter --version
+          dart --version
+          flutter --version | head -n 1 | grep -E "Flutter 3\.44\.4"
+          dart --version 2>&1 | grep -E "Dart SDK version: 3\.12\.2"
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Architecture boundary check
+        run: bash scripts/architecture_check.sh
+
+      - name: Dart analyze
+        run: flutter analyze --no-fatal-infos --no-fatal-warnings
+
+      - name: Run tests with coverage
+        run: flutter test --coverage --reporter=expanded
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          files: coverage/lcov.info
+          fail_ci_if_error: false
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+
+  # ── Secret scan ───────────────────────────────────────────────────────────────
+  secret-scan:
+    name: Secret Scan
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Scan for hardcoded secrets
+        run: |
+          set -e
+          PATTERNS=(
+            "supabase_url\s*=\s*['\"]https"
+            "supabase_anon_key\s*=\s*['\"]ey"
+            "SUPABASE_URL\s*=\s*['\"]https"
+            "SUPABASE_ANON_KEY\s*=\s*['\"]ey"
+            "AIza[0-9A-Za-z\-_]{35}"
+          )
+          FOUND=0
+          for pattern in "${PATTERNS[@]}"; do
+            if grep -rEi "$pattern" lib/ test/ 2>/dev/null; then
+              echo "ERROR: Potential secret found matching pattern: $pattern"
+              FOUND=1
+            fi
+          done
+          if [ "$FOUND" -eq 1 ]; then
+            exit 1
+          fi
+          echo "Secret scan passed."
+
+  # ── Build Android ─────────────────────────────────────────────────────────────
+  build-android:
+    name: Build Android APK
+    runs-on: ubuntu-latest
+    needs: test
+    if: always() && !cancelled()
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.44.4'
+          channel: stable
+          cache: true
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Decode keystore
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+        run: |
+          echo "$KEYSTORE_BASE64" | base64 -d > android/app/beltech-release.jks
+          echo "keystore decoded: $(ls -lh android/app/beltech-release.jks)"
+
+      - name: Write key.properties
+        env:
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          cat > android/key.properties << EOF
+          storePassword=${KEYSTORE_PASSWORD}
+          keyPassword=${KEY_PASSWORD}
+          keyAlias=${KEY_ALIAS}
+          storeFile=app/beltech-release.jks
+          EOF
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Build release APK
+        run: flutter build apk --release
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-apk
+          path: build/app/outputs/flutter-apk/app-release.apk
+          retention-days: 7
+
+  # ── Build iOS ─────────────────────────────────────────────────────────────────
+  build-ios:
+    name: Build iOS (no-codesign)
+    runs-on: macos-latest
+    needs: test
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.44.4'
+          channel: stable
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Build iOS (no codesign)
+        run: flutter build ios --release --no-codesign

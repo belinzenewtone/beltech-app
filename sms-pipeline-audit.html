@@ -1,0 +1,1562 @@
+<title>SMS Pipeline Audit — Kotlin vs Dart</title>
+<style>
+:root {
+  --bg:           #F4F6FB;
+  --surface:      #FFFFFF;
+  --surface-hi:   #EDF0F8;
+  --border:       #D9DEF0;
+  --text:         #18202E;
+  --text-2:       #46526A;
+  --text-3:       #8691A8;
+
+  --kotlin:       #7F52FF;
+  --kotlin-bg:    rgba(127,82,255,0.08);
+  --kotlin-bd:    rgba(127,82,255,0.22);
+  --dart:         #0175C2;
+  --dart-bg:      rgba(1,117,194,0.08);
+  --dart-bd:      rgba(1,117,194,0.22);
+
+  --crit:         #C0281E;
+  --crit-bg:      #FFF3F2;
+  --crit-bd:      rgba(192,40,30,0.28);
+  --warn:         #C96800;
+  --warn-bg:      #FFF8EE;
+  --warn-bd:      rgba(201,104,0,0.28);
+  --ok:           #0A7854;
+  --ok-bg:        #EDFAF4;
+  --ok-bd:        rgba(10,120,84,0.28);
+  --info:         #1450A3;
+  --info-bg:      #EEF4FF;
+  --info-bd:      rgba(20,80,163,0.28);
+
+  --code-bg:      #EDF0F8;
+  --code-text:    #18202E;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg:         #0D1117;
+    --surface:    #161C27;
+    --surface-hi: #1C2333;
+    --border:     #262F44;
+    --text:       #E2E8F6;
+    --text-2:     #8B99B8;
+    --text-3:     #4A5470;
+
+    --kotlin-bg:  rgba(127,82,255,0.12);
+    --kotlin-bd:  rgba(127,82,255,0.30);
+    --dart-bg:    rgba(1,117,194,0.12);
+    --dart-bd:    rgba(1,117,194,0.30);
+
+    --crit-bg:    #230E0D;
+    --crit-bd:    rgba(192,40,30,0.35);
+    --warn-bg:    #1F1400;
+    --warn-bd:    rgba(201,104,0,0.35);
+    --ok-bg:      #071A12;
+    --ok-bd:      rgba(10,120,84,0.35);
+    --info-bg:    #091529;
+    --info-bd:    rgba(20,80,163,0.35);
+
+    --code-bg:    #1C2333;
+    --code-text:  #B8C6E8;
+  }
+}
+
+:root[data-theme="dark"] {
+  --bg:         #0D1117;
+  --surface:    #161C27;
+  --surface-hi: #1C2333;
+  --border:     #262F44;
+  --text:       #E2E8F6;
+  --text-2:     #8B99B8;
+  --text-3:     #4A5470;
+  --kotlin-bg:  rgba(127,82,255,0.12);
+  --kotlin-bd:  rgba(127,82,255,0.30);
+  --dart-bg:    rgba(1,117,194,0.12);
+  --dart-bd:    rgba(1,117,194,0.30);
+  --crit-bg:    #230E0D;
+  --crit-bd:    rgba(192,40,30,0.35);
+  --warn-bg:    #1F1400;
+  --warn-bd:    rgba(201,104,0,0.35);
+  --ok-bg:      #071A12;
+  --ok-bd:      rgba(10,120,84,0.35);
+  --info-bg:    #091529;
+  --info-bd:    rgba(20,80,163,0.35);
+  --code-bg:    #1C2333;
+  --code-text:  #B8C6E8;
+}
+
+:root[data-theme="light"] {
+  --bg:         #F4F6FB;
+  --surface:    #FFFFFF;
+  --surface-hi: #EDF0F8;
+  --border:     #D9DEF0;
+  --text:       #18202E;
+  --text-2:     #46526A;
+  --text-3:     #8691A8;
+  --kotlin-bg:  rgba(127,82,255,0.08);
+  --kotlin-bd:  rgba(127,82,255,0.22);
+  --dart-bg:    rgba(1,117,194,0.08);
+  --dart-bd:    rgba(1,117,194,0.22);
+  --crit-bg:    #FFF3F2;
+  --crit-bd:    rgba(192,40,30,0.28);
+  --warn-bg:    #FFF8EE;
+  --warn-bd:    rgba(201,104,0,0.28);
+  --ok-bg:      #EDFAF4;
+  --ok-bd:      rgba(10,120,84,0.28);
+  --info-bg:    #EEF4FF;
+  --info-bd:    rgba(20,80,163,0.28);
+  --code-bg:    #EDF0F8;
+  --code-text:  #18202E;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  font-size: 15px;
+  line-height: 1.65;
+}
+
+/* ── Layout ─────────────────────────────────────────────── */
+.shell {
+  display: grid;
+  grid-template-columns: 228px 1fr;
+  min-height: 100vh;
+  max-width: 1300px;
+  margin: 0 auto;
+}
+
+/* ── Sidebar ─────────────────────────────────────────────── */
+.sidebar {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  padding: 28px 0 40px;
+  scrollbar-width: thin;
+}
+
+.sidebar-brand {
+  padding: 0 18px 18px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 10px;
+}
+
+.sidebar-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+
+.nav-section-head {
+  padding: 10px 18px 4px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+
+.nav-a {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 5px 18px;
+  font-size: 12.5px;
+  color: var(--text-2);
+  text-decoration: none;
+  border-left: 2px solid transparent;
+  transition: color 0.12s, background 0.12s, border-color 0.12s;
+}
+
+.nav-a:hover { color: var(--text); background: var(--surface-hi); }
+.nav-a.active { color: var(--kotlin); border-left-color: var(--kotlin); background: var(--surface-hi); }
+
+.dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.d-crit { background: var(--crit); }
+.d-warn { background: var(--warn); }
+.d-ok   { background: var(--ok); }
+.d-mute { background: var(--text-3); }
+
+/* ── Main ─────────────────────────────────────────────────── */
+.main {
+  padding: 44px 60px 96px;
+}
+
+/* ── Report header ────────────────────────────────────────── */
+.rhead {
+  border-bottom: 2px solid var(--border);
+  padding-bottom: 36px;
+  margin-bottom: 48px;
+}
+
+.eyebrow {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  margin-bottom: 14px;
+}
+
+.rtitle {
+  font-size: 34px;
+  font-weight: 800;
+  line-height: 1.18;
+  text-wrap: balance;
+  color: var(--text);
+  margin-bottom: 18px;
+  letter-spacing: -0.02em;
+}
+
+.repo-chips { display: flex; flex-wrap: wrap; gap: 7px; margin-bottom: 18px; }
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 11px;
+  border-radius: 100px;
+  font-size: 11.5px;
+  font-weight: 500;
+  border: 1px solid;
+}
+
+.chip-k { background: var(--kotlin-bg); color: var(--kotlin); border-color: var(--kotlin-bd); }
+.chip-d { background: var(--dart-bg); color: var(--dart); border-color: var(--dart-bd); }
+
+.rmeta { font-size: 13px; color: var(--text-3); }
+
+/* ── Summary cards ────────────────────────────────────────── */
+.cards {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-bottom: 44px;
+}
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 18px 16px 14px;
+}
+
+.card-num {
+  font-size: 30px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  margin-bottom: 5px;
+  letter-spacing: -0.02em;
+}
+
+.n-crit { color: var(--crit); }
+.n-warn { color: var(--warn); }
+.n-ok   { color: var(--ok); }
+.n-k    { color: var(--kotlin); }
+
+.card-lbl { font-size: 11.5px; color: var(--text-3); font-weight: 500; }
+
+/* ── Section ─────────────────────────────────────────────── */
+.sec {
+  margin-bottom: 60px;
+  scroll-margin-top: 24px;
+}
+
+.sec-eye {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-bottom: 9px;
+}
+
+.stagenum {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  color: var(--text-3);
+  font-variant-numeric: tabular-nums;
+}
+
+.badge {
+  font-size: 9.5px;
+  font-weight: 800;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  padding: 2px 8px;
+  border-radius: 4px;
+  border: 1px solid;
+}
+
+.badge-crit { background: var(--crit-bg); color: var(--crit); border-color: var(--crit-bd); }
+.badge-warn { background: var(--warn-bg); color: var(--warn); border-color: var(--warn-bd); }
+.badge-ok   { background: var(--ok-bg);   color: var(--ok);   border-color: var(--ok-bd); }
+.badge-mute { background: var(--surface-hi); color: var(--text-3); border-color: var(--border); }
+
+.sec-title {
+  font-size: 23px;
+  font-weight: 750;
+  letter-spacing: -0.015em;
+  text-wrap: balance;
+  margin-bottom: 14px;
+  color: var(--text);
+}
+
+.sec-desc {
+  font-size: 14px;
+  color: var(--text-2);
+  margin-bottom: 22px;
+  max-width: 660px;
+  line-height: 1.6;
+}
+
+/* ── Compare grid ─────────────────────────────────────────── */
+.cmp {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1px;
+  background: var(--border);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+  margin-bottom: 22px;
+}
+
+.cmp-col { background: var(--surface); padding: 18px 20px; }
+
+.lang-tag {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 2px 8px;
+  border-radius: 4px;
+  margin-bottom: 12px;
+  border: 1px solid;
+}
+
+.lt-k { background: var(--kotlin-bg); color: var(--kotlin); border-color: var(--kotlin-bd); }
+.lt-d { background: var(--dart-bg); color: var(--dart); border-color: var(--dart-bd); }
+
+.cmp-col p, .cmp-col li {
+  font-size: 13px;
+  color: var(--text-2);
+  line-height: 1.6;
+}
+
+.cmp-col p { margin-bottom: 10px; }
+.cmp-col p:last-child { margin-bottom: 0; }
+.cmp-col ul { padding-left: 16px; }
+.cmp-col li { margin-bottom: 5px; }
+.cmp-col strong { color: var(--text); font-weight: 600; }
+
+/* ── Code ─────────────────────────────────────────────────── */
+code {
+  font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', 'Consolas', monospace;
+  font-size: 12px;
+  background: var(--code-bg);
+  color: var(--code-text);
+  padding: 1px 5px;
+  border-radius: 3px;
+  border: 1px solid var(--border);
+  white-space: nowrap;
+}
+
+pre {
+  background: var(--code-bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 14px 18px;
+  overflow-x: auto;
+  margin: 14px 0;
+  line-height: 1.55;
+}
+
+pre code {
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: 12px;
+  white-space: pre;
+  color: var(--code-text);
+}
+
+/* ── Gap callout ──────────────────────────────────────────── */
+.gap {
+  border-radius: 6px;
+  padding: 13px 17px;
+  margin: 16px 0;
+  border-left: 3px solid;
+}
+
+.gap-crit { background: var(--crit-bg); border-color: var(--crit); }
+.gap-warn { background: var(--warn-bg); border-color: var(--warn); }
+.gap-ok   { background: var(--ok-bg);   border-color: var(--ok); }
+.gap-info { background: var(--info-bg); border-color: var(--info); }
+
+.gap-head {
+  font-size: 10.5px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  margin-bottom: 5px;
+}
+
+.gap-crit .gap-head { color: var(--crit); }
+.gap-warn .gap-head { color: var(--warn); }
+.gap-ok   .gap-head { color: var(--ok); }
+.gap-info .gap-head { color: var(--info); }
+
+.gap p {
+  font-size: 13px;
+  color: var(--text-2);
+  line-height: 1.6;
+  margin: 0;
+}
+
+/* ── Table ────────────────────────────────────────────────── */
+.tbl-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  margin: 20px 0;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+th {
+  background: var(--surface-hi);
+  padding: 9px 14px;
+  text-align: left;
+  font-weight: 700;
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--text-3);
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+
+td {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  color: var(--text-2);
+  vertical-align: top;
+  line-height: 1.5;
+}
+
+tr:last-child td { border-bottom: none; }
+
+td:first-child { white-space: nowrap; }
+
+.pb {
+  display: inline-block;
+  padding: 2px 7px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.04em;
+}
+
+.pb-p0 { background: rgba(192,40,30,0.12); color: var(--crit); }
+.pb-p1 { background: rgba(201,104,0,0.12); color: var(--warn); }
+.pb-p2 { background: rgba(10,120,84,0.12); color: var(--ok); }
+.pb-p3 { background: rgba(20,80,163,0.12); color: var(--info); }
+
+/* ── Prose ────────────────────────────────────────────────── */
+hr.div { border: none; border-top: 1px solid var(--border); margin: 52px 0; }
+
+h2 {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text);
+  margin: 26px 0 10px;
+}
+
+h3 {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text);
+  margin: 20px 0 8px;
+}
+
+p {
+  font-size: 14px;
+  color: var(--text-2);
+  margin-bottom: 12px;
+  max-width: 680px;
+  line-height: 1.65;
+}
+
+ul, ol { padding-left: 20px; margin-bottom: 12px; }
+li { font-size: 14px; color: var(--text-2); margin-bottom: 4px; line-height: 1.55; }
+li strong { color: var(--text); font-weight: 600; }
+p strong { color: var(--text); font-weight: 600; }
+
+/* ── Responsive ───────────────────────────────────────────── */
+@media (max-width: 860px) {
+  .shell { grid-template-columns: 1fr; }
+  .sidebar { display: none; }
+  .main { padding: 28px 20px 64px; }
+  .cards { grid-template-columns: 1fr 1fr; }
+  .cmp { grid-template-columns: 1fr; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  * { transition: none !important; }
+}
+</style>
+
+<div class="shell">
+
+<!-- ── Sidebar ───────────────────────────────────────────── -->
+<nav class="sidebar" aria-label="Sections">
+  <div class="sidebar-brand">
+    <div class="sidebar-label">SMS Pipeline Audit</div>
+  </div>
+
+  <div class="nav-section-head">Overview</div>
+  <a href="#summary" class="nav-a"><span class="dot d-mute"></span>Executive Summary</a>
+
+  <div class="nav-section-head">Pipeline Stages</div>
+  <a href="#s1"  class="nav-a"><span class="dot d-crit"></span>1. SMS Extraction</a>
+  <a href="#s2"  class="nav-a"><span class="dot d-mute"></span>2. Text Normalization</a>
+  <a href="#s3"  class="nav-a"><span class="dot d-mute"></span>3. Fast Filter</a>
+  <a href="#s4"  class="nav-a"><span class="dot d-crit"></span>4. Code Extraction</a>
+  <a href="#s5"  class="nav-a"><span class="dot d-crit"></span>5. Amount Extraction</a>
+  <a href="#s6"  class="nav-a"><span class="dot d-crit"></span>6. Date Parsing</a>
+  <a href="#s7"  class="nav-a"><span class="dot d-warn"></span>7. Classification Rules</a>
+  <a href="#s8"  class="nav-a"><span class="dot d-crit"></span>8. Confidence Scoring</a>
+  <a href="#s9"  class="nav-a"><span class="dot d-warn"></span>9. Counterparty</a>
+  <a href="#s10" class="nav-a"><span class="dot d-warn"></span>10. Deduplication</a>
+  <a href="#s11" class="nav-a"><span class="dot d-crit"></span>11. Parse Routing</a>
+  <a href="#s12" class="nav-a"><span class="dot d-crit"></span>12. Background Processing</a>
+  <a href="#s13" class="nav-a"><span class="dot d-crit"></span>13. Persistent Queues</a>
+  <a href="#s14" class="nav-a"><span class="dot d-crit"></span>14. Audit &amp; Observability</a>
+  <a href="#s15" class="nav-a"><span class="dot d-warn"></span>15. Category Inference</a>
+
+  <div class="nav-section-head">Actions</div>
+  <a href="#roadmap" class="nav-a"><span class="dot d-ok"></span>Implementation Roadmap</a>
+  <a href="#beyond"  class="nav-a"><span class="dot d-ok"></span>Beyond Kotlin</a>
+</nav>
+
+<!-- ── Main ─────────────────────────────────────────────── -->
+<main class="main">
+
+<!-- ───────────────────── HEADER ──────────────────────── -->
+<header class="rhead">
+  <div class="eyebrow">End-to-End Technical Audit · July 2026</div>
+  <h1 class="rtitle">SMS Pipeline Audit<br>Kotlin vs Dart</h1>
+  <div class="repo-chips">
+    <span class="chip chip-k">belinzenewtone/KOTLIN-PROJECT</span>
+    <span class="chip chip-d">belinzenewtone/beltech-app</span>
+  </div>
+  <p class="rmeta">15 pipeline stages · 8 critical gaps (P0) · 6 significant gaps (P1) · 5 Dart-only opportunities</p>
+</header>
+
+<!-- ───────────────────── SUMMARY ─────────────────────── -->
+<section class="sec" id="summary">
+  <div class="sec-eye">
+    <span class="stagenum">OVERVIEW</span>
+    <span class="badge badge-crit">Action Required</span>
+  </div>
+  <h1 class="sec-title">Executive Summary</h1>
+
+  <div class="cards">
+    <div class="card"><div class="card-num n-crit">8</div><div class="card-lbl">Critical gaps (P0)</div></div>
+    <div class="card"><div class="card-num n-warn">6</div><div class="card-lbl">Significant gaps (P1)</div></div>
+    <div class="card"><div class="card-num n-ok">5</div><div class="card-lbl">Dart-only opportunities</div></div>
+    <div class="card"><div class="card-num n-k">4</div><div class="card-lbl">Stages at parity</div></div>
+  </div>
+
+  <p>The Dart app has the right structural foundations — <code>mpesa_parser_rules.dart</code>, the dual-hash deduplication, and <code>device_sms_data_source.dart</code> are all well-designed. What it lacks is the production engineering layer that makes the Kotlin version reliable at scale.</p>
+
+  <p>The critical failures are not cosmetic. A start-anchored code regex misses any SMS where the code is not literally the first character, which is most of them. A single <code>firstMatch</code> for amount extraction returns the fee (e.g. "Ksh30.00 transaction cost") instead of the transaction amount. A standalone confidence scorer that exists but is never called means routing to the review queue or quarantine is driven by rule-matching alone, ignoring amount quality, date presence, and sender trust. And the entire absence of WorkManager, persistent queues, and an audit log means interruptions silently lose data with no recovery path.</p>
+
+  <p>The gaps are additive, not architectural. No file needs to be thrown away — each gap is a specific function or system to add to an existing structure that is already pointed in the right direction.</p>
+</section>
+
+<hr class="div">
+
+<!-- ──────────────────── STAGE 1 ─────────────────────── -->
+<section class="sec" id="s1">
+  <div class="sec-eye"><span class="stagenum">STAGE 01</span><span class="badge badge-crit">Critical Gap</span></div>
+  <h1 class="sec-title">SMS Extraction</h1>
+  <p class="sec-desc">How the operating system delivers SMS messages to the application.</p>
+
+  <div class="cmp">
+    <div class="cmp-col">
+      <span class="lang-tag lt-k">Kotlin · MpesaSmsReceiver.kt</span>
+      <p><strong>BroadcastReceiver</strong> registered for <code>Telephony.Sms.Intents.SMS_RECEIVED_ACTION</code>. Fires on every incoming SMS regardless of app state.</p>
+      <ul>
+        <li>Works when app is fully closed</li>
+        <li>Fires within milliseconds of carrier delivery</li>
+        <li>Manually assembles multi-part PDUs via <code>getMessagesFromIntent()</code></li>
+        <li>Preserves original carrier timestamp (not system clock time)</li>
+        <li>Dispatches <code>OneTimeWorkRequestBuilder</code> keyed by M-Pesa code with <code>KEEP</code> policy</li>
+      </ul>
+    </div>
+    <div class="cmp-col">
+      <span class="lang-tag lt-d">Dart · device_sms_data_source.dart</span>
+      <p><strong>ContentProvider polling</strong> via <code>flutter_sms_inbox</code>. Chunked reads of 200 SMS at a time from <code>content://sms/inbox</code>. Date-windowed backfill stops when the oldest chunk entry precedes the <code>from</code> date.</p>
+      <ul>
+        <li>App must be running to trigger a poll</li>
+        <li>No real-time path — new SMS sit unprocessed until next open</li>
+        <li>ContentProvider returns pre-assembled multi-part SMS</li>
+        <li>Timestamp from ContentProvider (accurate but not carrier-native)</li>
+        <li>No equivalent of WorkManager keyed-work deduplication</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="gap gap-crit">
+    <div class="gap-head">P0 — Real-Time Ingestion Gap</div>
+    <p>Any M-Pesa SMS received while the app is not running is never processed until the user manually opens the app. On a financial app where users may go days without opening it, this creates a systematic gap in the transaction history. The Kotlin app processes every SMS within milliseconds of delivery regardless of app lifecycle state.</p>
+  </div>
+
+  <div class="gap gap-crit">
+    <div class="gap-head">P0 — Multi-Part PDU Handling</div>
+    <p>M-Pesa messages with promotional tails are sometimes delivered by the carrier as multi-part PDUs. Kotlin assembles them explicitly. The Dart path relies entirely on Android's ContentProvider having already concatenated them — if the OS or device OEM handles this inconsistently, message fragments appear as separate truncated SMS.</p>
+  </div>
+
+  <h3>Recommended Fix</h3>
+  <p>Add a native Android plugin via a Flutter method channel that registers a <code>BroadcastReceiver</code>. The <code>workmanager</code> Flutter package exposes WorkManager, and a thin Kotlin plugin file can mirror <code>MpesaSmsReceiver.kt</code> exactly, calling back into Dart with the assembled body, sender, and carrier timestamp.</p>
+</section>
+
+<hr class="div">
+
+<!-- ──────────────────── STAGE 2 ─────────────────────── -->
+<section class="sec" id="s2">
+  <div class="sec-eye"><span class="stagenum">STAGE 02</span><span class="badge badge-mute">At Parity</span></div>
+  <h1 class="sec-title">Text Normalization</h1>
+
+  <div class="cmp">
+    <div class="cmp-col">
+      <span class="lang-tag lt-k">Kotlin · MpesaParserEnhanced.kt</span>
+      <p>Inline normalization: zero-width chars (<code>​</code>–<code>‍</code>, <code>﻿</code>), curly quotes → straight, en/em dashes → hyphen, multi-space collapse. Dedicated <code>PROMO_TAIL_RE</code> strips trailing promotional SMS content before any further parsing.</p>
+    </div>
+    <div class="cmp-col">
+      <span class="lang-tag lt-d">Dart · mpesa_parser_text.dart</span>
+      <p><code>normalizeParserText()</code> handles <code> </code>, zero-width chars, curly quotes, en/em dashes, whitespace collapse. The normalization set effectively matches Kotlin. No promo tail stripping.</p>
+    </div>
+  </div>
+
+  <div class="gap gap-warn">
+    <div class="gap-head">P2 — No Promo Tail Stripping</div>
+    <p>Kotlin's <code>PROMO_TAIL_RE</code> strips promotional suffixes ("Earn rewards…", "Visit mpesa.vodafone.co.ke…") before parsing. These tails are harmless for amount/code extraction today, but they pollute the stored raw SMS and will destabilize semantic hash values if Safaricom ever appends a different promo string to an otherwise identical message format.</p>
+  </div>
+</section>
+
+<hr class="div">
+
+<!-- ──────────────────── STAGE 3 ─────────────────────── -->
+<section class="sec" id="s3">
+  <div class="sec-eye"><span class="stagenum">STAGE 03</span><span class="badge badge-mute">At Parity</span></div>
+  <h1 class="sec-title">Fast Filter — M-Pesa Message Detection</h1>
+
+  <div class="cmp">
+    <div class="cmp-col">
+      <span class="lang-tag lt-k">Kotlin</span>
+      <p>Checks whether sender contains <code>MPESA</code> (case-insensitive) or the body contains key structural phrases. <code>isFulizaServiceNotice()</code> requires BOTH a Fuliza context AND a fee signal, and excludes repayment and outstanding-balance notices from being fast-filtered as importable transactions.</p>
+    </div>
+    <div class="cmp-col">
+      <span class="lang-tag lt-d">Dart · mpesa_parser_text.dart</span>
+      <p><code>looksLikeMpesaMessage()</code> is multi-signal: mpesa keyword OR confirmed+amount OR structural phrases. <code>_ignoreSmsPatterns</code> (4 patterns) is more targeted than a simple blocklist. Dart's fast filter is arguably more thorough than Kotlin's on this stage alone.</p>
+    </div>
+  </div>
+
+  <div class="gap gap-info">
+    <div class="gap-head">Note — Dart Leads Here</div>
+    <p>The multi-signal fast filter is a Dart advantage. No action needed. The targeted ignore-pattern list in <code>mpesa_parser_filters.dart</code> is also more precise and less likely to over-filter than a naive sender-check approach.</p>
+  </div>
+</section>
+
+<hr class="div">
+
+<!-- ──────────────────── STAGE 4 ─────────────────────── -->
+<section class="sec" id="s4">
+  <div class="sec-eye"><span class="stagenum">STAGE 04</span><span class="badge badge-crit">Critical Gap</span></div>
+  <h1 class="sec-title">M-Pesa Code Extraction</h1>
+  <p class="sec-desc">Extracting the M-Pesa confirmation code (e.g. <code>QFJ3K18N2W</code>) that uniquely identifies the transaction.</p>
+
+  <div class="cmp">
+    <div class="cmp-col">
+      <span class="lang-tag lt-k">Kotlin</span>
+      <pre><code>\b(?=[A-Za-z]*\d)([A-Za-z0-9]{9,10})\b</code></pre>
+      <ul>
+        <li>9 <em>or</em> 10 character codes</li>
+        <li>Mixed case (A–Z, a–z, 0–9)</li>
+        <li>Lookahead requires at least one digit</li>
+        <li>Word-boundary anchored, not start-anchored</li>
+        <li>Finds code anywhere in the body</li>
+      </ul>
+    </div>
+    <div class="cmp-col">
+      <span class="lang-tag lt-d">Dart · mpesa_parser_service.dart</span>
+      <pre><code>^([A-Z0-9]{10})\b</code></pre>
+      <ul>
+        <li>Exactly 10 characters — 9-char codes silently missed</li>
+        <li>Uppercase only — lowercase chars cause miss</li>
+        <li><strong>Start-anchored (<code>^</code>)</strong> — code must be the very first content</li>
+        <li>No digit lookahead</li>
+        <li>Most M-Pesa SMS begin with text before the code — every such SMS falls to synthetic code</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="gap gap-crit">
+    <div class="gap-head">P0 — Real Codes Will Be Missed, Inflating Synthetic-Code Bucket</div>
+    <p>The start anchor (<code>^</code>) is the critical defect. M-Pesa confirmation SMS typically begin with "Confirmed." or the amount before the code appears mid-sentence. With a start anchor, every such SMS fails code extraction and receives a synthesized <code>SYN…</code> code — routing it to MEDIUM confidence even when the parse is otherwise perfect. This means the review queue fills with correctly-parsed transactions whose only fault is a start-anchored regex. Historical SMS from before 2022 also used 9-character codes.</p>
+  </div>
+
+  <h3>One-Line Fix</h3>
+  <pre><code>// Replace in mpesa_parser_service.dart — remove ^ anchor, allow 9–10 chars, mixed case
+static final _codeRe = RegExp(r'\b(?=[A-Za-z]*\d)([A-Za-z0-9]{9,10})\b');</code></pre>
+</section>
+
+<hr class="div">
+
+<!-- ──────────────────── STAGE 5 ─────────────────────── -->
+<section class="sec" id="s5">
+  <div class="sec-eye"><span class="stagenum">STAGE 05</span><span class="badge badge-crit">Critical Gap</span></div>
+  <h1 class="sec-title">Amount Extraction &amp; Disambiguation</h1>
+  <p class="sec-desc">M-Pesa SMS contain 2–4 currency amounts (transaction, fee, balance, sometimes Fuliza credit). Extracting the right one is critical.</p>
+
+  <div class="cmp">
+    <div class="cmp-col">
+      <span class="lang-tag lt-k">Kotlin · MpesaParserEnhanced.kt</span>
+      <p><code>pickTransactionAmount()</code> finds all Ksh amounts, then disambiguates using two marker regexes:</p>
+      <ul>
+        <li><code>ACTION_VERB_RE</code> locates the verb (sent/received/paid/withdrawn/bought)</li>
+        <li><code>BALANCE_MARKER_RE</code> locates balance-marker phrases</li>
+        <li>Picks the amount nearest the action verb that is NOT preceded by a balance marker</li>
+        <li>Falls back to the largest non-balance amount if disambiguation fails</li>
+      </ul>
+    </div>
+    <div class="cmp-col">
+      <span class="lang-tag lt-d">Dart · mpesa_parser_service.dart</span>
+      <p>Single <code>firstMatch</code> on the amount regex. Returns the first currency-like number found in the text.</p>
+      <ul>
+        <li>No disambiguation between transaction amount and fee</li>
+        <li>No disambiguation between transaction amount and balance</li>
+        <li>"Ksh30.00 transaction cost… Ksh1,000.00 sent" → returns 30.00</li>
+        <li>Systematically wrong for any SMS that mentions the fee before the amount</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="gap gap-crit">
+    <div class="gap-head">P0 — Ledger Entries Will Record the Wrong Amount</div>
+    <p>Many M-Pesa SMS formats list the fee first: <em>"Ksh30.00 transaction cost… Ksh1,500.00 sent to John…"</em>. A <code>firstMatch</code> returns 30.00 instead of 1,500.00. This results in systematically wrong amounts in the user's ledger for every transaction type that leads with the fee.</p>
+  </div>
+
+  <h3>Recommended Fix — Port Kotlin's Disambiguation</h3>
+  <pre><code>// Add to mpesa_parser_service.dart
+static final _actionVerbRe = RegExp(
+  r'\b(?:sent|received|paid|withdrew|deposited|bought|transferred|given)\b',
+  caseSensitive: false,
+);
+static final _balanceMarkerRe = RegExp(
+  r'(?:new m-?pesa balance|available balance|balance is|outstanding)',
+  caseSensitive: false,
+);
+static final _allAmountsRe = RegExp(
+  r'Ksh\s*([0-9,]+(?:\.[0-9]{1,2})?)',
+  caseSensitive: false,
+);
+
+double? _pickTransactionAmount(String text) {
+  final matches = _allAmountsRe.allMatches(text).toList();
+  if (matches.isEmpty) return null;
+  if (matches.length == 1) return _parseKsh(matches.first.group(1)!);
+
+  final verb = _actionVerbRe.firstMatch(text);
+  // Exclude amounts that follow a balance marker
+  bool isBalanceAmount(RegExpMatch m) =>
+      _balanceMarkerRe.hasMatch(text.substring(0, m.start).split('\n').last);
+
+  final candidates = matches.where((m) => !isBalanceAmount(m)).toList();
+  if (candidates.isEmpty) return _parseKsh(matches.first.group(1)!);
+  if (verb == null) {
+    // No verb found — return largest non-balance amount
+    return candidates
+        .map((m) => _parseKsh(m.group(1)!))
+        .whereType&lt;double&gt;()
+        .fold&lt;double?&gt;(null, (best, v) => best == null || v &gt; best ? v : best);
+  }
+  // Return candidate closest to the action verb
+  return candidates
+      .map((m) => (dist: (m.start - verb.start).abs(), val: _parseKsh(m.group(1)!)))
+      .where((e) => e.val != null)
+      .fold&lt;({int dist, double? val})?&gt;(
+        null, (best, e) => best == null || e.dist &lt; best.dist ? e : best)
+      ?.val;
+}</code></pre>
+</section>
+
+<hr class="div">
+
+<!-- ──────────────────── STAGE 6 ─────────────────────── -->
+<section class="sec" id="s6">
+  <div class="sec-eye"><span class="stagenum">STAGE 06</span><span class="badge badge-crit">Critical Gap</span></div>
+  <h1 class="sec-title">Date Parsing</h1>
+
+  <div class="cmp">
+    <div class="cmp-col">
+      <span class="lang-tag lt-k">Kotlin · MpesaParserEnhanced.kt</span>
+      <p><strong>26 date formatters</strong> tried in sequence. Handles every known M-Pesa date variant across Safaricom's format history:</p>
+      <ul>
+        <li><code>DD/MM/YY at HH:MM am/pm</code></li>
+        <li><code>D/M/YY at H:MM am</code> (no leading zeros)</li>
+        <li><code>DD/MM/YYYY HH:MM:SS</code></li>
+        <li>24-hour variants of all the above</li>
+        <li>Month-name variants (<code>14 Jul 2026 14:30</code>)</li>
+        <li>Future-date guard: rejects dates &gt;24h ahead</li>
+        <li>Falls back to SMS arrival timestamp if all 26 fail</li>
+      </ul>
+    </div>
+    <div class="cmp-col">
+      <span class="lang-tag lt-d">Dart · mpesa_parser_text.dart</span>
+      <p><strong>2 date patterns</strong> — both variants of the same format:</p>
+      <ul>
+        <li><code>on DD/MM/YY at HH:MM am/pm</code></li>
+        <li>24-hour variant of the same</li>
+        <li>Has strict calendar validation via <code>_strictDateTime()</code> ✓</li>
+        <li>No future-date guard</li>
+        <li>Returns <code>null</code> for any other format</li>
+        <li>No fallback — null date means no date for the transaction</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="gap gap-crit">
+    <div class="gap-head">P0 — Historical SMS Will Have Null Dates, Stamped Wrong</div>
+    <p>Safaricom has changed its SMS date format multiple times. Any message older than ~2 years in a user's inbox is likely to use a format the Dart parser cannot recognize, returning <code>null</code>. A null date means the transaction either fails import outright, or gets stamped with <code>DateTime.now()</code> — both wrong. Kotlin handles 26 historical formats and falls back to the SMS arrival timestamp rather than null or now.</p>
+  </div>
+
+  <div class="gap gap-warn">
+    <div class="gap-head">P1 — No Future-Date Guard</div>
+    <p>A malformed or spoofed SMS containing a date in 2035 will be parsed and stored. Kotlin rejects any parsed date more than 24 hours ahead of the SMS arrival timestamp.</p>
+  </div>
+
+  <h3>Minimum Additional Patterns Needed</h3>
+  <pre><code>// Add to parseMpesaDateTime() in mpesa_parser_text.dart
+
+// 4-digit year
+RegExp(r'on (\d{1,2}/\d{1,2}/\d{4}) at (\d{1,2}:\d{2})\s*(am|pm)', caseSensitive: false),
+
+// No "on" prefix (some older formats)
+RegExp(r'(\d{1,2}/\d{1,2}/\d{2,4}),?\s+(\d{1,2}:\d{2})\s*(am|pm)', caseSensitive: false),
+
+// Short month name: "14 Jul 2026 14:30"
+RegExp(r'(\d{1,2})\s+(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+(\d{4})\s+(\d{1,2}:\d{2})',
+    caseSensitive: false),
+
+// ISO-like: "2026-07-14 14:30"
+RegExp(r'(\d{4}-\d{2}-\d{2})[T\s](\d{2}:\d{2})'),
+
+// Future-date guard (add after successful parse):
+if (parsed.isAfter(fallbackTimestamp.add(const Duration(hours: 24)))) {
+  return fallbackTimestamp;
+}</code></pre>
+</section>
+
+<hr class="div">
+
+<!-- ──────────────────── STAGE 7 ─────────────────────── -->
+<section class="sec" id="s7">
+  <div class="sec-eye"><span class="stagenum">STAGE 07</span><span class="badge badge-warn">Gap</span></div>
+  <h1 class="sec-title">SMS Classification Rules</h1>
+
+  <div class="cmp">
+    <div class="cmp-col">
+      <span class="lang-tag lt-k">Kotlin · MpesaParsingConfig.kt</span>
+      <p><strong>3-phase</strong> classification. Each of 10 rules has two pattern sets:</p>
+      <ul>
+        <li><strong>Phase 1</strong> — <code>patterns</code> (all must match AND-logic) → HIGH confidence</li>
+        <li><strong>Phase 2</strong> — <code>fallbackPatterns</code> (relaxed) → MEDIUM confidence</li>
+        <li><strong>Phase 3</strong> — last-resort keyword scan → LOW confidence → quarantine</li>
+        <li><code>matchedRulePhase</code> field on every parsed result</li>
+        <li>10 transaction categories including FulizaCharge + FulizaRepayment</li>
+      </ul>
+    </div>
+    <div class="cmp-col">
+      <span class="lang-tag lt-d">Dart · mpesa_parser_rules.dart</span>
+      <p><strong>2-phase</strong> classification:</p>
+      <ul>
+        <li><strong>Phase 1</strong> — <code>_primaryRules</code> → high confidence</li>
+        <li><strong>Phase 2</strong> — <code>_fallbackRules</code> → medium confidence</li>
+        <li>No Phase 3 — SMS that pass fast filter but miss both phases are silently discarded</li>
+        <li>No <code>matchedRulePhase</code> tracking</li>
+        <li>12 types including <code>fulizaDraw</code> ✓ (Kotlin lacks this)</li>
+        <li><code>_adjustConfidenceForSender()</code> downgrades bank/shortcode senders ✓</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="gap gap-warn">
+    <div class="gap-head">P1 — No Phase 3 Last-Resort Scan</div>
+    <p>When an SMS clearly looks like M-Pesa (passes fast filter) but doesn't match any phase 1 or phase 2 rule — typically a new format Safaricom deployed — Kotlin runs a flat keyword scan and routes to quarantine for manual review. Dart discards it entirely. No record is kept that the SMS was seen and failed. Real transactions are silently lost.</p>
+  </div>
+
+  <div class="gap gap-warn">
+    <div class="gap-head">P1 — No <code>matchedRulePhase</code> Tracking</div>
+    <p>Without recording which phase matched, you have no visibility into parser health degradation. If Safaricom changes a format and Phase 1 hit rate drops from 90% to 60%, you will not know until users report missing transactions. <code>matchedRulePhase</code> is the primary metric for detecting format drift.</p>
+  </div>
+
+  <div class="gap gap-ok">
+    <div class="gap-head">Dart Advantage — <code>fulizaDraw</code> Type</div>
+    <p>Dart correctly distinguishes a Fuliza draw (creating a liability) from a regular P2P send. Kotlin collapses both. Preserve this in all parity work — it's a meaningful financial distinction.</p>
+  </div>
+</section>
+
+<hr class="div">
+
+<!-- ──────────────────── STAGE 8 ─────────────────────── -->
+<section class="sec" id="s8">
+  <div class="sec-eye"><span class="stagenum">STAGE 08</span><span class="badge badge-crit">Critical Gap</span></div>
+  <h1 class="sec-title">Confidence Scoring</h1>
+
+  <div class="cmp">
+    <div class="cmp-col">
+      <span class="lang-tag lt-k">Kotlin · SmsConfidenceScorer.kt</span>
+      <p>Fully integrated into the parse pipeline. 6-factor weighted score:</p>
+      <ul>
+        <li>code × 0.15, amount × 0.20, date × 0.15</li>
+        <li>merchant × 0.20, type × 0.15, senderTrust × 0.15</li>
+        <li>Thresholds: ≥0.85 → HIGH, ≥0.60 → MEDIUM, else LOW</li>
+        <li>Synthesized F-prefix code scores 0.55 on code factor</li>
+        <li><code>SenderTrust.OFFICIAL_MPESA</code> → 1.0, <code>BANK</code> → 0.65, <code>UNKNOWN</code> → 0.5</li>
+        <li>Score drives routing decision</li>
+      </ul>
+    </div>
+    <div class="cmp-col">
+      <span class="lang-tag lt-d">Dart · sms_confidence_scorer.dart</span>
+      <p>Scorer class exists but is <strong>never called from the parser</strong>:</p>
+      <ul>
+        <li>Same 6 factors, same weights as Kotlin</li>
+        <li>Thresholds are more lenient: ≥0.75 HIGH, ≥0.50 MEDIUM</li>
+        <li>Factor 6 is <code>duplicate_likelihood</code> (requires async DB query) rather than <code>senderTrust</code></li>
+        <li>Returns <code>SmsConfidenceAnalysis</code> with full breakdown</li>
+        <li><strong>Confidence on parsed transactions comes only from rule phase, ignoring all 6 factors</strong></li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="gap gap-crit">
+    <div class="gap-head">P0 — Confidence Scorer Is Dead Code</div>
+    <p><code>SmsConfidenceScorer</code> is never invoked by <code>MpesaParserService</code>. Every parsed transaction's confidence is set by which phase matched the classification rules — phase 1 → HIGH, phase 2 → MEDIUM — with no regard for whether the amount was correctly extracted, the date parsed, the merchant identified, or the sender trusted. A transaction with a correct code but null date and wrong amount still gets HIGH confidence if it matched a Phase 1 rule. Wiring the scorer in is the single highest-leverage fix in this entire audit.</p>
+  </div>
+
+  <div class="gap gap-warn">
+    <div class="gap-head">P1 — Thresholds Too Lenient</div>
+    <p>Dart's ≥0.75 HIGH threshold accepts lower-quality parses directly to the ledger. Kotlin requires ≥0.85. A transaction scoring 0.80 (plausible but not certain) goes straight to the ledger in Dart but goes to the review queue in Kotlin. Match the Kotlin thresholds.</p>
+  </div>
+
+  <div class="gap gap-warn">
+    <div class="gap-head">P1 — Replace <code>duplicate_likelihood</code> with <code>senderTrust</code></div>
+    <p>Kotlin's 6th scoring factor is a synchronous enum lookup (<code>SenderTrust.OFFICIAL_MPESA / BANK / UNKNOWN</code>). Dart's equivalent requires an async database query during what should be a pure parsing function. Replace it with a synchronous sender classification to keep the scorer side-effect-free and callable from <code>Isolate.run</code>.</p>
+  </div>
+
+  <h3>Integration Point</h3>
+  <p>After counterparty extraction in <code>parseSingleDetailed()</code>, replace the rule-phase confidence with:</p>
+  <pre><code>final scored = SmsConfidenceScorer().score(SmsScoreInput(
+  hasMpesaCode:    candidate.mpesaCode != null &amp;&amp; !candidate.mpesaCode!.startsWith('SYN'),
+  hasAmount:       candidate.amount != null,
+  hasDate:         candidate.occurredAt != null,
+  hasMerchant:     candidate.counterparty != null,
+  transactionType: candidate.type,
+  senderTrust:     SenderTrust.fromSender(job.sender),
+));
+// Replace MpesaConfidence from rule phase with scored.confidence
+// Apply thresholds: &gt;= 0.85 → high, &gt;= 0.60 → medium, else low</code></pre>
+</section>
+
+<hr class="div">
+
+<!-- ──────────────────── STAGE 9 ─────────────────────── -->
+<section class="sec" id="s9">
+  <div class="sec-eye"><span class="stagenum">STAGE 09</span><span class="badge badge-warn">Gap</span></div>
+  <h1 class="sec-title">Counterparty Extraction</h1>
+
+  <div class="cmp">
+    <div class="cmp-col">
+      <span class="lang-tag lt-k">Kotlin · MpesaParsingConfig.kt</span>
+      <p>Each <code>DetectionRule</code> carries its own <code>counterpartyPatterns</code> — regex capture groups tuned to that rule's specific SMS structure. A Paybill rule extracts from a different position in the string than a P2P-send rule. Post-extraction, <code>normalizeMerchantName()</code> strips noise words, phone artifacts, and known prefixes to produce a consistent DB key.</p>
+    </div>
+    <div class="cmp-col">
+      <span class="lang-tag lt-d">Dart · mpesa_parser_filters.dart</span>
+      <p><code>cleanCounterparty()</code> post-processes extracted counterparty strings: strips phone numbers, "Kopo Kopo" and "New M-PESA" suffixes. But the initial extraction uses a generic pattern across all transaction types, not per-rule patterns. No merchant name normalization.</p>
+    </div>
+  </div>
+
+  <div class="gap gap-warn">
+    <div class="gap-head">P1 — Generic Extraction, Not Per-Rule</div>
+    <p>A Paybill SMS and a P2P-send SMS have completely different text structure around the counterparty name. Using a single generic extraction regex for all types means Paybill counterparties often include trailing account number strings ("Nairobi Water Company Account 0009230"), while P2P sends may miss the name entirely if the structure doesn't match. Kotlin's per-rule <code>counterpartyPatterns</code> solve this precisely.</p>
+  </div>
+
+  <div class="gap gap-warn">
+    <div class="gap-head">P1 — No <code>normalizeMerchantName()</code></div>
+    <p>Without merchant normalization, "SAFARICOM LTD", "Safaricom Limited", and "SAFARICOM" are three different merchants in the database. Category inference keyword rules won't consistently match, and merchant-based dedup heuristics break entirely. This is a significant source of data quality degradation over time as the transaction history grows.</p>
+  </div>
+</section>
+
+<hr class="div">
+
+<!-- ──────────────────── STAGE 10 ─────────────────────── -->
+<section class="sec" id="s10">
+  <div class="sec-eye"><span class="stagenum">STAGE 10</span><span class="badge badge-warn">Gap</span></div>
+  <h1 class="sec-title">Deduplication</h1>
+
+  <div class="cmp">
+    <div class="cmp-col">
+      <span class="lang-tag lt-k">Kotlin · MpesaDedupeEngineEnhanced.kt</span>
+      <p><strong>4-tier</strong> deduplication:</p>
+      <ol>
+        <li>Exact <code>mpesaCode</code> match (O(1) indexed lookup)</li>
+        <li>SHA-256 source hash of normalized SMS body</li>
+        <li>Semantic hash: SHA-256 of <code>category|amount|date|counterparty</code></li>
+        <li>Heuristic: same amount + merchant within 5-minute window</li>
+      </ol>
+      <p>Two <code>isDuplicate()</code> overloads. Within-batch dedup via <code>ConcurrentHashMap</code> before any DB call.</p>
+    </div>
+    <div class="cmp-col">
+      <span class="lang-tag lt-d">Dart · mpesa_parser_service.dart</span>
+      <p><strong>2-tier</strong> deduplication:</p>
+      <ol>
+        <li>SHA-256 source hash</li>
+        <li>Semantic hash: SHA-256 of <code>category|amount|date|counterparty</code></li>
+      </ol>
+      <p>Both hashes are computed and stored. No code-based lookup. No heuristic time-window. No within-batch dedup.</p>
+    </div>
+  </div>
+
+  <div class="gap gap-warn">
+    <div class="gap-head">P1 — Missing Code-Based Dedup (Tier 1)</div>
+    <p>The fastest and most reliable dedup check — does a transaction with this M-Pesa code already exist? — is missing. Tier 2 (source hash) catches the same re-import case but requires computing a full SHA-256 first. Add a simple <code>existsByMpesaCode()</code> check as the first pass.</p>
+  </div>
+
+  <div class="gap gap-warn">
+    <div class="gap-head">P1 — Missing Heuristic Time-Window (Tier 4)</div>
+    <p>Once a real-time BroadcastReceiver is added (Stage 1), the same transaction can arrive via two paths: ContentProvider backfill and BroadcastReceiver. If the SMS text differs by a single trailing space between readings, source hash and semantic hash both fail to catch the duplicate. The 5-minute heuristic (same amount + merchant) is the safety net for exactly this scenario.</p>
+  </div>
+
+  <div class="gap gap-warn">
+    <div class="gap-head">P1 — No Within-Batch Dedup</div>
+    <p>During bulk import, 500 SMS may contain 10 duplicates of the same transaction (user received a resent confirmation). Kotlin catches these with an in-memory <code>ConcurrentHashMap</code> before touching the database. Dart processes each item independently, hitting the DB with duplicate write attempts.</p>
+  </div>
+</section>
+
+<hr class="div">
+
+<!-- ──────────────────── STAGE 11 ─────────────────────── -->
+<section class="sec" id="s11">
+  <div class="sec-eye"><span class="stagenum">STAGE 11</span><span class="badge badge-crit">Critical Gap</span></div>
+  <h1 class="sec-title">Confidence-Based Parse Routing</h1>
+
+  <div class="cmp">
+    <div class="cmp-col">
+      <span class="lang-tag lt-k">Kotlin · EnhancedMpesaIngestionPipeline.kt</span>
+      <p>3-tier routing driven by confidence score:</p>
+      <ul>
+        <li>HIGH → <strong>DIRECT_LEDGER</strong> — auto-imported</li>
+        <li>MEDIUM → <strong>REVIEW_QUEUE</strong> — held for user approval</li>
+        <li>LOW → <strong>QUARANTINE</strong> — stored with failure_reason, can be resolved</li>
+        <li>Fuliza charge notice short-circuit: calls <code>fulizaLoanRepository.setOutstandingKes()</code>, never imports as transaction</li>
+        <li>Fuliza repayment: calculates outstanding = limit − available</li>
+      </ul>
+    </div>
+    <div class="cmp-col">
+      <span class="lang-tag lt-d">Dart · mpesa_parser_service.dart</span>
+      <p><code>MpesaParseRoute</code> enum exists (directLedger / reviewQueue / quarantine). But:</p>
+      <ul>
+        <li><code>parseMany()</code> filters out quarantine → discarded, not stored</li>
+        <li>MEDIUM confidence transactions are returned but have nowhere to be stored — no review queue table</li>
+        <li>No Fuliza short-circuit — charge notices misclassified or dropped</li>
+        <li>Confidence driving the route comes from rule phase alone (see Stage 8)</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="gap gap-crit">
+    <div class="gap-head">P0 — Quarantine Items Discarded, Not Stored</div>
+    <p><code>parseMany()</code> filters out quarantine candidates. They are never written to any table, never surfaced to the user, and there is no way to resolve them retroactively. Kotlin stores every quarantined item with its <code>failure_reason</code> and allows the user to resolve it. The quarantine table is a safety net for real money that the parser wasn't confident about — discarding those items is silent data loss.</p>
+  </div>
+
+  <div class="gap gap-crit">
+    <div class="gap-head">P0 — No Fuliza Short-Circuit</div>
+    <p>Fuliza charge notices (<em>"Your Fuliza M-PESA balance is Ksh342.00…"</em>) are informational SMS that should update the app's outstanding Fuliza balance without being imported as a transaction. Dart has no <code>fulizaLoanRepository</code> equivalent. These SMS are either incorrectly classified as income or dropped — neither is correct, and the user's Fuliza balance tracking will be wrong.</p>
+  </div>
+</section>
+
+<hr class="div">
+
+<!-- ──────────────────── STAGE 12 ─────────────────────── -->
+<section class="sec" id="s12">
+  <div class="sec-eye"><span class="stagenum">STAGE 12</span><span class="badge badge-crit">Critical Gap</span></div>
+  <h1 class="sec-title">Background Processing</h1>
+
+  <div class="cmp">
+    <div class="cmp-col">
+      <span class="lang-tag lt-k">Kotlin · MpesaSmsIngestionWorker.kt</span>
+      <p><code>CoroutineWorker</code> via WorkManager:</p>
+      <ul>
+        <li>Runs entirely off main thread</li>
+        <li>Survives app death, device restart, and low-memory kills</li>
+        <li>Max 3 retry attempts with exponential backoff</li>
+        <li>Shows persistent "Importing M-Pesa SMS" notification</li>
+        <li>Keyed work prevents duplicate workers per message</li>
+        <li><code>Semaphore(4)</code> limits concurrent parse workers</li>
+      </ul>
+    </div>
+    <div class="cmp-col">
+      <span class="lang-tag lt-d">Dart · mpesa_parser_service.dart</span>
+      <p><code>Isolate.run</code> for batches ≥50:</p>
+      <ul>
+        <li>Off main thread for large batches ✓</li>
+        <li><strong>Killed when app goes to background</strong></li>
+        <li>No retry on failure</li>
+        <li>No persistent notification</li>
+        <li>No WorkManager — work does not survive app close</li>
+        <li>No concurrency cap across multiple isolates</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="gap gap-crit">
+    <div class="gap-head">P0 — Isolate Killed on App Backgrounding</div>
+    <p>If the user starts a 500-SMS bulk import and switches to another app, Android will kill the Dart isolate. The import stops at whatever item it was on, with no record of progress and no recovery path. WorkManager guarantees completion across app death and device reboots. For a bulk import of years of financial history, this reliability gap is unacceptable.</p>
+  </div>
+
+  <div class="gap gap-warn">
+    <div class="gap-head">P1 — No Retry Logic</div>
+    <p>A transient SQLite write failure, OOM event, or Supabase timeout mid-batch silently stops processing. Kotlin workers retry up to 3 times with backoff before marking the item FAILED and moving on.</p>
+  </div>
+
+  <h3>Recommended Fix</h3>
+  <p>Use the <code>workmanager</code> Flutter package for durable background tasks. Register a Dart callback via <code>Workmanager().executeTask()</code> that runs the ingest pipeline for a queued batch. For real-time (BroadcastReceiver path), each received SMS enqueues a one-shot task that the WorkManager runs even after the app closes.</p>
+</section>
+
+<hr class="div">
+
+<!-- ──────────────────── STAGE 13 ─────────────────────── -->
+<section class="sec" id="s13">
+  <div class="sec-eye"><span class="stagenum">STAGE 13</span><span class="badge badge-crit">Critical Gap</span></div>
+  <h1 class="sec-title">Persistent Queues</h1>
+
+  <div class="cmp">
+    <div class="cmp-col">
+      <span class="lang-tag lt-k">Kotlin · SmsIngestQueue.sq + SmsReviewQueue.sq + SmsQuarantine.sq</span>
+      <p>Three SQLDelight tables forming a full state machine:</p>
+      <ul>
+        <li><code>sms_ingest_queue</code> — PENDING → PROCESSING → DONE/FAILED. <code>resetStaleProcessing</code> recovers from crashes.</li>
+        <li><code>sms_review_queue</code> — holds MEDIUM-confidence transactions with <code>review_decision</code>, <code>review_notes</code> fields. User sees and approves/rejects in UI.</li>
+        <li><code>sms_quarantine</code> — holds LOW-confidence with <code>failure_reason</code>, <code>resolution</code>. Can be manually resolved.</li>
+      </ul>
+    </div>
+    <div class="cmp-col">
+      <span class="lang-tag lt-d">Dart</span>
+      <p>No equivalent persistent queues. All state is in-memory during the parse run:</p>
+      <ul>
+        <li>No ingest queue — crash loses all progress</li>
+        <li>No review queue — MEDIUM confidence has nowhere to live</li>
+        <li>No quarantine table — LOW confidence discarded</li>
+        <li>No state machine — restart from item 0 on any failure</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="gap gap-crit">
+    <div class="gap-head">P0 — No Crash Recovery</div>
+    <p>Without an ingest queue, a crash or OOM event during a 500-SMS import means starting over from the beginning and re-importing everything, with no way to know which items already succeeded. Kotlin marks each SMS PROCESSING before starting work and DONE only after confirmed DB write. A crash restarts from the first non-DONE item.</p>
+  </div>
+
+  <div class="gap gap-crit">
+    <div class="gap-head">P0 — No Review Queue for Ambiguous Transactions</div>
+    <p>MEDIUM-confidence transactions represent real money that the parser recognized but wasn't fully certain about. Without a persistent review queue and a corresponding UI, these either all go to the ledger (risky — potential incorrect entries) or get dropped (lossy — real transactions missed). There is currently no middle path.</p>
+  </div>
+
+  <h3>Drift Schema (Add to Existing Database)</h3>
+  <pre><code>// sms_queue_tables.dart — add to Drift database
+
+class SmsIngestQueue extends Table {
+  IntColumn get id =&gt; integer().autoIncrement()();
+  TextColumn get rawMessage =&gt; text()();
+  TextColumn get sender =&gt; text()();
+  IntColumn get receivedAtMs =&gt; integer()();
+  // 'pending' | 'processing' | 'done' | 'failed'
+  TextColumn get state =&gt; text().withDefault(const Constant('pending'))();
+  IntColumn get attempts =&gt; integer().withDefault(const Constant(0))();
+  TextColumn get errorMessage =&gt; text().nullable()();
+}
+
+class SmsReviewQueue extends Table {
+  TextColumn get mpesaCode =&gt; text()();
+  RealColumn get amount =&gt; real()();
+  TextColumn get counterparty =&gt; text().nullable()();
+  TextColumn get category =&gt; text()();
+  RealColumn get confidenceScore =&gt; real()();
+  TextColumn get rawMessage =&gt; text()();
+  // null | 'approved' | 'rejected'
+  TextColumn get reviewDecision =&gt; text().nullable()();
+}
+
+class SmsQuarantine extends Table {
+  TextColumn get rawMessage =&gt; text()();
+  TextColumn get failureReason =&gt; text()();
+  IntColumn get createdAtMs =&gt; integer()();
+  TextColumn get resolution =&gt; text().nullable()();
+  IntColumn get resolvedAtMs =&gt; integer().nullable()();
+}</code></pre>
+</section>
+
+<hr class="div">
+
+<!-- ──────────────────── STAGE 14 ─────────────────────── -->
+<section class="sec" id="s14">
+  <div class="sec-eye"><span class="stagenum">STAGE 14</span><span class="badge badge-crit">Critical Gap</span></div>
+  <h1 class="sec-title">Audit Logging &amp; Observability</h1>
+
+  <div class="cmp">
+    <div class="cmp-col">
+      <span class="lang-tag lt-k">Kotlin · ImportAuditLogger.kt + SmsImportHealthStore</span>
+      <ul>
+        <li>Every parse outcome written to <code>ImportAuditQueries</code> table</li>
+        <li>Telemetry events: <code>parser_result</code>, <code>dedupe_hit</code>, <code>parser_quarantine</code></li>
+        <li>Amount banding: lt_100 / 100_999 / 1k_9999 / 10k_plus</li>
+        <li>In-memory rejection ring buffer tracks parse rejections</li>
+        <li><code>_importProgress</code> StateFlow drives real-time UI progress bar</li>
+        <li><code>EnhancedMpesaIngestionOutcome</code> enum: 8 distinct outcomes</li>
+      </ul>
+    </div>
+    <div class="cmp-col">
+      <span class="lang-tag lt-d">Dart</span>
+      <ul>
+        <li>No audit table</li>
+        <li>No telemetry events</li>
+        <li>No rejection tracking — parse failures return null silently</li>
+        <li>No import health metrics</li>
+        <li>No progress stream — bulk import shows only a spinner</li>
+        <li>No outcome enum — success and failure are both "did it throw?"</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="gap gap-crit">
+    <div class="gap-head">P0 — Parse Failures Are Invisible</div>
+    <p>When a transaction fails to parse, the Dart app returns null and discards it. There is no record anywhere of what was seen and rejected, no count of how many SMS were tried vs imported, and no way to retroactively understand why certain transactions are missing. In a financial app, silent data loss without any audit trail is a serious reliability problem — not just observability theater.</p>
+  </div>
+
+  <div class="gap gap-warn">
+    <div class="gap-head">P1 — No Import Progress Stream</div>
+    <p>Importing 500+ SMS with no feedback renders the app unusable during that time. Kotlin's <code>_importProgress</code> StateFlow drives a progress bar showing "imported 247 of 500". Dart has no equivalent — the entire import is a black box from the UI's perspective.</p>
+  </div>
+
+  <h3>Minimum Viable Audit</h3>
+  <pre><code>// New file: lib/features/expenses/data/services/import_audit_logger.dart
+
+sealed class ParseOutcome { const ParseOutcome(); }
+
+class ParseSuccess extends ParseOutcome {
+  final ParsedMpesaCandidate result;
+  const ParseSuccess(this.result);
+}
+
+class ParseDuplicate extends ParseOutcome {
+  final String dupeKey;
+  const ParseDuplicate(this.dupeKey);
+}
+
+class ParseFailure extends ParseOutcome {
+  final String reason;
+  final int? matchedRulePhase; // null = no phase matched
+  final String rawMessage;
+  const ParseFailure({required this.reason, this.matchedRulePhase, required this.rawMessage});
+}
+
+// In MpesaParserService — expose progress stream
+final _progress = StreamController&lt;({int done, int total})&gt;.broadcast();
+Stream&lt;({int done, int total})&gt; get importProgress =&gt; _progress.stream;</code></pre>
+</section>
+
+<hr class="div">
+
+<!-- ──────────────────── STAGE 15 ─────────────────────── -->
+<section class="sec" id="s15">
+  <div class="sec-eye"><span class="stagenum">STAGE 15</span><span class="badge badge-warn">Gap</span></div>
+  <h1 class="sec-title">Category Inference</h1>
+
+  <div class="cmp">
+    <div class="cmp-col">
+      <span class="lang-tag lt-k">Kotlin · CategoryInferenceEngine.kt (13.9KB)</span>
+      <p>Priority chain: M-Pesa type → 80+ keyword rules → amount heuristic.</p>
+      <ul>
+        <li>20+ spending categories</li>
+        <li><code>InferenceSource</code> enum (MPESA_KIND / KEYWORD / AMOUNT_HEURISTIC)</li>
+        <li><code>normalizeMerchantName()</code> for consistent DB keys</li>
+        <li>Amount heuristic: ≤50→Airtime, ≤500→Eating Out, ≤2000→Shopping, ≤8000→Utilities, else→Transfer</li>
+        <li>Called from ingestion pipeline after every successful parse</li>
+      </ul>
+    </div>
+    <div class="cmp-col">
+      <span class="lang-tag lt-d">Dart · category_inference_engine.dart (6.2KB)</span>
+      <ul>
+        <li>11 keyword categories (vs 20+ in Kotlin)</li>
+        <li>Amount-aware overrides for airtime, fuel, rent ✓</li>
+        <li>Returns <code>CategoryGuess</code> with float confidence ✓ (Dart advantage)</li>
+        <li>No <code>InferenceSource</code> tracking</li>
+        <li>No <code>normalizeMerchantName()</code></li>
+        <li><strong>Not called from the parser</strong> — <code>_categoryFor()</code> in parser uses hardcoded strings like 'Income', 'Bills', 'Food', 'Cash'</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="gap gap-warn">
+    <div class="gap-head">P1 — Parser Bypasses the Inference Engine</div>
+    <p><code>_categoryFor()</code> in <code>mpesa_parser_service.dart</code> maps transaction type to a hardcoded category string ('Income', 'Bills', 'Food', 'Cash'). The <code>CategoryInferenceEngine</code> — which does merchant-keyword matching to distinguish "Nairobi Water" from "Kenya Power" from "Safaricom" — is never called from the parser. All Paybill transactions get 'Bills' regardless of who they're paid to. Wire the inference engine in after counterparty extraction.</p>
+  </div>
+
+  <div class="gap gap-warn">
+    <div class="gap-head">P1 — 11 vs 20+ Categories</div>
+    <p>Categories missing from Dart: Insurance, Government Fees, Investments, Subscriptions, Health, Education, Fuel, Rent (separate from Utilities), Loans &amp; Credit (separate from Bills), Savings. All are real M-Pesa spending patterns for Kenyan users.</p>
+  </div>
+
+  <div class="gap gap-ok">
+    <div class="gap-head">Dart Advantage — <code>CategoryGuess</code> Confidence Float</div>
+    <p>Dart's inference engine returns a float confidence per category guess. This can power a UI feature Kotlin doesn't have: showing "Auto-categorized (Medium confidence)" on transactions and inviting the user to correct low-confidence guesses — a meaningful UX improvement.</p>
+  </div>
+</section>
+
+<hr class="div">
+
+<!-- ──────────────────── ROADMAP ─────────────────────── -->
+<section class="sec" id="roadmap">
+  <div class="sec-eye"><span class="stagenum">ROADMAP</span><span class="badge badge-ok">Prioritized</span></div>
+  <h1 class="sec-title">Implementation Roadmap</h1>
+  <p>Ordered by impact. P0 = data loss or systematically wrong data at scale. P1 = reliability or accuracy regression vs Kotlin. P2/P3 = parity completion and enhancement.</p>
+
+  <div class="tbl-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Priority</th>
+          <th>Gap</th>
+          <th>File(s)</th>
+          <th>Est.</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span class="pb pb-p0">P0</span></td>
+          <td>Amount disambiguation — <code>pickTransactionAmount()</code> with action verb + balance marker regex</td>
+          <td><code>mpesa_parser_service.dart</code></td>
+          <td>1 day</td>
+        </tr>
+        <tr>
+          <td><span class="pb pb-p0">P0</span></td>
+          <td>Wire <code>SmsConfidenceScorer</code> into <code>parseSingleDetailed()</code>; replace rule-phase confidence</td>
+          <td><code>mpesa_parser_service.dart</code>, <code>sms_confidence_scorer.dart</code></td>
+          <td>1 day</td>
+        </tr>
+        <tr>
+          <td><span class="pb pb-p0">P0</span></td>
+          <td>Fix code regex: remove <code>^</code> anchor, allow 9–10 chars, case-insensitive</td>
+          <td><code>mpesa_parser_service.dart</code></td>
+          <td>1 hour</td>
+        </tr>
+        <tr>
+          <td><span class="pb pb-p0">P0</span></td>
+          <td>Add 4+ date format patterns + future-date guard + fallback to SMS arrival timestamp</td>
+          <td><code>mpesa_parser_text.dart</code></td>
+          <td>3 hours</td>
+        </tr>
+        <tr>
+          <td><span class="pb pb-p0">P0</span></td>
+          <td>Persistent ingest queue + review queue + quarantine (Drift schema + DAOs)</td>
+          <td>New: <code>sms_queue_tables.dart</code></td>
+          <td>2 days</td>
+        </tr>
+        <tr>
+          <td><span class="pb pb-p0">P0</span></td>
+          <td>Quarantine items stored (not discarded) in <code>parseMany()</code>; review queue UI</td>
+          <td><code>mpesa_parser_service.dart</code> + new UI screen</td>
+          <td>2 days</td>
+        </tr>
+        <tr>
+          <td><span class="pb pb-p0">P0</span></td>
+          <td>Fuliza charge notice short-circuit — detect, update outstanding balance, skip ledger</td>
+          <td><code>mpesa_parser_service.dart</code> + new <code>fuliza_repository.dart</code></td>
+          <td>1 day</td>
+        </tr>
+        <tr>
+          <td><span class="pb pb-p0">P0</span></td>
+          <td>Durable background worker (WorkManager via <code>workmanager</code> package) with retry × 3</td>
+          <td>New: <code>sms_ingestion_worker.dart</code></td>
+          <td>2 days</td>
+        </tr>
+        <tr>
+          <td><span class="pb pb-p0">P0</span></td>
+          <td>Audit log — sealed <code>ParseOutcome</code> type, persist failures to DB, silent drop eliminated</td>
+          <td>New: <code>import_audit_logger.dart</code></td>
+          <td>1 day</td>
+        </tr>
+        <tr>
+          <td><span class="pb pb-p1">P1</span></td>
+          <td>Replace <code>duplicate_likelihood</code> scorer factor with synchronous <code>SenderTrust</code></td>
+          <td><code>sms_confidence_scorer.dart</code></td>
+          <td>3 hours</td>
+        </tr>
+        <tr>
+          <td><span class="pb pb-p1">P1</span></td>
+          <td>Tighten confidence thresholds: ≥0.85 HIGH, ≥0.60 MEDIUM (was 0.75 / 0.50)</td>
+          <td><code>sms_confidence_scorer.dart</code></td>
+          <td>30 min</td>
+        </tr>
+        <tr>
+          <td><span class="pb pb-p1">P1</span></td>
+          <td>Add Phase 3 last-resort keyword scan → quarantine route (no silent discard)</td>
+          <td><code>mpesa_parser_rules.dart</code></td>
+          <td>4 hours</td>
+        </tr>
+        <tr>
+          <td><span class="pb pb-p1">P1</span></td>
+          <td>Code-based dedup (tier 1) + 5-minute heuristic window (tier 4)</td>
+          <td>Ingestion pipeline layer</td>
+          <td>3 hours</td>
+        </tr>
+        <tr>
+          <td><span class="pb pb-p1">P1</span></td>
+          <td>Wire <code>CategoryInferenceEngine</code> into parser; remove hardcoded <code>_categoryFor()</code> strings</td>
+          <td><code>mpesa_parser_service.dart</code>, <code>category_inference_engine.dart</code></td>
+          <td>4 hours</td>
+        </tr>
+        <tr>
+          <td><span class="pb pb-p1">P1</span></td>
+          <td>Add <code>normalizeMerchantName()</code> for consistent DB merchant keys</td>
+          <td><code>category_inference_engine.dart</code></td>
+          <td>3 hours</td>
+        </tr>
+        <tr>
+          <td><span class="pb pb-p1">P1</span></td>
+          <td>Import progress <code>Stream&lt;({int done, int total})&gt;</code> for bulk import UI</td>
+          <td><code>mpesa_parser_service.dart</code></td>
+          <td>2 hours</td>
+        </tr>
+        <tr>
+          <td><span class="pb pb-p2">P2</span></td>
+          <td>Per-rule counterparty extraction patterns (not single generic regex)</td>
+          <td><code>mpesa_parser_rules.dart</code></td>
+          <td>1 day</td>
+        </tr>
+        <tr>
+          <td><span class="pb pb-p2">P2</span></td>
+          <td>Expand category inference to 20+ categories (Insurance, Fuel, Rent, Health, Savings…)</td>
+          <td><code>category_inference_engine.dart</code></td>
+          <td>1 day</td>
+        </tr>
+        <tr>
+          <td><span class="pb pb-p2">P2</span></td>
+          <td>Promo tail stripping regex in <code>normalizeParserText()</code></td>
+          <td><code>mpesa_parser_text.dart</code></td>
+          <td>1 hour</td>
+        </tr>
+        <tr>
+          <td><span class="pb pb-p2">P2</span></td>
+          <td>Android BroadcastReceiver plugin for real-time SMS ingestion</td>
+          <td>New native Android plugin + method channel</td>
+          <td>3 days</td>
+        </tr>
+        <tr>
+          <td><span class="pb pb-p2">P2</span></td>
+          <td>Within-batch dedup via in-memory <code>Set&lt;String&gt;</code> before DB writes</td>
+          <td>Ingestion pipeline layer</td>
+          <td>2 hours</td>
+        </tr>
+        <tr>
+          <td><span class="pb pb-p3">P3</span></td>
+          <td>Add <code>matchedRulePhase</code> to <code>ParsedMpesaCandidate</code> for analytics</td>
+          <td><code>mpesa_parser_models.dart</code>, <code>mpesa_parser_rules.dart</code></td>
+          <td>2 hours</td>
+        </tr>
+        <tr>
+          <td><span class="pb pb-p3">P3</span></td>
+          <td>In-memory rejection ring buffer + import health metrics</td>
+          <td>New: <code>sms_import_health_store.dart</code></td>
+          <td>3 hours</td>
+        </tr>
+        <tr>
+          <td><span class="pb pb-p3">P3</span></td>
+          <td>Amount banding telemetry (lt_100 / 100_999 / 1k_9999 / 10k_plus) in audit log</td>
+          <td><code>import_audit_logger.dart</code></td>
+          <td>1 hour</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<hr class="div">
+
+<!-- ──────────────────── BEYOND ─────────────────────── -->
+<section class="sec" id="beyond">
+  <div class="sec-eye"><span class="stagenum">OPPORTUNITIES</span><span class="badge badge-ok">Dart-Only</span></div>
+  <h1 class="sec-title">Where Dart Can Surpass Kotlin</h1>
+  <p>Five areas where the Dart app already has structural advantages, or where Flutter's platform unlocks features the Kotlin KMP architecture cannot easily match.</p>
+
+  <h2>1. <code>fulizaDraw</code> as a Liability Type</h2>
+  <p>Dart's <code>MpesaTransactionType.fulizaDraw</code> correctly distinguishes a Fuliza borrowing event (creating a liability) from a regular P2P send (moving existing funds). Kotlin has no equivalent — both map to the same category. This distinction is financially meaningful: a Fuliza draw should appear in a "Loans &amp; Credit" section and affect a debt balance, not just the spending feed. Preserve and build on this in the data model.</p>
+
+  <h2>2. Low-Confidence Category UX</h2>
+  <p><code>CategoryGuess</code> returns a float confidence per inference. Use it to show a small indicator on auto-categorized transactions: a faint "Auto · Medium confidence" tag that the user can tap to correct. Kotlin's inference engine doesn't expose this. A user who sees that Nairobi Water was categorized as "Bills" at 0.62 confidence has actionable information; one who sees "Bills" with no indicator doesn't know to question it.</p>
+
+  <h2>3. Cross-Device Semantic Dedup via Supabase</h2>
+  <p>The Dart app already computes semantic hashes (<code>SHA-256</code> of <code>category|amount|date|counterparty</code>). If these are stored in Supabase, a user who reinstalls the app or switches devices gets exact duplicate-free import automatically — without sharing raw SMS text, which is sensitive. The Kotlin app is local-only (SQLDelight) and cannot offer this. The semantic hash design already makes this possible without any schema changes — it just needs the Supabase write path wired in.</p>
+
+  <h2>4. Swipeable Review Queue UI</h2>
+  <p>When the persistent review queue is built (P0 item in the roadmap), design it as a swipeable card flow: left to reject, right to approve, tap to see full SMS. Flutter's animation system makes this fluid in a way that Kotlin's Compose UI does not yet surface in the Kotlin project. The review queue is a first-class feature — not a debug screen — and can be a meaningful product differentiator.</p>
+
+  <h2>5. Local Parser Health Dashboard</h2>
+  <p>Add a local-only telemetry table tracking which rule phase matched each SMS, phase hit rates, dedup rates, and quarantine rates over time. Expose an in-app "Parser Health" debug screen — hidden behind a developer settings toggle. This gives visibility into format drift without requiring a remote analytics backend: when Safaricom changes the SMS format and Phase 1 hit rate drops from 92% to 65% over a week, you see it immediately. Kotlin has the data (audit log, health store) but does not expose it in a visible debug interface.</p>
+</section>
+
+</main>
+</div>
+
+<script>
+// Sidebar active-state tracking on scroll
+const sections = document.querySelectorAll('.sec[id]');
+const navLinks = document.querySelectorAll('.nav-a');
+
+const io = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      navLinks.forEach(a => {
+        a.classList.toggle('active', a.getAttribute('href') === '#' + e.target.id);
+      });
+    }
+  });
+}, { rootMargin: '-15% 0px -72% 0px' });
+
+sections.forEach(s => io.observe(s));
+</script>

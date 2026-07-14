@@ -1,0 +1,1030 @@
+<title>SMS Pipeline — Implementation Plan</title>
+<style>
+/* ── Tokens ───────────────────────────────────────────────── */
+:root {
+  --bg:          #F4F6FB;
+  --surface:     #FFFFFF;
+  --surface-hi:  #EDF0F8;
+  --border:      #D8DDF0;
+  --text:        #18202E;
+  --text-2:      #44526A;
+  --text-3:      #8490AA;
+
+  --kotlin:      #7F52FF;
+  --dart:        #0175C2;
+
+  /* Phase accent colors — urgency gradient */
+  --ph1: #B92318;   /* P0 corrections — urgent red */
+  --ph2: #C26010;   /* infrastructure amber */
+  --ph3: #B07A00;   /* reliability gold */
+  --ph4: #127A58;   /* accuracy teal */
+  --ph5: #0D5FA3;   /* real-time blue */
+  --ph6: #1A6E40;   /* innovations green */
+
+  /* Semantic */
+  --crit:    #B92318;
+  --warn:    #C26010;
+  --ok:      #127A58;
+  --info:    #0D5FA3;
+
+  --crit-bg: #FDF2F1;
+  --warn-bg: #FDF6EE;
+  --ok-bg:   #EEFAF4;
+  --info-bg: #EEF4FD;
+
+  --code-bg:   #EDF0F8;
+  --code-text: #18202E;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg:         #0C1018;
+    --surface:    #151B28;
+    --surface-hi: #1B2336;
+    --border:     #252E44;
+    --text:       #E0E8F8;
+    --text-2:     #8899BC;
+    --text-3:     #48577A;
+
+    --ph1: #E05046;
+    --ph2: #E08040;
+    --ph3: #D4A820;
+    --ph4: #2AAE7E;
+    --ph5: #3B8AD4;
+    --ph6: #34A868;
+
+    --crit-bg: #1E0D0C;
+    --warn-bg: #1E1408;
+    --ok-bg:   #081A12;
+    --info-bg: #08152A;
+
+    --code-bg:   #1B2336;
+    --code-text: #B4C4E4;
+  }
+}
+
+:root[data-theme="dark"] {
+  --bg:         #0C1018;
+  --surface:    #151B28;
+  --surface-hi: #1B2336;
+  --border:     #252E44;
+  --text:       #E0E8F8;
+  --text-2:     #8899BC;
+  --text-3:     #48577A;
+  --ph1: #E05046; --ph2: #E08040; --ph3: #D4A820;
+  --ph4: #2AAE7E; --ph5: #3B8AD4; --ph6: #34A868;
+  --crit-bg: #1E0D0C; --warn-bg: #1E1408; --ok-bg: #081A12; --info-bg: #08152A;
+  --code-bg:   #1B2336; --code-text: #B4C4E4;
+}
+
+:root[data-theme="light"] {
+  --bg:         #F4F6FB;
+  --surface:    #FFFFFF;
+  --surface-hi: #EDF0F8;
+  --border:     #D8DDF0;
+  --text:       #18202E;
+  --text-2:     #44526A;
+  --text-3:     #8490AA;
+  --ph1: #B92318; --ph2: #C26010; --ph3: #B07A00;
+  --ph4: #127A58; --ph5: #0D5FA3; --ph6: #1A6E40;
+  --crit-bg: #FDF2F1; --warn-bg: #FDF6EE; --ok-bg: #EEFAF4; --info-bg: #EEF4FD;
+  --code-bg:   #EDF0F8; --code-text: #18202E;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  font-size: 15px;
+  line-height: 1.65;
+}
+
+/* ── Page ─────────────────────────────────────────────────── */
+.page { max-width: 960px; margin: 0 auto; padding: 44px 40px 100px; }
+
+/* ── Header ───────────────────────────────────────────────── */
+.hdr { border-bottom: 2px solid var(--border); padding-bottom: 32px; margin-bottom: 40px; }
+
+.hdr-eye {
+  font-size: 10.5px; font-weight: 700; letter-spacing: 0.12em;
+  text-transform: uppercase; color: var(--text-3); margin-bottom: 12px;
+}
+
+.hdr-title {
+  font-size: 32px; font-weight: 800; letter-spacing: -0.022em;
+  line-height: 1.18; text-wrap: balance; color: var(--text); margin-bottom: 14px;
+}
+
+.hdr-sub { font-size: 14px; color: var(--text-2); max-width: 600px; line-height: 1.6; margin-bottom: 16px; }
+
+.hdr-chips { display: flex; flex-wrap: wrap; gap: 7px; }
+
+.chip {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 3px 11px; border-radius: 100px; font-size: 11.5px; font-weight: 500; border: 1px solid;
+}
+.ck { background: rgba(127,82,255,.08); color: var(--kotlin); border-color: rgba(127,82,255,.22); }
+.cd { background: rgba(1,117,194,.08); color: var(--dart); border-color: rgba(1,117,194,.22); }
+.cn { background: var(--surface-hi); color: var(--text-3); border-color: var(--border); }
+
+/* ── Pipeline strip ───────────────────────────────────────── */
+.pipeline-wrap { overflow-x: auto; margin-bottom: 52px; }
+
+.pipeline {
+  display: flex; align-items: stretch;
+  gap: 0; min-width: 640px;
+}
+
+.ph-seg {
+  flex: 1; position: relative;
+  background: var(--surface); border: 1px solid var(--border);
+  border-right: none; padding: 14px 16px 14px 18px;
+  cursor: pointer; text-decoration: none;
+  transition: background 0.12s;
+  display: flex; flex-direction: column; gap: 4px;
+}
+
+.ph-seg:first-child { border-radius: 8px 0 0 8px; }
+.ph-seg:last-child  { border-right: 1px solid var(--border); border-radius: 0 8px 8px 0; }
+.ph-seg:hover { background: var(--surface-hi); }
+
+/* left accent line */
+.ph-seg::before {
+  content: '';
+  position: absolute; left: 0; top: 0; bottom: 0; width: 3px;
+  border-radius: 8px 0 0 8px;
+  background: var(--ph-color);
+}
+.ph-seg:first-child::before { border-radius: 8px 0 0 8px; }
+
+/* arrow connector */
+.ph-seg:not(:last-child)::after {
+  content: '';
+  position: absolute; right: -9px; top: 50%; transform: translateY(-50%);
+  width: 0; height: 0;
+  border-top: 8px solid transparent;
+  border-bottom: 8px solid transparent;
+  border-left: 8px solid var(--border);
+  z-index: 2;
+}
+.ph-seg:not(:last-child)::before { border-radius: 0; }
+
+.ph-num {
+  font-size: 10px; font-weight: 800; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--ph-color); font-variant-numeric: tabular-nums;
+}
+
+.ph-name { font-size: 12.5px; font-weight: 700; color: var(--text); line-height: 1.3; }
+
+.ph-est {
+  font-size: 11px; color: var(--text-3); font-variant-numeric: tabular-nums;
+  margin-top: 2px;
+}
+
+/* ── Overview table ───────────────────────────────────────── */
+.ov-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: 8px; margin-bottom: 52px; }
+
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+
+th {
+  background: var(--surface-hi); padding: 9px 14px;
+  text-align: left; font-weight: 700; font-size: 10.5px;
+  text-transform: uppercase; letter-spacing: 0.07em; color: var(--text-3);
+  border-bottom: 1px solid var(--border); white-space: nowrap;
+}
+
+td {
+  padding: 10px 14px; border-bottom: 1px solid var(--border);
+  color: var(--text-2); vertical-align: top; line-height: 1.5;
+}
+tr:last-child td { border-bottom: none; }
+td:first-child { white-space: nowrap; }
+td strong { color: var(--text); font-weight: 600; }
+
+.ph-dot {
+  display: inline-block; width: 8px; height: 8px; border-radius: 50%;
+  margin-right: 7px; vertical-align: middle; flex-shrink: 0;
+}
+
+/* ── Phase card ───────────────────────────────────────────── */
+.phase {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  margin-bottom: 36px;
+  overflow: hidden;
+  scroll-margin-top: 28px;
+  position: relative;
+}
+
+.phase-head {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  padding: 26px 28px 20px 32px;
+  border-bottom: 1px solid var(--border);
+  position: relative; overflow: hidden;
+}
+
+/* Ghost phase number */
+.phase-head::after {
+  content: attr(data-n);
+  position: absolute; right: 20px; top: -10px;
+  font-size: 96px; font-weight: 900; letter-spacing: -0.04em;
+  color: var(--ph-color); opacity: 0.055;
+  line-height: 1; pointer-events: none;
+  font-variant-numeric: tabular-nums;
+  user-select: none;
+}
+
+/* Left accent border */
+.phase::before {
+  content: '';
+  position: absolute; left: 0; top: 0; bottom: 0; width: 4px;
+  background: var(--ph-color);
+}
+
+.phase-head-left { flex: 1; min-width: 0; }
+
+.phase-label {
+  font-size: 10px; font-weight: 800; letter-spacing: 0.12em;
+  text-transform: uppercase; color: var(--ph-color); margin-bottom: 6px;
+}
+
+.phase-title {
+  font-size: 21px; font-weight: 750; letter-spacing: -0.015em;
+  text-wrap: balance; color: var(--text); margin-bottom: 10px;
+}
+
+.phase-goal { font-size: 13.5px; color: var(--text-2); max-width: 560px; line-height: 1.6; }
+
+.phase-meta { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; flex-shrink: 0; padding-left: 20px; padding-top: 2px; }
+
+.est-badge {
+  font-size: 22px; font-weight: 800; letter-spacing: -0.03em;
+  color: var(--ph-color); font-variant-numeric: tabular-nums;
+  white-space: nowrap; line-height: 1;
+}
+
+.est-unit { font-size: 12px; font-weight: 500; color: var(--text-3); }
+
+.prereq-chip {
+  font-size: 11px; font-weight: 600; padding: 3px 9px; border-radius: 100px;
+  background: var(--surface-hi); color: var(--text-3); border: 1px solid var(--border);
+  white-space: nowrap;
+}
+
+/* ── Task table ───────────────────────────────────────────── */
+.task-wrap { overflow-x: auto; }
+
+.task-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+
+.task-table th {
+  background: var(--surface-hi); padding: 8px 14px;
+  text-align: left; font-weight: 700; font-size: 10px;
+  text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-3);
+  border-bottom: 1px solid var(--border); border-top: none; white-space: nowrap;
+}
+
+.task-table td {
+  padding: 9px 14px; border-bottom: 1px solid var(--border);
+  color: var(--text-2); vertical-align: middle; line-height: 1.5;
+}
+
+.task-table tr:last-child td { border-bottom: none; }
+
+.task-table td:first-child { width: 28px; text-align: center; }
+.task-table td:nth-child(2) { color: var(--text); font-weight: 500; }
+.task-table td:nth-child(3) code { white-space: nowrap; }
+
+.task-num {
+  width: 20px; height: 20px; border-radius: 50%;
+  background: var(--surface-hi); border: 1px solid var(--border);
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 10px; font-weight: 700; color: var(--text-3);
+  font-variant-numeric: tabular-nums;
+}
+
+.t-est {
+  font-size: 12px; color: var(--text-3); font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.t-new {
+  font-size: 10px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase;
+  background: var(--ok-bg); color: var(--ok); padding: 1px 6px;
+  border-radius: 3px; white-space: nowrap; margin-left: 6px;
+}
+
+.t-fix {
+  font-size: 10px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase;
+  background: var(--crit-bg); color: var(--crit); padding: 1px 6px;
+  border-radius: 3px; white-space: nowrap; margin-left: 6px;
+}
+
+/* ── Definition of Done ───────────────────────────────────── */
+.dod {
+  padding: 16px 20px 16px 32px;
+  border-top: 1px solid var(--border);
+  background: var(--surface-hi);
+}
+
+.dod-head {
+  font-size: 10px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--ok); margin-bottom: 8px;
+}
+
+.dod-list { display: flex; flex-wrap: wrap; gap: 6px; }
+
+.dod-item {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: 12px; color: var(--text-2);
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 100px; padding: 3px 10px;
+}
+
+.dod-item::before { content: '✓'; color: var(--ok); font-weight: 700; font-size: 10px; }
+
+/* ── Code inline ──────────────────────────────────────────── */
+code {
+  font-family: 'SF Mono','Fira Code','Cascadia Code','Consolas', monospace;
+  font-size: 11.5px; background: var(--code-bg); color: var(--code-text);
+  padding: 1px 5px; border-radius: 3px; border: 1px solid var(--border);
+}
+
+/* ── Section header ───────────────────────────────────────── */
+.section-head {
+  font-size: 10.5px; font-weight: 700; letter-spacing: 0.11em;
+  text-transform: uppercase; color: var(--text-3);
+  padding-bottom: 12px; margin-bottom: 20px;
+  border-bottom: 1px solid var(--border);
+}
+
+/* ── Notes callout ────────────────────────────────────────── */
+.note {
+  border-left: 3px solid var(--border); background: var(--surface-hi);
+  padding: 12px 16px; border-radius: 0 6px 6px 0; margin: 16px 0;
+  font-size: 13px; color: var(--text-2); line-height: 1.6;
+}
+
+/* ── Responsive ───────────────────────────────────────────── */
+@media (max-width: 700px) {
+  .page { padding: 24px 16px 60px; }
+  .hdr-title { font-size: 24px; }
+  .phase-head { flex-direction: column; gap: 16px; }
+  .phase-meta { flex-direction: row; align-items: center; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  * { transition: none !important; }
+}
+</style>
+
+<div class="page">
+
+<!-- ── Header ────────────────────────────────────────────── -->
+<header class="hdr">
+  <div class="hdr-eye">Implementation Plan · beltech-app SMS Pipeline</div>
+  <h1 class="hdr-title">Six Phases to Close Every Gap<br>and Surpass the Kotlin App</h1>
+  <p class="hdr-sub">Phases are ordered by dependency. Each phase is independently shippable. Total estimate: ~27 developer days across ~5.5 weeks solo, or ~3.5 weeks with parallel execution of Phases 4–6.</p>
+  <div class="hdr-chips">
+    <span class="chip ck">belinzenewtone/KOTLIN-PROJECT</span>
+    <span class="chip cd">belinzenewtone/beltech-app</span>
+    <span class="chip cn">Companion to SMS Pipeline Audit</span>
+  </div>
+</header>
+
+<!-- ── Pipeline strip ────────────────────────────────────── -->
+<div class="pipeline-wrap" aria-label="Phase overview">
+  <div class="pipeline">
+    <a href="#ph1" class="ph-seg" style="--ph-color: var(--ph1)">
+      <span class="ph-num">Phase 1</span>
+      <span class="ph-name">Parser Correctness</span>
+      <span class="ph-est">~3 days</span>
+    </a>
+    <a href="#ph2" class="ph-seg" style="--ph-color: var(--ph2)">
+      <span class="ph-num">Phase 2</span>
+      <span class="ph-name">Data Completeness</span>
+      <span class="ph-est">~6 days</span>
+    </a>
+    <a href="#ph3" class="ph-seg" style="--ph-color: var(--ph3)">
+      <span class="ph-num">Phase 3</span>
+      <span class="ph-name">Pipeline Reliability</span>
+      <span class="ph-est">~4 days</span>
+    </a>
+    <a href="#ph4" class="ph-seg" style="--ph-color: var(--ph4)">
+      <span class="ph-num">Phase 4</span>
+      <span class="ph-name">Accuracy &amp; Enrichment</span>
+      <span class="ph-est">~4 days</span>
+    </a>
+    <a href="#ph5" class="ph-seg" style="--ph-color: var(--ph5)">
+      <span class="ph-num">Phase 5</span>
+      <span class="ph-name">Real-Time Ingestion</span>
+      <span class="ph-est">~4 days</span>
+    </a>
+    <a href="#ph6" class="ph-seg" style="--ph-color: var(--ph6)">
+      <span class="ph-num">Phase 6</span>
+      <span class="ph-name">Dart-Only Innovations</span>
+      <span class="ph-est">~6 days</span>
+    </a>
+  </div>
+</div>
+
+<!-- ── Overview table ─────────────────────────────────────── -->
+<div class="section-head">Phases at a glance</div>
+<div class="ov-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th>Phase</th>
+        <th>Goal</th>
+        <th>Requires</th>
+        <th>Key Deliverables</th>
+        <th>Est.</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="ph-dot" style="background:var(--ph1)"></span><strong>1 · Correctness</strong></td>
+        <td>Stop producing wrong amounts, wrong codes, null dates</td>
+        <td>—</td>
+        <td>Amount disambiguation, code regex fix, 6 date formats, scorer wired in</td>
+        <td class="t-est">~3 days</td>
+      </tr>
+      <tr>
+        <td><span class="ph-dot" style="background:var(--ph2)"></span><strong>2 · Completeness</strong></td>
+        <td>Zero silently-discarded transactions</td>
+        <td>Phase 1</td>
+        <td>3 persistent queue tables, Fuliza short-circuit, audit log, progress stream</td>
+        <td class="t-est">~6 days</td>
+      </tr>
+      <tr>
+        <td><span class="ph-dot" style="background:var(--ph3)"></span><strong>3 · Reliability</strong></td>
+        <td>Survive crashes, retries, and dual-path duplicates</td>
+        <td>Phase 2</td>
+        <td>WorkManager worker, crash recovery, 4-tier dedup, within-batch dedup</td>
+        <td class="t-est">~4 days</td>
+      </tr>
+      <tr>
+        <td><span class="ph-dot" style="background:var(--ph4)"></span><strong>4 · Accuracy</strong></td>
+        <td>Better data quality from every parse</td>
+        <td>Phase 2</td>
+        <td>Per-rule counterparty, merchant normalization, 20+ categories, inference engine wired</td>
+        <td class="t-est">~4 days</td>
+      </tr>
+      <tr>
+        <td><span class="ph-dot" style="background:var(--ph5)"></span><strong>5 · Real-Time</strong></td>
+        <td>Process SMS within seconds of delivery, app-closed</td>
+        <td>Phase 3</td>
+        <td>Native BroadcastReceiver plugin, method channel, WorkManager task per SMS</td>
+        <td class="t-est">~4 days</td>
+      </tr>
+      <tr>
+        <td><span class="ph-dot" style="background:var(--ph6)"></span><strong>6 · Innovations</strong></td>
+        <td>Features the Kotlin app cannot offer</td>
+        <td>Phases 2, 4</td>
+        <td>Fuliza liability model, category confidence UX, cross-device dedup, review queue UI, health dashboard</td>
+        <td class="t-est">~6 days</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+     PHASE 1
+═══════════════════════════════════════════════════════════ -->
+<div class="phase" id="ph1" style="--ph-color: var(--ph1)">
+  <div class="phase-head" data-n="1">
+    <div class="phase-head-left">
+      <div class="phase-label">Phase 1 · Parser Correctness</div>
+      <h2 class="phase-title">Fix the bugs producing wrong data</h2>
+      <p class="phase-goal">All six tasks in this phase correct defects that currently cause wrong amounts, missed codes, null dates, or routing decisions based on a confidence scorer that is never called. Nothing architectural changes — these are all surgical edits to existing files.</p>
+    </div>
+    <div class="phase-meta">
+      <div>
+        <div class="est-badge">~3</div>
+        <div class="est-unit">dev days</div>
+      </div>
+      <span class="prereq-chip">No dependencies</span>
+    </div>
+  </div>
+
+  <div class="task-wrap">
+    <table class="task-table">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Task</th>
+          <th>File</th>
+          <th>Est.</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span class="task-num">1</span></td>
+          <td>Fix M-Pesa code regex: remove <code>^</code> start anchor, allow 9–10 chars, make case-insensitive. Replace <code>^([A-Z0-9]{10})\b</code> with <code>\b(?=[A-Za-z]*\d)([A-Za-z0-9]{9,10})\b</code>. <span class="t-fix">Fix</span></td>
+          <td><code>mpesa_parser_service.dart</code></td>
+          <td class="t-est">1 h</td>
+        </tr>
+        <tr>
+          <td><span class="task-num">2</span></td>
+          <td>Implement <code>_pickTransactionAmount()</code>: find all Ksh amounts, locate action verb with <code>ACTION_VERB_RE</code>, exclude balance-marker amounts with <code>BALANCE_MARKER_RE</code>, return amount nearest the verb. Fall back to largest non-balance amount. Replaces single <code>firstMatch</code>. <span class="t-fix">Fix</span></td>
+          <td><code>mpesa_parser_service.dart</code></td>
+          <td class="t-est">1 d</td>
+        </tr>
+        <tr>
+          <td><span class="task-num">3</span></td>
+          <td>Expand <code>parseMpesaDateTime()</code> to handle 6 format variants: 4-digit year, no "on" prefix, short month name (<code>14 Jul 2026</code>), ISO-like (<code>2026-07-14 14:30</code>). Add future-date guard rejecting dates &gt;24 h ahead. Add fallback to SMS arrival timestamp when all formats fail (replaces returning <code>null</code>). <span class="t-fix">Fix</span></td>
+          <td><code>mpesa_parser_text.dart</code></td>
+          <td class="t-est">3 h</td>
+        </tr>
+        <tr>
+          <td><span class="task-num">4</span></td>
+          <td>Replace <code>duplicate_likelihood</code> factor 6 in <code>SmsConfidenceScorer</code> with synchronous <code>SenderTrust</code> enum (<code>officialMpesa → 1.0</code>, <code>bank → 0.65</code>, <code>unknown → 0.5</code>). Add <code>SenderTrust.fromSender(String)</code> classifier. Keeps scorer pure and callable from an isolate. <span class="t-fix">Fix</span></td>
+          <td><code>sms_confidence_scorer.dart</code></td>
+          <td class="t-est">3 h</td>
+        </tr>
+        <tr>
+          <td><span class="task-num">5</span></td>
+          <td>Wire <code>SmsConfidenceScorer.score()</code> into <code>parseSingleDetailed()</code> after counterparty extraction. Replace rule-phase confidence with scorer output. Tighten thresholds to ≥ 0.85 → <code>high</code>, ≥ 0.60 → <code>medium</code> (was 0.75 / 0.50). <span class="t-fix">Fix</span></td>
+          <td><code>mpesa_parser_service.dart</code>, <code>sms_confidence_scorer.dart</code></td>
+          <td class="t-est">1 d</td>
+        </tr>
+        <tr>
+          <td><span class="task-num">6</span></td>
+          <td>Port the Kotlin parser unit test suite to Dart. Cover: fee-first SMS (amount picks correctly), 9-char code in body (not start), 4 date format variants, LOW-confidence routing for synthesized codes, HIGH-confidence routing for official-sender + full parse. <span class="t-new">New</span></td>
+          <td><code>test/mpesa_parser_test.dart</code></td>
+          <td class="t-est">4 h</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="dod">
+    <div class="dod-head">Definition of Done</div>
+    <div class="dod-list">
+      <span class="dod-item">Fee-first SMS returns transaction amount, not fee</span>
+      <span class="dod-item">Body-embedded codes extracted correctly</span>
+      <span class="dod-item">6 date format variants parse without null</span>
+      <span class="dod-item">Confidence scorer called on every parse</span>
+      <span class="dod-item">Parser unit tests all green</span>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+     PHASE 2
+═══════════════════════════════════════════════════════════ -->
+<div class="phase" id="ph2" style="--ph-color: var(--ph2)">
+  <div class="phase-head" data-n="2">
+    <div class="phase-head-left">
+      <div class="phase-label">Phase 2 · Data Completeness</div>
+      <h2 class="phase-title">Ensure no transaction is silently discarded</h2>
+      <p class="phase-goal">Create the three persistent queue tables, route every parse outcome to a durable home, implement the Fuliza short-circuit, and introduce a structured audit log. After this phase, zero M-Pesa SMS are lost without a record explaining why.</p>
+    </div>
+    <div class="phase-meta">
+      <div>
+        <div class="est-badge">~6</div>
+        <div class="est-unit">dev days</div>
+      </div>
+      <span class="prereq-chip">Requires Phase 1</span>
+    </div>
+  </div>
+
+  <div class="task-wrap">
+    <table class="task-table">
+      <thead>
+        <tr><th>#</th><th>Task</th><th>File</th><th>Est.</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span class="task-num">1</span></td>
+          <td>Add three Drift tables: <code>SmsIngestQueue</code> (id, rawMessage, sender, receivedAtMs, state, attempts, errorMessage), <code>SmsReviewQueue</code> (mpesaCode, amount, counterparty, category, confidenceScore, rawMessage, reviewDecision), <code>SmsQuarantine</code> (rawMessage, failureReason, createdAtMs, resolution, resolvedAtMs). Generate DAOs. Write migration. <span class="t-new">New</span></td>
+          <td><code>sms_queue_tables.dart</code></td>
+          <td class="t-est">1.5 d</td>
+        </tr>
+        <tr>
+          <td><span class="task-num">2</span></td>
+          <td>Add Phase 3 last-resort keyword scan to <code>detectMpesaTransaction()</code>: if Phase 1 and Phase 2 rules both miss, run a flat keyword scan across a short list (<code>sent</code>, <code>received</code>, <code>paid</code>, <code>withdrew</code>, <code>fuliza</code>). Return <code>MpesaConfidence.low</code> with reason <code>'keyword_scan_only'</code>. Never return null for an SMS that passed the fast filter. <span class="t-new">New</span></td>
+          <td><code>mpesa_parser_rules.dart</code></td>
+          <td class="t-est">4 h</td>
+        </tr>
+        <tr>
+          <td><span class="task-num">3</span></td>
+          <td>Update <code>parseMany()</code> to write quarantine candidates to <code>SmsQuarantine</code> table instead of filtering them out. Write MEDIUM-confidence candidates to <code>SmsReviewQueue</code>. Only <code>directLedger</code> results are returned for immediate import. <span class="t-fix">Fix</span></td>
+          <td><code>mpesa_parser_service.dart</code></td>
+          <td class="t-est">3 h</td>
+        </tr>
+        <tr>
+          <td><span class="task-num">4</span></td>
+          <td>Implement Fuliza charge-notice short-circuit: detect via <code>isFulizaChargeNotice()</code> (requires BOTH Fuliza context AND a fee signal, excludes repayment and balance SMS). Call <code>FulizaRepository.setOutstandingKes()</code>. Never route to ledger or review queue. <span class="t-new">New</span></td>
+          <td><code>mpesa_parser_service.dart</code>, new <code>fuliza_repository.dart</code></td>
+          <td class="t-est">1 d</td>
+        </tr>
+        <tr>
+          <td><span class="task-num">5</span></td>
+          <td>Create sealed <code>ParseOutcome</code> hierarchy: <code>ParseSuccess</code>, <code>ParseDuplicate(dupeKey)</code>, <code>ParseFailure(reason, matchedRulePhase?, rawMessage)</code>, <code>ParseFulizaUpdate</code>. All parse paths must return an outcome — no silent null returns. <span class="t-new">New</span></td>
+          <td><code>mpesa_parser_models.dart</code></td>
+          <td class="t-est">2 h</td>
+        </tr>
+        <tr>
+          <td><span class="task-num">6</span></td>
+          <td>Implement <code>ImportAuditLogger</code>: write every <code>ParseOutcome</code> to an <code>import_audit</code> Drift table (rawMessageHash, outcome, reason, matchedPhase, confidenceScore, timestamp). Expose <code>Stream&lt;List&lt;AuditEntry&gt;&gt;</code> for diagnostic access. <span class="t-new">New</span></td>
+          <td>new <code>import_audit_logger.dart</code></td>
+          <td class="t-est">1 d</td>
+        </tr>
+        <tr>
+          <td><span class="task-num">7</span></td>
+          <td>Add <code>matchedRulePhase</code> (int?, 1–3) to <code>ParsedMpesaCandidate</code>. Set it in <code>detectMpesaTransaction()</code> based on which rule list matched. Persist to DB for analytics queries. <span class="t-new">New</span></td>
+          <td><code>mpesa_parser_models.dart</code>, <code>mpesa_parser_rules.dart</code></td>
+          <td class="t-est">2 h</td>
+        </tr>
+        <tr>
+          <td><span class="task-num">8</span></td>
+          <td>Add <code>Stream&lt;({int done, int total})&gt; importProgress</code> to <code>MpesaParserService</code> via a broadcast <code>StreamController</code>. Emit on every parsed item in <code>parseMany()</code>. Wire to a progress bar in the import UI. <span class="t-new">New</span></td>
+          <td><code>mpesa_parser_service.dart</code></td>
+          <td class="t-est">2 h</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="dod">
+    <div class="dod-head">Definition of Done</div>
+    <div class="dod-list">
+      <span class="dod-item">Every SMS that passes fast filter has a DB row (ledger, review, or quarantine)</span>
+      <span class="dod-item">Fuliza charge notices update FulizaRepository, not ledger</span>
+      <span class="dod-item">No parse can return null — sealed outcome type enforced</span>
+      <span class="dod-item">Import progress stream drives UI progress bar</span>
+      <span class="dod-item">matchedRulePhase queryable from audit table</span>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+     PHASE 3
+═══════════════════════════════════════════════════════════ -->
+<div class="phase" id="ph3" style="--ph-color: var(--ph3)">
+  <div class="phase-head" data-n="3">
+    <div class="phase-head-left">
+      <div class="phase-label">Phase 3 · Pipeline Reliability</div>
+      <h2 class="phase-title">Survive crashes, retries, and dual-path duplicates</h2>
+      <p class="phase-goal">Replace the ephemeral Isolate with a WorkManager-backed durable worker, add crash recovery via the ingest queue state machine, and plug all four deduplication tiers. After this phase, a bulk import interrupted at item 247 resumes from item 248.</p>
+    </div>
+    <div class="phase-meta">
+      <div>
+        <div class="est-badge">~4</div>
+        <div class="est-unit">dev days</div>
+      </div>
+      <span class="prereq-chip">Requires Phase 2</span>
+    </div>
+  </div>
+
+  <div class="task-wrap">
+    <table class="task-table">
+      <thead>
+        <tr><th>#</th><th>Task</th><th>File</th><th>Est.</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span class="task-num">1</span></td>
+          <td>Add <code>workmanager</code> Flutter package. Implement <code>SmsIngestionWorker</code>: register Dart callback via <code>Workmanager().executeTask()</code>, read a batch of PENDING rows from <code>SmsIngestQueue</code>, process each, mark DONE or FAILED. Max 3 retries per item with exponential backoff (2 s → 4 s → 8 s). <span class="t-new">New</span></td>
+          <td>new <code>sms_ingestion_worker.dart</code></td>
+          <td class="t-est">2 d</td>
+        </tr>
+        <tr>
+          <td><span class="task-num">2</span></td>
+          <td>Implement ingest queue state machine in <code>SmsIngestQueueDao</code>: <code>claimPending()</code> atomically sets state PENDING → PROCESSING; <code>markDone()</code>; <code>markFailed(reason)</code>; <code>resetStaleProcessing(cutoffMs)</code> resets any PROCESSING rows older than 5 minutes back to PENDING (crash recovery). <span class="t-new">New</span></td>
+          <td><code>sms_queue_tables.dart</code> (DAO methods)</td>
+          <td class="t-est">4 h</td>
+        </tr>
+        <tr>
+          <td><span class="task-num">3</span></td>
+          <td>Replace <code>parseJobsInIsolate(Isolate.run)</code> with a call that enqueues jobs to <code>SmsIngestQueue</code> then schedules a one-shot WorkManager task. Keep <code>Isolate.run</code> only for the internal parse computation within the worker (not for the overall import lifecycle). <span class="t-fix">Fix</span></td>
+          <td><code>mpesa_parser_service.dart</code></td>
+          <td class="t-est">3 h</td>
+        </tr>
+        <tr>
+          <td><span class="task-num">4</span></td>
+          <td>Add per-item error isolation in the worker: wrap each item's parse + DB write in a try/catch that marks the item FAILED and continues the batch. One bad SMS cannot abort the remaining 499. <span class="t-new">New</span></td>
+          <td><code>sms_ingestion_worker.dart</code></td>
+          <td class="t-est">1 h</td>
+        </tr>
+        <tr>
+          <td><span class="task-num">5</span></td>
+          <td>Add dedup tier 1: <code>existsByMpesaCode(code)</code> as the first check before source-hash lookup. Indexed column on <code>transactions.mpesaCode</code>. <span class="t-new">New</span></td>
+          <td>transactions DAO</td>
+          <td class="t-est">1 h</td>
+        </tr>
+        <tr>
+          <td><span class="task-num">6</span></td>
+          <td>Add dedup tier 4 heuristic: <code>existsPotentialDuplicate(amount, merchant, dateMs, windowMs: 300000)</code> — query for any transaction with same amount + normalized merchant within 5-minute window. Used as safety net when source hash and semantic hash both miss (e.g., trailing-space difference between ContentProvider and BroadcastReceiver reads). <span class="t-new">New</span></td>
+          <td>transactions DAO</td>
+          <td class="t-est">2 h</td>
+        </tr>
+        <tr>
+          <td><span class="task-num">7</span></td>
+          <td>Add within-batch dedup: <code>HashSet&lt;String&gt;</code> keyed by code + source hash at the start of each worker run. Skip items already seen in this batch before any DB call. <span class="t-new">New</span></td>
+          <td><code>sms_ingestion_worker.dart</code></td>
+          <td class="t-est">1 h</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="dod">
+    <div class="dod-head">Definition of Done</div>
+    <div class="dod-list">
+      <span class="dod-item">Import killed at item 247 resumes from item 248 on relaunch</span>
+      <span class="dod-item">WorkManager task visible in Android Developer Options → Running services</span>
+      <span class="dod-item">4-tier dedup correctly handles code, source hash, semantic hash, and 5-min window</span>
+      <span class="dod-item">Single-item parse failure does not abort the batch</span>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+     PHASE 4
+═══════════════════════════════════════════════════════════ -->
+<div class="phase" id="ph4" style="--ph-color: var(--ph4)">
+  <div class="phase-head" data-n="4">
+    <div class="phase-head-left">
+      <div class="phase-label">Phase 4 · Accuracy &amp; Enrichment</div>
+      <h2 class="phase-title">Better data quality from every parse</h2>
+      <p class="phase-goal">Replace generic counterparty extraction with per-rule patterns, add merchant normalization so the same business is never stored twice under different names, wire the category inference engine into the parser, and expand categories from 11 to 20+. Can run in parallel with Phase 3 after Phase 2 is complete.</p>
+    </div>
+    <div class="phase-meta">
+      <div>
+        <div class="est-badge">~4</div>
+        <div class="est-unit">dev days</div>
+      </div>
+      <span class="prereq-chip">Requires Phase 2</span>
+    </div>
+  </div>
+
+  <div class="task-wrap">
+    <table class="task-table">
+      <thead>
+        <tr><th>#</th><th>Task</th><th>File</th><th>Est.</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span class="task-num">1</span></td>
+          <td>Add <code>counterpartyPattern</code> (nullable <code>RegExp</code>) to <code>MpesaParserRule</code>. Write per-rule patterns for each of the 10+ transaction types: Paybill extracts from account context, P2P-send extracts name before phone/after "to", BuyGoods extracts business name, Received extracts sender name. Generic fallback only if rule has no pattern. <span class="t-new">New</span></td>
+          <td><code>mpesa_parser_rules.dart</code></td>
+          <td class="t-est">1 d</td>
+        </tr>
+        <tr>
+          <td><span class="task-num">2</span></td>
+          <td>Implement <code>normalizeMerchantName(String raw)</code>: strip leading company-type tokens (<code>LTD</code>, <code>LIMITED</code>, <code>CO</code>), uppercase normalize, remove trailing phone numbers and account number patterns, collapse spaces. "NAIROBI WATER COMPANY LIMITED" and "Nairobi Water" → same key. <span class="t-new">New</span></td>
+          <td><code>category_inference_engine.dart</code></td>
+          <td class="t-est">3 h</td>
+        </tr>
+        <tr>
+          <td><span class="task-num">3</span></td>
+          <td>Remove hardcoded <code>_categoryFor(type)</code> from <code>MpesaParserService</code>. Replace with call to <code>CategoryInferenceEngine.infer(normalizedMerchant, type, amount)</code> after counterparty extraction. The returned <code>CategoryGuess</code> (category + confidence float) is stored on the candidate. <span class="t-fix">Fix</span></td>
+          <td><code>mpesa_parser_service.dart</code>, <code>category_inference_engine.dart</code></td>
+          <td class="t-est">4 h</td>
+        </tr>
+        <tr>
+          <td><span class="task-num">4</span></td>
+          <td>Expand keyword rule set from 11 to 20+ categories. Add: Insurance (britam, jubilee, AAR, CIC), Fuel (total, shell, rubis, kenol), Rent (rent, landlord, caretaker), Health (hospital, clinic, pharmacy, chemist, doctor), Savings (sacco, chama, savings), Subscriptions (netflix, spotify, showmax, dstv), Government (kra, ntsa, nhif, nssf, huduma), Investments (cma, nse, unit trust), Education (school fees, tuition, university). <span class="t-new">New</span></td>
+          <td><code>category_inference_engine.dart</code></td>
+          <td class="t-est">1 d</td>
+        </tr>
+        <tr>
+          <td><span class="task-num">5</span></td>
+          <td>Add <code>InferenceSource</code> enum (<code>mpesaKind</code>, <code>keyword</code>, <code>amountHeuristic</code>) to <code>CategoryGuess</code>. Set in <code>infer()</code> based on which path matched. Used in Phase 6 to drive the confidence UX label ("Auto-categorized from keyword" vs "Auto-categorized from amount"). <span class="t-new">New</span></td>
+          <td><code>category_inference_engine.dart</code></td>
+          <td class="t-est">2 h</td>
+        </tr>
+        <tr>
+          <td><span class="task-num">6</span></td>
+          <td>Add promo tail stripping to <code>normalizeParserText()</code>: regex matching known promotional suffix patterns (<code>Earn rewards</code>, <code>Visit mpesa</code>, <code>Get more</code>). Strip everything from the first match to end of string before any other processing. <span class="t-new">New</span></td>
+          <td><code>mpesa_parser_text.dart</code></td>
+          <td class="t-est">1 h</td>
+        </tr>
+        <tr>
+          <td><span class="task-num">7</span></td>
+          <td>Implement <code>SmsImportHealthStore</code>: in-memory ring buffer (last 200 outcomes) tracking Phase 1/2/3 hit counts, dedup hit count, quarantine count, failure reasons. Expose as <code>ImportHealthSnapshot</code> value. Consumed by Phase 6's health dashboard. <span class="t-new">New</span></td>
+          <td>new <code>sms_import_health_store.dart</code></td>
+          <td class="t-est">3 h</td>
+        </tr>
+        <tr>
+          <td><span class="task-num">8</span></td>
+          <td>Add amount banding to <code>ImportAuditLogger</code>: tag each logged outcome with <code>amountBand</code> (lt_100 / 100_999 / 1k_9999 / 10k_plus). Enables queries like "what fraction of high-value transactions go to quarantine?". <span class="t-new">New</span></td>
+          <td><code>import_audit_logger.dart</code></td>
+          <td class="t-est">1 h</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="dod">
+    <div class="dod-head">Definition of Done</div>
+    <div class="dod-list">
+      <span class="dod-item">Paybill transactions categorized by merchant name, not generic 'Bills'</span>
+      <span class="dod-item">"Nairobi Water" and "NAIROBI WATER COMPANY LTD" stored under same normalized key</span>
+      <span class="dod-item">20+ categories present and covered by keyword tests</span>
+      <span class="dod-item">CategoryGuess confidence float stored on every transaction</span>
+      <span class="dod-item">InferenceSource trackable via audit log query</span>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+     PHASE 5
+═══════════════════════════════════════════════════════════ -->
+<div class="phase" id="ph5" style="--ph-color: var(--ph5)">
+  <div class="phase-head" data-n="5">
+    <div class="phase-head-left">
+      <div class="phase-label">Phase 5 · Real-Time Ingestion</div>
+      <h2 class="phase-title">Process SMS within seconds of delivery, app-closed</h2>
+      <p class="phase-goal">Build the native Android plugin that registers a BroadcastReceiver for <code>SMS_RECEIVED_ACTION</code>, assembles multi-part PDUs, and hands off to the WorkManager ingest queue built in Phase 3. This is the only phase that requires writing native Kotlin.</p>
+    </div>
+    <div class="phase-meta">
+      <div>
+        <div class="est-badge">~4</div>
+        <div class="est-unit">dev days</div>
+      </div>
+      <span class="prereq-chip">Requires Phase 3</span>
+    </div>
+  </div>
+
+  <div class="task-wrap">
+    <table class="task-table">
+      <thead>
+        <tr><th>#</th><th>Task</th><th>File</th><th>Est.</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span class="task-num">1</span></td>
+          <td>Create native Android plugin package. Write <code>MpesaSmsPlugin.kt</code> implementing <code>FlutterPlugin</code> and registering the method channel <code>com.beltech.sms/receiver</code>. Set up <code>MpesaSmsReceiverPlugin.kt</code> as a <code>BroadcastReceiver</code> for <code>Telephony.Sms.Intents.SMS_RECEIVED_ACTION</code>. <span class="t-new">New</span></td>
+          <td><code>android/src/main/kotlin/…/MpesaSmsPlugin.kt</code></td>
+          <td class="t-est">1 d</td>
+        </tr>
+        <tr>
+          <td><span class="task-num">2</span></td>
+          <td>Implement multi-part PDU assembly in <code>MpesaSmsReceiverPlugin</code> via <code>Telephony.Sms.Intents.getMessagesFromIntent(intent)</code>. Concatenate PDU bodies in order. Extract sender address and carrier timestamp from the first PDU. <span class="t-new">New</span></td>
+          <td><code>MpesaSmsPlugin.kt</code></td>
+          <td class="t-est">3 h</td>
+        </tr>
+        <tr>
+          <td><span class="task-num">3</span></td>
+          <td>Write Dart method channel client <code>SmsReceiverChannel</code>. Expose <code>Stream&lt;RawSmsEvent&gt;</code> (body, sender, receivedAtMs) via a Flutter <code>EventChannel</code>. Run a fast M-Pesa pre-filter on the Kotlin side before calling back (saves cross-thread overhead for non-M-Pesa SMS). <span class="t-new">New</span></td>
+          <td>new <code>sms_receiver_channel.dart</code></td>
+          <td class="t-est">1 d</td>
+        </tr>
+        <tr>
+          <td><span class="task-num">4</span></td>
+          <td>On <code>RawSmsEvent</code> received in Dart: write to <code>SmsIngestQueue</code> as PENDING, schedule a WorkManager one-shot task keyed by <code>"mpesa-ingest-{mpesaCode}"</code> with <code>ExistingWorkPolicy.KEEP</code>. Carrier timestamp preserved as <code>receivedAtMs</code>. <span class="t-new">New</span></td>
+          <td><code>mpesa_parser_service.dart</code> (or ingestion coordinator)</td>
+          <td class="t-est">3 h</td>
+        </tr>
+        <tr>
+          <td><span class="task-num">5</span></td>
+          <td>Add persistent "Importing M-Pesa SMS" foreground notification in <code>SmsIngestionWorker</code> via <code>WorkManager.setForeground()</code>. Required for long-running work on Android 12+. Dismiss on completion. <span class="t-new">New</span></td>
+          <td><code>sms_ingestion_worker.dart</code></td>
+          <td class="t-est">2 h</td>
+        </tr>
+        <tr>
+          <td><span class="task-num">6</span></td>
+          <td>Add <code>&lt;receiver&gt;</code> declaration to <code>AndroidManifest.xml</code> with <code>android.permission.RECEIVE_SMS</code>. Add <code>READ_SMS</code> and <code>RECEIVE_SMS</code> to the permission rationale flow in <code>device_sms_data_source.dart</code>. <span class="t-new">New</span></td>
+          <td><code>AndroidManifest.xml</code>, <code>device_sms_data_source.dart</code></td>
+          <td class="t-est">1 h</td>
+        </tr>
+        <tr>
+          <td><span class="task-num">7</span></td>
+          <td>Integration test: send a test SMS to the device with app closed. Verify transaction appears in the ledger within 10 seconds. Verify no duplicate when ContentProvider backfill also reads the same SMS on next app open (heuristic dedup from Phase 3 covers this). <span class="t-new">New</span></td>
+          <td><code>test/integration/realtime_sms_test.dart</code></td>
+          <td class="t-est">2 h</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="dod">
+    <div class="dod-head">Definition of Done</div>
+    <div class="dod-list">
+      <span class="dod-item">SMS received with app closed → transaction in ledger within 10 s</span>
+      <span class="dod-item">No duplicate when BroadcastReceiver + ContentProvider both see the same SMS</span>
+      <span class="dod-item">Multi-part SMS assembled correctly (test with a 160+ char M-Pesa SMS)</span>
+      <span class="dod-item">Foreground notification shown during background import</span>
+      <span class="dod-item">Integration test green on physical Android device</span>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+     PHASE 6
+═══════════════════════════════════════════════════════════ -->
+<div class="phase" id="ph6" style="--ph-color: var(--ph6)">
+  <div class="phase-head" data-n="6">
+    <div class="phase-head-left">
+      <div class="phase-label">Phase 6 · Dart-Only Innovations</div>
+      <h2 class="phase-title">Features the Kotlin app cannot offer</h2>
+      <p class="phase-goal">Build five capabilities that leverage Dart/Flutter platform advantages or the data model improvements from earlier phases. Each is independently shippable within this phase. Run in parallel with Phase 5 once Phases 2 and 4 are complete.</p>
+    </div>
+    <div class="phase-meta">
+      <div>
+        <div class="est-badge">~6</div>
+        <div class="est-unit">dev days</div>
+      </div>
+      <span class="prereq-chip">Requires Phases 2 &amp; 4</span>
+    </div>
+  </div>
+
+  <div class="task-wrap">
+    <table class="task-table">
+      <thead>
+        <tr><th>#</th><th>Task</th><th>File</th><th>Est.</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span class="task-num">1</span></td>
+          <td><strong>Fuliza liability model.</strong> Add <code>isLiability: true</code> flag to <code>fulizaDraw</code> transactions. Expose a <code>FulizaBalanceViewModel</code> showing outstanding balance + available limit + draw history. Distinct from the spending feed — draws appear under a "Loans &amp; Credit" section and affect a debt balance widget, not just the transaction list. <span class="t-new">New</span></td>
+          <td>new <code>fuliza_balance_viewmodel.dart</code></td>
+          <td class="t-est">1 d</td>
+        </tr>
+        <tr>
+          <td><span class="task-num">2</span></td>
+          <td><strong>Category confidence UX.</strong> When <code>CategoryGuess.confidence &lt; 0.70</code> or <code>inferenceSource == amountHeuristic</code>, show a small "Auto · Medium confidence" chip on the transaction tile. Tapping opens a bottom sheet with the inferred category pre-selected, 4 alternatives from the CategoryInferenceEngine, and a free-text search. On correction, store a user override that persists across re-imports for that normalized merchant. <span class="t-new">New</span></td>
+          <td>transaction tile widget, new <code>category_override_repository.dart</code></td>
+          <td class="t-est">1.5 d</td>
+        </tr>
+        <tr>
+          <td><span class="task-num">3</span></td>
+          <td><strong>Cross-device semantic dedup via Supabase.</strong> After every successful import, upsert <code>{semanticHash, userId}</code> to a Supabase <code>sms_semantic_hashes</code> table. On a fresh device import, check each candidate's semantic hash against this table before writing locally. De-duplicates across device reinstalls without sharing raw SMS text. Add a 30-day TTL to keep the table bounded. <span class="t-new">New</span></td>
+          <td>new <code>semantic_hash_sync_service.dart</code></td>
+          <td class="t-est">1.5 d</td>
+        </tr>
+        <tr>
+          <td><span class="task-num">4</span></td>
+          <td><strong>Swipeable review queue UI.</strong> Full-screen card tray for the <code>SmsReviewQueue</code> table. Each card shows: category + confidence, amount, merchant, raw SMS (collapsed). Swipe right = approve (write to ledger), swipe left = reject (delete from queue). Keyboard-accessible fallback buttons. Accessible from main navigation. Badge count on nav item. <span class="t-new">New</span></td>
+          <td>new <code>review_queue_screen.dart</code></td>
+          <td class="t-est">1.5 d</td>
+        </tr>
+        <tr>
+          <td><span class="task-num">5</span></td>
+          <td><strong>Local parser health dashboard.</strong> Debug screen (hidden behind Settings → Developer → Parser Health) powered by <code>SmsImportHealthStore</code> and the audit log. Shows: Phase 1/2/3 hit rates over last 7 days, dedup hit rate, quarantine rate, top 5 failure reasons, amount band distribution. No remote analytics — all local SQLite queries. Flag when Phase 1 hit rate drops &gt;10 pp week-over-week (Safaricom format drift detection). <span class="t-new">New</span></td>
+          <td>new <code>parser_health_screen.dart</code></td>
+          <td class="t-est">1 d</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="dod">
+    <div class="dod-head">Definition of Done</div>
+    <div class="dod-list">
+      <span class="dod-item">Fuliza draws appear as liabilities, not spend</span>
+      <span class="dod-item">Low-confidence categories show correction chip</span>
+      <span class="dod-item">Reinstall + re-import produces zero duplicate transactions</span>
+      <span class="dod-item">Review queue accessible from nav with pending badge count</span>
+      <span class="dod-item">Parser health screen shows Phase 1 hit rate trend</span>
+    </div>
+  </div>
+</div>
+
+<!-- ── Execution notes ─────────────────────────────────────── -->
+<div class="section-head" style="margin-top: 52px">Execution notes</div>
+
+<div class="note">
+  <strong>Parallel execution.</strong> Phases 3 and 4 both require only Phase 2 — they can run in parallel on two branches after Phase 2 merges. Phase 5 requires Phase 3. Phase 6 requires Phases 2 and 4. With two developers, the critical path is: Phase 1 → Phase 2 → (Phase 3 ‖ Phase 4) → Phase 5 → Phase 6 ≈ 3.5 weeks.
+</div>
+
+<div class="note">
+  <strong>Test coverage.</strong> Every parse fix in Phase 1 must have a corresponding unit test before it merges. The Phase 2 queue tables need DAO tests. Phase 3's WorkManager worker needs an integration test on a physical device — the emulator does not reliably exercise the lifecycle kill behaviour you are protecting against.
+</div>
+
+<div class="note">
+  <strong>Supabase schema (Phase 6 task 3).</strong> The <code>sms_semantic_hashes</code> table needs a composite unique index on <code>(userId, semanticHash)</code> and a <code>created_at</code> column for the 30-day TTL. Row-level security policy: users can only read and write their own rows. The semantic hash does not contain any raw SMS content — it is safe to store remotely.
+</div>
+
+<div class="note">
+  <strong>Safaricom format drift detection (Phase 6 task 5).</strong> The Phase 1 hit rate alert threshold of 10 pp week-over-week is a heuristic starting point. If Safaricom launches a new SMS format for a single transaction type, the overall rate may drop only 3–5 pp. Consider also alerting on per-category Phase 1 rate drops once you have a few weeks of baseline data.
+</div>
+
+</div><!-- /page -->
+
+<script>
+// Highlight pipeline strip segment matching the visible section
+const phases = document.querySelectorAll('.phase[id]');
+const segments = document.querySelectorAll('.ph-seg');
+
+const io = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      const target = '#' + e.target.id;
+      segments.forEach(s => {
+        const isActive = s.getAttribute('href') === target;
+        s.style.background = isActive ? 'var(--surface-hi)' : '';
+      });
+    }
+  });
+}, { rootMargin: '-20% 0px -65% 0px' });
+
+phases.forEach(p => io.observe(p));
+</script>

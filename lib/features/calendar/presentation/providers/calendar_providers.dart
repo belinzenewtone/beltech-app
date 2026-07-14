@@ -1,0 +1,314 @@
+import 'dart:async';
+
+import 'package:beltech/core/di/notification_providers.dart';
+import 'package:beltech/core/notifications/local_notification_service.dart';
+import 'package:beltech/core/di/repository_providers.dart';
+import 'package:beltech/features/calendar/domain/entities/calendar_event.dart';
+import 'package:beltech/features/calendar/domain/repositories/calendar_repository.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/legacy.dart';
+
+final visibleMonthProvider = StateProvider<DateTime>((_) {
+  final now = DateTime.now();
+  return DateTime(now.year, now.month, 1);
+});
+
+final selectedDayProvider = StateProvider<DateTime>((_) => DateTime.now());
+
+final dayEventsProvider = StreamProvider<List<CalendarEvent>>((ref) {
+  final day = ref.watch(selectedDayProvider);
+  return ref.watch(calendarRepositoryProvider).watchEventsForDay(day);
+});
+
+final monthEventTypesProvider = StreamProvider<Map<int, CalendarEventType>>((
+  ref,
+) {
+  final visibleMonth = ref.watch(visibleMonthProvider);
+  final monthStart = DateTime(visibleMonth.year, visibleMonth.month, 1);
+  final monthEnd = DateTime(visibleMonth.year, visibleMonth.month + 1, 1);
+  return ref
+      .watch(calendarRepositoryProvider)
+      .watchEventsInRange(monthStart, monthEnd)
+      .map((events) {
+        final dayTypes = <int, CalendarEventType>{};
+        for (final event in events) {
+          dayTypes[event.startAt.day] = _preferType(
+            dayTypes[event.startAt.day],
+            event.type,
+          );
+        }
+        return dayTypes;
+      });
+});
+
+class CalendarWriteController extends AsyncNotifier<void> {
+  @override
+  FutureOr<void> build() {}
+
+  Future<void> addQuickEvent(DateTime day) async {
+    final start = DateTime(day.year, day.month, day.day, 14, 0);
+    await addEvent(
+      title: 'New Event',
+      startAt: start,
+      endAt: start.add(const Duration(hours: 1)),
+      note: 'Created from Calendar tab',
+    );
+  }
+
+  Future<void> addEvent({
+    required String title,
+    required DateTime startAt,
+    CalendarEventPriority priority = CalendarEventPriority.neutral,
+    CalendarEventType type = CalendarEventType.personal,
+    CalendarEventKind kind = CalendarEventKind.event,
+    DateTime? endAt,
+    String? note,
+    List<int> reminderOffsets = const [],
+    bool alarmEnabled = false,
+    bool allDay = false,
+    RepeatRule repeatRule = RepeatRule.never,
+    String guests = '',
+    String timeZoneId = '',
+    int reminderTimeOfDayMinutes = 480,
+  }) async {
+    final repository = ref.read(calendarRepositoryProvider);
+    final notifications = ref.read(localNotificationServiceProvider);
+    state = const AsyncLoading();
+    state = await AsyncValue.guard(() async {
+      await repository.addEvent(
+        title: title,
+        startAt: startAt,
+        priority: priority,
+        type: type,
+        kind: kind,
+        endAt: endAt,
+        note: note,
+        reminderOffsets: reminderOffsets,
+        alarmEnabled: alarmEnabled,
+        allDay: allDay,
+        repeatRule: repeatRule,
+        guests: guests,
+        timeZoneId: timeZoneId,
+        reminderTimeOfDayMinutes: reminderTimeOfDayMinutes,
+      );
+      if (reminderOffsets.isNotEmpty) {
+        await _scheduleCreatedEventReminder(
+          repository: repository,
+          notifications: notifications,
+          title: title,
+          startAt: startAt,
+          kind: kind,
+          note: note,
+          reminderOffsets: reminderOffsets,
+          alarmEnabled: alarmEnabled,
+          allDay: allDay,
+          reminderTimeOfDayMinutes: reminderTimeOfDayMinutes,
+        );
+      }
+    });
+  }
+
+  Future<void> updateEvent({
+    required int eventId,
+    required String title,
+    required DateTime startAt,
+    required CalendarEventPriority priority,
+    required CalendarEventType type,
+    required CalendarEventKind kind,
+    DateTime? endAt,
+    String? note,
+    List<int> reminderOffsets = const [],
+    bool alarmEnabled = false,
+    bool allDay = false,
+    RepeatRule repeatRule = RepeatRule.never,
+    String guests = '',
+    String timeZoneId = '',
+    int reminderTimeOfDayMinutes = 480,
+  }) async {
+    final repository = ref.read(calendarRepositoryProvider);
+    final notifications = ref.read(localNotificationServiceProvider);
+    state = const AsyncLoading();
+    state = await AsyncValue.guard(() async {
+      await repository.updateEvent(
+        eventId: eventId,
+        title: title,
+        startAt: startAt,
+        priority: priority,
+        type: type,
+        kind: kind,
+        endAt: endAt,
+        note: note,
+        reminderOffsets: reminderOffsets,
+        alarmEnabled: alarmEnabled,
+        allDay: allDay,
+        repeatRule: repeatRule,
+        guests: guests,
+        timeZoneId: timeZoneId,
+        reminderTimeOfDayMinutes: reminderTimeOfDayMinutes,
+      );
+      if (reminderOffsets.isNotEmpty) {
+        await notifications.scheduleEventReminder(
+          eventId: eventId,
+          title: title,
+          startAt: startAt,
+          kind: kind,
+          reminderOffsets: reminderOffsets,
+          alarmEnabled: alarmEnabled,
+          allDay: allDay,
+          reminderTimeOfDayMinutes: reminderTimeOfDayMinutes,
+        );
+      } else {
+        await notifications.cancelEventReminder(eventId);
+      }
+    });
+  }
+
+  Future<void> deleteEvent(int eventId) async {
+    final repository = ref.read(calendarRepositoryProvider);
+    final notifications = ref.read(localNotificationServiceProvider);
+    state = const AsyncLoading();
+    state = await AsyncValue.guard(() async {
+      await notifications.cancelEventReminder(eventId);
+      await repository.deleteEvent(eventId);
+    });
+  }
+
+  Future<void> setEventCompleted({
+    required int eventId,
+    required bool completed,
+  }) async {
+    final repository = ref.read(calendarRepositoryProvider);
+    final notifications = ref.read(localNotificationServiceProvider);
+    state = const AsyncLoading();
+    state = await AsyncValue.guard(() async {
+      await repository.setCompleted(eventId: eventId, completed: completed);
+      if (completed) {
+        await notifications.cancelEventReminder(eventId);
+      }
+    });
+  }
+
+  Future<void> _scheduleCreatedEventReminder({
+    required CalendarRepository repository,
+    required LocalNotificationService notifications,
+    required String title,
+    required DateTime startAt,
+    required CalendarEventKind kind,
+    String? note,
+    required List<int> reminderOffsets,
+    bool alarmEnabled = false,
+    bool allDay = false,
+    int reminderTimeOfDayMinutes = 480,
+  }) async {
+    try {
+      final dayStart = DateTime(startAt.year, startAt.month, startAt.day);
+      final events = await repository.watchEventsForDay(dayStart).first;
+      final created = events.where((event) {
+        final sameNote = (event.note ?? '') == (note ?? '');
+        return event.title == title &&
+            event.startAt.isAtSameMomentAs(startAt) &&
+            sameNote;
+      }).firstOrNull;
+      if (created == null) {
+        return;
+      }
+      await notifications.scheduleEventReminder(
+        eventId: created.id,
+        title: created.title,
+        startAt: created.startAt,
+        kind: kind,
+        reminderOffsets: reminderOffsets,
+        alarmEnabled: alarmEnabled,
+        allDay: allDay,
+        reminderTimeOfDayMinutes: reminderTimeOfDayMinutes,
+      );
+    } catch (_) {
+      return;
+    }
+  }
+}
+
+final calendarWriteControllerProvider =
+    AsyncNotifierProvider<CalendarWriteController, void>(
+      CalendarWriteController.new,
+    );
+
+CalendarEventType _preferType(
+  CalendarEventType? current,
+  CalendarEventType incoming,
+) {
+  if (current == null) {
+    return incoming;
+  }
+  const weight = <CalendarEventType, int>{
+    CalendarEventType.work: 5,
+    CalendarEventType.finance: 4,
+    CalendarEventType.health: 3,
+    CalendarEventType.personal: 2,
+    CalendarEventType.other: 1,
+  };
+  return (weight[incoming] ?? 0) >= (weight[current] ?? 0) ? incoming : current;
+}
+
+enum CalendarViewMode { month, week, day }
+
+final calendarViewModeProvider = StateProvider<CalendarViewMode>(
+  (_) => CalendarViewMode.month,
+);
+
+final visibleWeekStartProvider = StateProvider<DateTime>((_) {
+  final now = DateTime.now();
+  final monday = now.subtract(Duration(days: now.weekday - 1));
+  return DateTime(monday.year, monday.month, monday.day);
+});
+
+final weekEventsProvider = StreamProvider<List<CalendarEvent>>((ref) {
+  final weekStart = ref.watch(visibleWeekStartProvider);
+  final weekEnd = weekStart.add(const Duration(days: 7));
+  return ref
+      .watch(calendarRepositoryProvider)
+      .watchEventsInRange(weekStart, weekEnd);
+});
+
+enum EventFilter { all, upcoming, completed }
+
+final eventFilterProvider = StateProvider<EventFilter>((_) => EventFilter.all);
+
+final eventSearchQueryProvider = StateProvider<String>((_) => '');
+
+final allEventsProvider = StreamProvider<List<CalendarEvent>>((ref) {
+  return ref.watch(calendarRepositoryProvider).watchAllEvents();
+});
+
+/// Upcoming events for the next 30 days, used by the agenda tab.
+final agendaEventsProvider = StreamProvider<List<CalendarEvent>>((ref) {
+  final now = DateTime.now();
+  final start = DateTime(now.year, now.month, now.day);
+  final end = start.add(const Duration(days: 30));
+  return ref
+      .watch(calendarRepositoryProvider)
+      .watchEventsInRange(start, end);
+});
+
+final filteredEventsProvider = Provider<AsyncValue<List<CalendarEvent>>>((ref) {
+  final eventsState = ref.watch(allEventsProvider);
+  final filter = ref.watch(eventFilterProvider);
+  final query = ref.watch(eventSearchQueryProvider).trim().toLowerCase();
+
+  return eventsState.whenData((events) {
+    var visible = events;
+    switch (filter) {
+      case EventFilter.upcoming:
+        visible = events.where((event) => !event.completed).toList();
+      case EventFilter.completed:
+        visible = events.where((event) => event.completed).toList();
+      case EventFilter.all:
+        visible = events;
+    }
+    if (query.isEmpty) return visible;
+    return visible.where((event) {
+      final haystack = '${event.title} ${event.note ?? ''}'.toLowerCase();
+      return haystack.contains(query);
+    }).toList();
+  });
+});
