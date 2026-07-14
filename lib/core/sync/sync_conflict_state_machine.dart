@@ -79,7 +79,7 @@ class SyncConflictResolver {
         conflictReason: isLocalDeleted
             ? 'Local deleted, remote exists; delete confirmed remotely?'
             : 'Remote deleted, local exists; accept remote deletion?',
-        localWins: !isRemoteDeleted,
+        localWins: isRemoteDeleted,
         resolvedAt: DateTime.now(),
       );
     }
