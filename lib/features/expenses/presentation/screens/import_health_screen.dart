@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:beltech/core/di/database_providers.dart';
+import 'package:beltech/core/widgets/loading_indicator.dart';
 import 'package:beltech/core/sync/data_integrity_service.dart';
 import 'package:beltech/core/theme/app_colors.dart';
 import 'package:beltech/core/theme/app_radius.dart';
@@ -108,7 +109,7 @@ class _ImportHealthScreenState extends ConsumerState<ImportHealthScreen> {
         tone: AppCardTone.muted,
         child: SizedBox(
           height: 120,
-          child: Center(child: CircularProgressIndicator()),
+          child: Center(child: LoadingIndicator()),
         ),
       ),
       error: (_, _) => const SizedBox.shrink(),
@@ -215,7 +216,7 @@ class _ImportHealthScreenState extends ConsumerState<ImportHealthScreen> {
           ),
         );
       },
-      loading: () => const Center(child: CircularProgressIndicator()),
+      loading: () => const Center(child: LoadingIndicator()),
       error: (e, _) => Center(
         child: Text('Error: $e', style: AppTypography.bodySm(context)),
       ),

@@ -93,7 +93,7 @@ void main() {
   group('parseSingleDetailed routing', () {
     test('sent transaction → high confidence → directLedger', () {
       final r = parser.parseSingleDetailed(
-        'QW12AB34CD Confirmed. Ksh1,250.00 sent to SKY CAFE on 7/3/26 at 6:24 PM.',
+        'QW12AB34CD Confirmed. Ksh1,250.00 sent to SKY CAFE on 7/3/26 at 6:24 PM. New M-PESA balance is Ksh0.00.',
       );
       expect(r, isNotNull);
       expect(r!.confidence, MpesaConfidence.high);
@@ -520,11 +520,11 @@ void main() {
       expect(r!.category, 'Bills');
     });
 
-    test('buyGoods → Food', () {
+    test('buyGoods → Shopping', () {
       final r = parser.parseSingleDetailed(
         'AA11BB22CC Confirmed. Ksh200.00 paid to JAVA HOUSE on 1/1/26 at 1:00 PM.',
       );
-      expect(r!.category, 'Food');
+      expect(r!.category, 'Shopping');
     });
 
     test('withdrawal → Cash', () {
@@ -784,7 +784,7 @@ BB22CC33DD Confirmed. Ksh800.00 received from BOB on 2/2/26 at 10:00 AM.
   group('confidenceScore', () {
     test('high confidence → score >= 0.9', () {
       final r = parser.parseSingleDetailed(
-        'AA11BB22CC Confirmed. Ksh500.00 sent to JOHN on 1/1/26 at 9:00 AM.',
+        'AA11BB22CC Confirmed. Ksh500.00 sent to JOHN on 1/1/26 at 9:00 AM. New M-PESA balance is Ksh0.00.',
       );
       expect(r!.confidenceScore, greaterThanOrEqualTo(0.9));
     });
@@ -801,6 +801,28 @@ BB22CC33DD Confirmed. Ksh800.00 received from BOB on 2/2/26 at 10:00 AM.
         'ZZ11YY22XX Confirmed. Ksh50.00 transfer noted on 7/3/26 at 4:00 PM.',
       );
       expect(r!.confidenceScore, lessThan(0.5));
+    });
+  });
+
+  // ── fee extraction ────────────────────────────────────────────────────────
+
+  group('feeKes extraction', () {
+    test('extracts transaction cost into feeKes', () {
+      final r = parser.parseSingleDetailed(
+        'QW12AB34CD Confirmed. Ksh1,000.00 sent to JOHN DOE on 1/1/26 at 9:00 AM. '
+        'Transaction cost, Ksh23.00. New M-PESA balance is Ksh500.00.',
+      );
+      expect(r, isNotNull);
+      expect(r!.feeKes, closeTo(23.0, 0.001));
+    });
+
+    test('feeKes is null when no fee is present', () {
+      final r = parser.parseSingleDetailed(
+        'QW12AB34CD Confirmed. Ksh1,000.00 sent to JOHN DOE on 1/1/26 at 9:00 AM. '
+        'New M-PESA balance is Ksh500.00.',
+      );
+      expect(r, isNotNull);
+      expect(r!.feeKes, isNull);
     });
   });
 

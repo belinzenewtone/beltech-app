@@ -1,4 +1,5 @@
 import 'package:beltech/core/di/repository_providers.dart';
+import 'package:beltech/core/widgets/app_dialog.dart';
 import 'package:beltech/core/theme/app_colors.dart';
 import 'package:beltech/core/theme/app_spacing.dart';
 import 'package:beltech/core/theme/app_typography.dart';
@@ -127,6 +128,7 @@ class LearningScreen extends ConsumerWidget {
                   itemBuilder: (context, i) {
                     final s = sessions[i];
                     return Padding(
+                      key: ValueKey(s.id),
                       padding: EdgeInsets.only(
                         bottom: i < sessions.length - 1 ? AppSpacing.sm : 0,
                       ),
@@ -168,33 +170,10 @@ class LearningScreen extends ConsumerWidget {
                                 color: AppColors.textMuted,
                               ),
                               onPressed: () async {
-                                final confirmed = await showDialog<bool>(
-                                  context: context,
-                                  builder: (ctx) => AlertDialog(
-                                    title: const Text('Delete session?'),
-                                    content: Text(
-                                      'Remove "${s.topic}"?',
-                                      maxLines: 2,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                    actions: [
-                                      TextButton(
-                                        onPressed: () =>
-                                            Navigator.pop(ctx, false),
-                                        child: const Text('Cancel'),
-                                      ),
-                                      TextButton(
-                                        onPressed: () =>
-                                            Navigator.pop(ctx, true),
-                                        child: const Text(
-                                          'Delete',
-                                          style: TextStyle(
-                                            color: AppColors.danger,
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
+                                final confirmed = await showDeleteConfirmDialog(
+                                  context,
+                                  title: 'Delete session?',
+                                  body: 'Remove "${s.topic}"?',
                                 );
                                 if (confirmed == true) {
                                   await ref

@@ -68,7 +68,7 @@ void main() {
 
   test('audit logs omit raw SMS payloads', () async {
     const rawMessage =
-        'QW12ER34TY Confirmed. Ksh250.00 paid to WATER BILL on 8/3/26 at 9:00 AM.';
+        'QW12ER34TY Confirmed. Ksh250.00 paid to WATER BILL on 8/3/26 at 9:00 AM. New M-PESA balance is Ksh0.00.';
 
     await repository.importSmsMessages(const [rawMessage]);
 
@@ -86,7 +86,7 @@ void main() {
 
   test('duplicate SMS does not create duplicate ledger rows', () async {
     const message =
-        'QW12AB34CD Confirmed. Ksh1,250.00 sent to SKY CAFE on 7/3/26 at 6:24 PM.';
+        'QW12AB34CD Confirmed. Ksh1,250.00 sent to SKY CAFE on 7/3/26 at 6:24 PM. New M-PESA balance is Ksh0.00.';
 
     await repository.importSmsMessages(const [message, message]);
 

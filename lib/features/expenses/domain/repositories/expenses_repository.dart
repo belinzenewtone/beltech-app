@@ -25,7 +25,11 @@ abstract class ExpensesRepository {
 
   Future<void> deleteTransaction(int transactionId);
 
-  Future<int> importSmsMessages(List<String> rawMessages, {DateTime? from});
+  Future<int> importSmsMessages(
+    List<String> rawMessages, {
+    DateTime? from,
+    String? sender,
+  });
 
   Future<int> importFromDevice({DateTime? from});
 

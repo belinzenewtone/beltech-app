@@ -1,4 +1,5 @@
 import 'package:beltech/core/di/repository_providers.dart';
+import 'package:beltech/core/widgets/app_dialog.dart';
 import 'package:beltech/core/theme/app_spacing.dart';
 import 'package:beltech/core/widgets/app_empty_state.dart';
 import 'package:beltech/core/widgets/app_icon_pill_button.dart';
@@ -56,32 +57,14 @@ class GoalsScreen extends ConsumerWidget {
                   itemBuilder: (context, i) => Padding(
                     padding: const EdgeInsets.only(bottom: 12),
                     child: GoalItemCard(
+                      key: ValueKey(goals[i].id),
                       goal: goals[i],
                       onTap: () => _showForm(context, ref, goals[i]),
                       onDelete: () async {
-                        final confirmed = await showDialog<bool>(
-                          context: context,
-                          builder: (ctx) => AlertDialog(
-                            title: const Text('Delete goal?'),
-                            content: Text(
-                              'Remove "${goals[i].title}"?',
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            actions: [
-                              TextButton(
-                                onPressed: () => Navigator.pop(ctx, false),
-                                child: const Text('Cancel'),
-                              ),
-                              TextButton(
-                                onPressed: () => Navigator.pop(ctx, true),
-                                child: const Text(
-                                  'Delete',
-                                  style: TextStyle(color: Color(0xFFF87171)),
-                                ),
-                              ),
-                            ],
-                          ),
+                        final confirmed = await showDeleteConfirmDialog(
+                          context,
+                          title: 'Delete goal?',
+                          body: 'Remove "${goals[i].title}"?',
                         );
                         if (confirmed == true) {
                           await ref

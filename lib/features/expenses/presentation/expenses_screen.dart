@@ -28,15 +28,6 @@ class ExpensesScreen extends ConsumerStatefulWidget {
 
 class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
   final _searchController = TextEditingController();
-  String _searchQuery = '';
-
-  @override
-  void initState() {
-    super.initState();
-    _searchController.addListener(() {
-      setState(() => _searchQuery = _searchController.text);
-    });
-  }
 
   @override
   void dispose() {
@@ -130,66 +121,6 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
       const FulizaBanner(),
     ];
 
-    final snapshotChild = snapshotState.when(
-      data: (snapshot) {
-        consumeExpenseSearchTarget(context, ref, snapshot);
-        return KeyedSubtree(
-          key: const ValueKey<String>('expenses-data'),
-          child: ExpensesSnapshotContent(
-            snapshot: snapshot,
-            selectedFilter: selectedFilter,
-            busy: writeBusy,
-            searchQuery: _searchQuery,
-            budgetSnapshot: budgetSnapshotState.value,
-            headerItems: headerItems,
-            searchController: _searchController,
-            onFilterChanged: (filter) {
-              ref.read(expenseFilterProvider.notifier).state = filter;
-            },
-            onEditExpense: (expense) async {
-              await editExpenseEntry(context, ref, expense);
-            },
-            onMerchantTap: (expense) async {
-              await editExpenseEntry(context, ref, expense);
-            },
-            onDeleteExpense: (expense) async {
-              await ref
-                  .read(expenseWriteControllerProvider.notifier)
-                  .deleteExpense(expense.id);
-              if (!context.mounted) return;
-              if (ref.read(expenseWriteControllerProvider).hasError) return;
-              ref
-                  .read(toastProvider.notifier)
-                  .showWithUndo(
-                    'Transaction deleted',
-                    onUndo: () async {
-                      await ref
-                          .read(expenseWriteControllerProvider.notifier)
-                          .addExpense(
-                            title: expense.title,
-                            category: expense.category,
-                            amountKes: expense.amountKes,
-                            occurredAt: expense.occurredAt,
-                          );
-                    },
-                  );
-            },
-          ),
-        );
-      },
-      loading: () => const KeyedSubtree(
-        key: ValueKey<String>('expenses-loading'),
-        child: FinanceSkeletonList(),
-      ),
-      error: (_, _) => KeyedSubtree(
-        key: const ValueKey<String>('expenses-error'),
-        child: ErrorMessage(
-          label: 'Unable to load expenses',
-          onRetry: () => ref.invalidate(expensesSnapshotProvider),
-        ),
-      ),
-    );
-
     ref.listen<AsyncValue<void>>(expenseWriteControllerProvider, (
       previous,
       next,
@@ -226,18 +157,87 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
             onTap: () => context.pushNamed('import-health'),
           ),
           Expanded(
-            child: AnimatedSwitcher(
-              duration: contentSwitchDuration,
-              switchInCurve: Curves.easeOutCubic,
-              switchOutCurve: Curves.easeInCubic,
-              transitionBuilder: (child, animation) =>
-                  FadeTransition(opacity: animation, child: child),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AppSpacing.screenHorizontal,
-                ),
-                child: snapshotChild,
-              ),
+            child: AnimatedBuilder(
+              animation: _searchController,
+              builder: (context, _) {
+                final snapshotChild = snapshotState.when(
+                  data: (snapshot) {
+                    consumeExpenseSearchTarget(context, ref, snapshot);
+                    return KeyedSubtree(
+                      key: const ValueKey<String>('expenses-data'),
+                      child: ExpensesSnapshotContent(
+                        snapshot: snapshot,
+                        selectedFilter: selectedFilter,
+                        busy: writeBusy,
+                        searchQuery: _searchController.text,
+                        budgetSnapshot: budgetSnapshotState.value,
+                        headerItems: headerItems,
+                        searchController: _searchController,
+                        onFilterChanged: (filter) {
+                          ref.read(expenseFilterProvider.notifier).state =
+                              filter;
+                        },
+                        onEditExpense: (expense) async {
+                          await editExpenseEntry(context, ref, expense);
+                        },
+                        onMerchantTap: (expense) async {
+                          await editExpenseEntry(context, ref, expense);
+                        },
+                        onDeleteExpense: (expense) async {
+                          await ref
+                              .read(expenseWriteControllerProvider.notifier)
+                              .deleteExpense(expense.id);
+                          if (!context.mounted) { return; }
+                          if (ref
+                              .read(expenseWriteControllerProvider)
+                              .hasError) { return; }
+                          ref
+                              .read(toastProvider.notifier)
+                              .showWithUndo(
+                                'Transaction deleted',
+                                onUndo: () async {
+                                  await ref
+                                      .read(
+                                        expenseWriteControllerProvider.notifier,
+                                      )
+                                      .addExpense(
+                                        title: expense.title,
+                                        category: expense.category,
+                                        amountKes: expense.amountKes,
+                                        occurredAt: expense.occurredAt,
+                                      );
+                                },
+                              );
+                        },
+                      ),
+                    );
+                  },
+                  loading: () => const KeyedSubtree(
+                    key: ValueKey<String>('expenses-loading'),
+                    child: FinanceSkeletonList(),
+                  ),
+                  error: (_, _) => KeyedSubtree(
+                    key: const ValueKey<String>('expenses-error'),
+                    child: ErrorMessage(
+                      label: 'Unable to load expenses',
+                      onRetry: () => ref.invalidate(expensesSnapshotProvider),
+                    ),
+                  ),
+                );
+                return AnimatedSwitcher(
+                  duration: contentSwitchDuration,
+                  switchInCurve: Curves.easeOutCubic,
+                  switchOutCurve: Curves.easeInCubic,
+                  transitionBuilder: (child, animation) =>
+                      FadeTransition(opacity: animation, child: child),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.screenHorizontal,
+                    ),
+                    child: snapshotChild,
+                  ),
+                );
+              },
             ),
           ),
         ],

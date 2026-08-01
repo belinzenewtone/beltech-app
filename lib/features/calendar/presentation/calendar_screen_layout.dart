@@ -350,7 +350,7 @@ class _WeekBody extends StatelessWidget {
                   ),
                   loading: () => const Padding(
                     padding: EdgeInsets.all(AppSpacing.lg),
-                    child: Center(child: CircularProgressIndicator()),
+                    child: Center(child: LoadingIndicator()),
                   ),
                   error: (_, _) => ErrorMessage(
                     label: 'Unable to load events',
@@ -432,7 +432,7 @@ class _DayBody extends StatelessWidget {
                   );
                 },
               ),
-              loading: () => const Center(child: CircularProgressIndicator()),
+              loading: () => const Center(child: LoadingIndicator()),
               error: (_, _) => ErrorMessage(
                 label: 'Unable to load events',
                 onRetry: () => state.ref.invalidate(dayEventsProvider),

@@ -19,11 +19,27 @@ class MpesaSmsReceiver : BroadcastReceiver() {
         if (intent.action != Telephony.Sms.Intents.SMS_RECEIVED_ACTION) return
 
         val messages = Telephony.Sms.Intents.getMessagesFromIntent(intent)
-        for (msg in messages) {
-            val sender = msg.originatingAddress ?: ""
-            val body = msg.messageBody ?: ""
+        if (messages.isNullOrEmpty()) return
 
-            if (sender.lowercase().contains("mpesa")) {
+        // Concatenate multi-part SMS from the same sender (preserves order).
+        val grouped = LinkedHashMap<String, StringBuilder>()
+        for (msg in messages) {
+            val sender = msg.originatingAddress ?: continue
+            grouped.getOrPut(sender) { StringBuilder() }.append(msg.messageBody ?: "")
+        }
+
+        for ((sender, bodyBuilder) in grouped) {
+            val body = bodyBuilder.toString()
+            if (body.isBlank()) continue
+            val senderLower = sender.lowercase()
+            val bodyLower = body.lowercase()
+            // Forward if official M-PESA sender OR body contains M-Pesa keywords.
+            val isMpesa = senderLower.contains("mpesa") ||
+                bodyLower.contains("m-pesa") ||
+                bodyLower.contains("mpesa") ||
+                (bodyLower.contains("confirmed") &&
+                    (bodyLower.contains("ksh") || bodyLower.contains("kes")))
+            if (isMpesa) {
                 channel?.invokeMethod("onMpesaSmsReceived", mapOf(
                     "sender" to sender,
                     "body" to body,

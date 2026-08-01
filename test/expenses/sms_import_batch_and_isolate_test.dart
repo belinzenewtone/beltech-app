@@ -57,7 +57,7 @@ void main() {
 
     test('re-enqueueing the same SMS does not create a second queue row', () async {
       const message =
-          'LM11NO22PQ Confirmed. Ksh900.00 sent to CITY MART on 7/3/26 at 6:24 PM.';
+          'LM11NO22PQ Confirmed. Ksh900.00 sent to CITY MART on 7/3/26 at 6:24 PM. New M-PESA balance is Ksh0.00.';
 
       await repository.importSmsMessages([message]);
       await repository.importSmsMessages([message]);
@@ -71,7 +71,7 @@ void main() {
 
     test('importing an already-ledgered SMS skips enqueue entirely', () async {
       const message =
-          'LM11NO22PQ Confirmed. Ksh900.00 sent to CITY MART on 7/3/26 at 6:24 PM.';
+          'LM11NO22PQ Confirmed. Ksh900.00 sent to CITY MART on 7/3/26 at 6:24 PM. New M-PESA balance is Ksh0.00.';
 
       final firstImported = await repository.importSmsMessages([message]);
       expect(firstImported, 1);
@@ -100,8 +100,8 @@ void main() {
 
     test('addTransactionsBatch inserts multiple rows', () async {
       await store.addTransactionsBatch([
-        ['TX 1', 'Food', 100.0, DateTime(2026, 3, 1).millisecondsSinceEpoch, 'sms', 'hash1', 'sent', 900.0],
-        ['TX 2', 'Bills', 250.0, DateTime(2026, 3, 2).millisecondsSinceEpoch, 'sms', 'hash2', 'paybill', 650.0],
+        ['TX 1', 'Food', 100.0, DateTime(2026, 3, 1).millisecondsSinceEpoch, 'sms', 'hash1', 'sent', 900.0, 'TX1AA00001 Confirmed. Ksh100 sent.', 'TX1AA00001', 12.0],
+        ['TX 2', 'Bills', 250.0, DateTime(2026, 3, 2).millisecondsSinceEpoch, 'sms', 'hash2', 'paybill', 650.0, null, null, null],
       ]);
 
       final rows = await store.executor.runSelect(
@@ -171,7 +171,7 @@ void main() {
         ['local', 'hash1', 'sem1', 'Merchant', 'Food', 100.0, now, 'raw1', 0.7, 'pending', now],
       ]);
       await store.insertSmsQuarantineBatch([
-        ['local', 'hash2', 'sem2', 'raw2', 'low confidence', 0.3, 'pending', now],
+        ['local', 'hash2', 'sem2', 'raw2', 'low confidence', 0.3, 'pending', now, '', 'Other', 0.0, 0],
       ]);
 
       final review = await store.executor.runSelect(

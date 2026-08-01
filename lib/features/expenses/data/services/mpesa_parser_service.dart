@@ -1,10 +1,13 @@
 import 'dart:convert';
 import 'dart:isolate';
 
+import 'package:beltech/features/expenses/data/services/generic_bank_parser.dart';
 import 'package:beltech/features/expenses/data/services/mpesa_parser_filters.dart';
 import 'package:beltech/features/expenses/data/services/mpesa_parser_models.dart';
 import 'package:beltech/features/expenses/data/services/mpesa_parser_rules.dart';
 import 'package:beltech/features/expenses/data/services/mpesa_parser_text.dart';
+import 'package:beltech/features/expenses/data/services/sms_confidence_scorer.dart';
+import 'package:beltech/features/expenses/data/services/transaction_decision_tree.dart';
 import 'package:crypto/crypto.dart';
 
 /// A single unit of work that can be sent to a parser isolate.
@@ -25,9 +28,27 @@ class SmsParseJob {
 class MpesaParserService {
   const MpesaParserService();
 
-  static final RegExp _codePattern = RegExp(r'^([A-Z0-9]{10})\b');
+  static const _bankParser = GenericBankParser();
+  static const _decisionTree = TransactionDecisionTree();
+
+  // Matches any 10-char alphanumeric token not surrounded by alphanumerics.
+  // Requires at least one letter AND one digit (via post-extraction check).
+  static final RegExp _codePattern = RegExp(
+    r'(?<![A-Z0-9])([A-Z0-9]{10})(?![A-Z0-9])',
+    caseSensitive: false,
+  );
   static final RegExp _amountPattern = RegExp(
     r'(?:ksh|kes)\s*([\d,]+(?:\.\d{1,2})?)',
+    caseSensitive: false,
+  );
+  // Verb tokens whose position we use to pick the closest amount.
+  static final RegExp _verbPattern = RegExp(
+    r'\b(?:sent|paid|received|withdrawn|credited|charged|deposited)\b',
+    caseSensitive: false,
+  );
+  // Captures transaction fee from "Transaction cost[,/:] Ksh X" or "Service charge".
+  static final RegExp _feePattern = RegExp(
+    r'(?:transaction\s+cost|service\s+charge)[\s,:.]*(?:ksh|kes)\s*([\d,]+(?:\.\d{1,2})?)',
     caseSensitive: false,
   );
   static final RegExp _dateTimePattern = RegExp(
@@ -134,11 +155,37 @@ class MpesaParserService {
     DateTime? fallbackOccurredAt,
     String? sender,
   }) {
+    // Keyword-hints fast path: discard messages with no financial content
+    // before the more expensive normalizeParserText + looksLikeMpesaMessage
+    // call chain. This handles the majority of non-financial SMS in O(n) with
+    // a small constant via short-circuiting String.contains.
+    final bodyLower = message.toLowerCase();
+    final hasFinancialHint =
+        bodyLower.contains('ksh') ||
+        bodyLower.contains('kes') ||
+        bodyLower.contains('mpesa') ||
+        bodyLower.contains('m-pesa') ||
+        bodyLower.contains('fuliza') ||
+        bodyLower.contains('umetumwa') ||
+        bodyLower.contains('umepokelewa') ||
+        bodyLower.contains('salio lako') ||
+        bodyLower.contains('confirmed');
+    if (!hasFinancialHint) return null;
+
     final cleaned = normalizeParserText(message);
     if (cleaned.isEmpty ||
         !looksLikeMpesaMessage(cleaned) ||
         shouldIgnoreMpesaSms(cleaned) ||
         isAmbiguousSuccessReceipt(cleaned)) {
+      // Offer the message to the bank parser before giving up.
+      if (cleaned.isNotEmpty && !shouldIgnoreMpesaSms(cleaned)) {
+        final bankResult = _bankParser.tryParse(
+          message,
+          sender: sender,
+          fallbackOccurredAt: fallbackOccurredAt,
+        );
+        if (bankResult != null) return bankResult;
+      }
       return null;
     }
 
@@ -194,7 +241,7 @@ class MpesaParserService {
     final title = _buildTitle(type, counterparty);
     final source = sourceHash(cleaned);
 
-    return ParsedMpesaCandidate(
+    final candidate = ParsedMpesaCandidate(
       mpesaCode: code,
       title: title,
       category: _categoryFor(type, cleaned, isReceivedReversal: isReceivedReversal),
@@ -210,16 +257,92 @@ class MpesaParserService {
         amountKes: effectiveAmount,
         occurredAt: occurredAt,
         title: title,
+        mpesaCode: code,
       ),
       counterparty: counterparty,
       reason: reason,
       paybillAccount: _extractPaybillAccount(cleaned),
       balanceAfterKes: balanceAfterKes,
+      feeKes: _extractFee(cleaned),
       isReceivedReversal: isReceivedReversal,
       fulizaOutstandingKes: _extractFulizaOutstanding(cleaned),
       fulizaAvailableLimitKes: _extractFulizaAvailableLimit(cleaned),
     );
+
+    // Structural cross-check: a real (non-synthetic) 10-char code must appear
+    // verbatim in the message. If not, the regex extracted something spurious.
+    final isRealCode = code.length == 10 &&
+        !code.startsWith('SYN') &&
+        !code.startsWith('FCHG');
+    if (isRealCode && !cleaned.toUpperCase().contains(code.toUpperCase())) {
+      return _buildQuarantine(
+        cleaned,
+        reason: 'Structural mismatch: code not found in message',
+        fallbackOccurredAt: fallbackOccurredAt,
+      );
+    }
+
+    // Refine confidence with the weighted 6-factor scorer, then apply the
+    // decision-tree second opinion to the *final* confidence value.
+    //
+    // Invariants neither stage may break:
+    //   1. Unknown transaction types always stay quarantined (no upgrade).
+    //   2. Fuliza types are identified by unambiguous keywords — their type
+    //      recognition IS the confidence signal, so no scorer/tree adjustment.
+    //   3. Sender-aware downgrades are authoritative — a non-MPESA sender
+    //      deliberately reduces trust, so the scorer must not re-upgrade.
+    final adjustable =
+        candidate.transactionType != MpesaTransactionType.unknown &&
+        !_kFulizaTypes.contains(candidate.transactionType);
+    if (!adjustable) {
+      return candidate;
+    }
+
+    final senderDowngraded =
+        sender != null &&
+        sender.isNotEmpty &&
+        !sender.toLowerCase().contains('mpesa');
+
+    var finalConfidence = candidate.confidence;
+
+    // Stage 1 — weighted scorer.
+    final scored = SmsConfidenceScorer().scoreTransaction(candidate: candidate);
+    if (scored.confidence != candidate.confidence) {
+      final wouldUpgrade =
+          _kConfRank[scored.confidence]! > _kConfRank[candidate.confidence]!;
+      // Sender-downgraded candidates may not be re-upgraded by the scorer.
+      if (!(senderDowngraded && wouldUpgrade)) {
+        finalConfidence = scored.confidence;
+      }
+    }
+
+    // Stage 2 — decision-tree second opinion on the final confidence. If the
+    // tree sees no reliable signals (tree=LOW) while confidence is still HIGH,
+    // demote to review. The tree never upgrades — parser/scorer win on that.
+    if (_decisionTree.shouldDemote(cleaned, finalConfidence)) {
+      finalConfidence = MpesaConfidence.medium;
+    }
+
+    if (finalConfidence != candidate.confidence) {
+      return candidate.copyWith(
+        confidence: finalConfidence,
+        route: _routeFor(finalConfidence),
+      );
+    }
+    return candidate;
   }
+
+  static const Set<MpesaTransactionType> _kFulizaTypes = {
+    MpesaTransactionType.fulizaDraw,
+    MpesaTransactionType.fulizaRepayment,
+    MpesaTransactionType.fulizaCharge,
+  };
+
+  static const Map<MpesaConfidence, int> _kConfRank = {
+    MpesaConfidence.high: 2,
+    MpesaConfidence.medium: 1,
+    MpesaConfidence.low: 0,
+  };
 
   String sourceHash(String message) =>
       sha256.convert(utf8.encode(normalizeParserText(message))).toString();
@@ -229,7 +352,16 @@ class MpesaParserService {
     required double amountKes,
     required DateTime occurredAt,
     required String title,
+    String? mpesaCode,
   }) {
+    // When an M-Pesa code is present it is the canonical transaction identity.
+    if (mpesaCode != null &&
+        mpesaCode.isNotEmpty &&
+        mpesaCode != 'UNKNOWN' &&
+        !mpesaCode.startsWith('SYN') &&
+        !mpesaCode.startsWith('FCHG')) {
+      return sha256.convert(utf8.encode('mpesa|$mpesaCode')).toString();
+    }
     final key =
         '${type.name}|${amountKes.toStringAsFixed(2)}|${occurredAt.year}-${occurredAt.month}-${occurredAt.day}|${title.toLowerCase()}';
     return sha256.convert(utf8.encode(key)).toString();
@@ -281,7 +413,7 @@ class MpesaParserService {
   }) => switch (type) {
     MpesaTransactionType.received => 'Income',
     MpesaTransactionType.paybill => 'Bills',
-    MpesaTransactionType.buyGoods => 'Food',
+    MpesaTransactionType.buyGoods => 'Shopping',
     MpesaTransactionType.withdrawal => 'Cash',
     MpesaTransactionType.deposit => 'Cash',
     MpesaTransactionType.airtime => 'Airtime',
@@ -388,16 +520,53 @@ class MpesaParserService {
         parseMpesaDateTime(message, _dateTimePattern) != null;
   }
 
-  String? _extractMpesaCode(String message) =>
-      _codePattern.firstMatch(message)?.group(1);
+  String? _extractMpesaCode(String message) {
+    final match = _codePattern.firstMatch(message);
+    if (match == null) return null;
+    final code = match.group(1)!.toUpperCase();
+    // Must contain at least one letter AND one digit.
+    if (!code.contains(RegExp(r'[A-Z]')) || !code.contains(RegExp(r'[0-9]'))) {
+      return null;
+    }
+    return code;
+  }
 
-  /// Extracts the leading 10-character M-Pesa transaction code from a raw
-  /// message without doing a full parse. Returns `null` when no code is found.
-  static String? extractMpesaCode(String message) =>
-      _codePattern.firstMatch(normalizeParserText(message))?.group(1);
+  /// Extracts the 10-character M-Pesa transaction code from a raw message
+  /// without doing a full parse. Returns `null` when no code is found.
+  static String? extractMpesaCode(String message) {
+    final normalized = normalizeParserText(message);
+    final match = _codePattern.firstMatch(normalized);
+    if (match == null) return null;
+    final code = match.group(1)!.toUpperCase();
+    if (!code.contains(RegExp(r'[A-Z]')) || !code.contains(RegExp(r'[0-9]'))) {
+      return null;
+    }
+    return code;
+  }
 
   double? _extractAmount(String message) {
-    final value = _amountPattern.firstMatch(message)?.group(1);
+    final matches = _amountPattern.allMatches(message).toList();
+    if (matches.isEmpty) return null;
+    if (matches.length == 1) {
+      return double.tryParse(matches.first.group(1)!.replaceAll(',', ''));
+    }
+    // Multiple amounts — pick the one closest to the first action verb.
+    final verbMatch = _verbPattern.firstMatch(message);
+    if (verbMatch != null) {
+      final verbPos = verbMatch.start;
+      final closest = matches.reduce(
+        (a, b) =>
+            (a.start - verbPos).abs() <= (b.start - verbPos).abs() ? a : b,
+      );
+      final value = closest.group(1);
+      if (value != null) return double.tryParse(value.replaceAll(',', ''));
+    }
+    // Fallback: first occurrence.
+    return double.tryParse(matches.first.group(1)!.replaceAll(',', ''));
+  }
+
+  double? _extractFee(String message) {
+    final value = _feePattern.firstMatch(message)?.group(1);
     return value == null ? null : double.tryParse(value.replaceAll(',', ''));
   }
 }

@@ -166,6 +166,9 @@ Future<int> _processQueueChunk(
         candidate.sourceHash,
         candidate.transactionType.name,
         candidate.balanceAfterKes,
+        candidate.rawMessage,
+        candidate.mpesaCode,
+        candidate.feeKes,
       ]);
       if (_shouldCreateIncome(candidate)) {
         incomeBatch.add([
@@ -300,6 +303,10 @@ List<Object?> _quarantineRow(ParsedMpesaCandidate candidate) {
     candidate.confidenceScore,
     'pending',
     DateTime.now().millisecondsSinceEpoch,
+    candidate.title,
+    candidate.category,
+    candidate.amountKes,
+    candidate.occurredAt.millisecondsSinceEpoch,
   ];
 }
 
@@ -460,6 +467,9 @@ Future<void> _insertDirectImpl(
     sourceHash: candidate.sourceHash,
     transactionType: candidate.transactionType.name,
     balanceAfterKes: candidate.balanceAfterKes,
+    feeKes: candidate.feeKes,
+    rawSms: candidate.rawMessage,
+    mpesaCode: candidate.mpesaCode,
   );
   if (_shouldCreateIncome(candidate)) {
     await _insertIncomeBatchImpl(repo, [
@@ -530,8 +540,9 @@ Future<void> _insertQuarantineImpl(
 ) async {
   await repo._store.executor.runInsert(
     'INSERT OR IGNORE INTO sms_quarantine('
-    'scope, source_hash, semantic_hash, raw_message, reason, confidence, status, created_at'
-    ') VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+    'scope, source_hash, semantic_hash, raw_message, reason, confidence, status, created_at,'
+    'title, category, amount, occurred_at'
+    ') VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
     [
       'local',
       candidate.sourceHash,
@@ -541,6 +552,10 @@ Future<void> _insertQuarantineImpl(
       candidate.confidenceScore,
       'pending',
       DateTime.now().millisecondsSinceEpoch,
+      candidate.title,
+      candidate.category,
+      candidate.amountKes,
+      candidate.occurredAt.millisecondsSinceEpoch,
     ],
   );
   await _logAuditImpl(
@@ -596,6 +611,47 @@ Future<void> _upsertPaybillAndFulizaImpl(
       candidate.sourceHash,
     ],
   );
+  // Reconcile draw↔repayment pairs after any Fuliza event is recorded. Runs
+  // regardless of which row was inserted first, so ordering within a batch
+  // does not matter.
+  await _reconcileFulizaLinksImpl(repo);
+}
+
+/// Pairs each still-unlinked Fuliza repayment with the most recent unlinked
+/// draw that occurred at or before it — the debt being paid down. Real
+/// repayments are frequently partial or bundle the access fee, so amounts are
+/// deliberately NOT required to match. Idempotent: only touches unlinked rows.
+Future<void> _reconcileFulizaLinksImpl(ExpensesRepositoryImpl repo) async {
+  final repayments = await repo._store.executor.runSelect(
+    'SELECT id, mpesa_code, occurred_at FROM fuliza_lifecycle_events '
+    'WHERE scope = ? AND event_kind = ? AND linked_code IS NULL '
+    'ORDER BY occurred_at',
+    ['local', MpesaTransactionType.fulizaRepayment.name],
+  );
+  for (final rep in repayments) {
+    final repId = rep['id'] as int;
+    final repCode = rep['mpesa_code'] as String;
+    final repTime = rep['occurred_at'] as int;
+    final draws = await repo._store.executor.runSelect(
+      'SELECT id, mpesa_code FROM fuliza_lifecycle_events '
+      'WHERE scope = ? AND event_kind = ? AND linked_code IS NULL '
+      'AND occurred_at <= ? '
+      'ORDER BY occurred_at DESC LIMIT 1',
+      ['local', MpesaTransactionType.fulizaDraw.name, repTime],
+    );
+    if (draws.isEmpty) continue;
+    final drawId = draws.first['id'] as int;
+    final drawCode = draws.first['mpesa_code'] as String;
+    // Cross-link both rows: draw ← repayment code, repayment ← draw code.
+    await repo._store.executor.runUpdate(
+      'UPDATE fuliza_lifecycle_events SET linked_code = ? WHERE id = ?',
+      [repCode, drawId],
+    );
+    await repo._store.executor.runUpdate(
+      'UPDATE fuliza_lifecycle_events SET linked_code = ? WHERE id = ?',
+      [drawCode, repId],
+    );
+  }
 }
 
 bool _shouldCreateIncome(ParsedMpesaCandidate candidate) {
@@ -626,15 +682,26 @@ Future<void> _insertIncomeBatchImpl(
     final title = '${row[0]}';
     final amount = (row[1] as num).toDouble();
     final receivedAt = (row[2] as num).toInt();
-    final existing = await repo._store.executor.runSelect(
-      'SELECT id FROM incomes '
-      'WHERE source = ? AND ABS(amount - ?) <= 0.01 AND received_at = ? LIMIT 1',
-      ['sms', amount, receivedAt],
-    );
-    if (existing.isNotEmpty) continue;
+    final sourceHash = row.length > 4 ? row[4] as String? : null;
+    // Primary dedup: source_hash (exact match) when available.
+    if (sourceHash != null && sourceHash.isNotEmpty) {
+      final existing = await repo._store.executor.runSelect(
+        'SELECT id FROM incomes WHERE source_hash = ? LIMIT 1',
+        [sourceHash],
+      );
+      if (existing.isNotEmpty) continue;
+    } else {
+      // Fallback: fuzzy match on amount + timestamp for legacy rows without hash.
+      final existing = await repo._store.executor.runSelect(
+        'SELECT id FROM incomes '
+        'WHERE source = ? AND ABS(amount - ?) <= 0.01 AND received_at = ? LIMIT 1',
+        ['sms', amount, receivedAt],
+      );
+      if (existing.isNotEmpty) continue;
+    }
     await repo._store.executor.runInsert(
-      'INSERT INTO incomes(title, amount, received_at, source) VALUES (?, ?, ?, ?)',
-      [title, amount, receivedAt, 'sms'],
+      'INSERT INTO incomes(title, amount, received_at, source, source_hash) VALUES (?, ?, ?, ?, ?)',
+      [title, amount, receivedAt, 'sms', sourceHash],
     );
   }
 }

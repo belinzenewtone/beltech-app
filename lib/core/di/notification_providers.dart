@@ -4,7 +4,6 @@ import 'package:beltech/core/di/repository_providers.dart';
 import 'package:beltech/core/di/feature_flag_providers.dart';
 import 'package:beltech/core/notifications/local_notification_service.dart';
 import 'package:beltech/core/notifications/notification_insights_service.dart';
-import 'package:beltech/features/notifications/data/services/daily_digest_worker.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 final localNotificationServiceProvider = Provider<LocalNotificationService>(
@@ -51,6 +50,16 @@ final weeklyReviewNotificationsEnabledProvider = FutureProvider<bool>(
 final dailyDigestScheduleTimeProvider = FutureProvider<(int, int)>(
   (ref) =>
       ref.watch(localNotificationServiceProvider).getDailyDigestScheduleTime(),
+);
+
+final learningReminderEnabledProvider = FutureProvider<bool>(
+  (ref) =>
+      ref.watch(localNotificationServiceProvider).isLearningReminderEnabled(),
+);
+
+final learningReminderTimeProvider = FutureProvider<(int, int)>(
+  (ref) =>
+      ref.watch(localNotificationServiceProvider).getLearningReminderTime(),
 );
 
 final budgetAlertThresholdsProvider = FutureProvider<(double, double, double)>(
@@ -150,6 +159,34 @@ class NotificationPreferenceController extends AsyncNotifier<void> {
     });
   }
 
+  Future<void> setLearningReminderEnabled(bool enabled) async {
+    state = const AsyncLoading();
+    state = await AsyncValue.guard(() async {
+      await ref
+          .read(localNotificationServiceProvider)
+          .setLearningReminderEnabled(enabled);
+      await ref.read(revampTelemetryServiceProvider).track(
+            'learning_reminder_setting_changed',
+            attributes: {'enabled': enabled},
+          );
+      ref.invalidate(learningReminderEnabledProvider);
+    });
+  }
+
+  Future<void> setLearningReminderTime(int hour, int minute) async {
+    state = const AsyncLoading();
+    state = await AsyncValue.guard(() async {
+      await ref
+          .read(localNotificationServiceProvider)
+          .setLearningReminderTime(hour, minute);
+      await ref.read(revampTelemetryServiceProvider).track(
+            'learning_reminder_schedule_changed',
+            attributes: {'hour': hour, 'minute': minute},
+          );
+      ref.invalidate(learningReminderTimeProvider);
+    });
+  }
+
   Future<void> setBudgetAlertThresholds(
     double high,
     double medium,
@@ -200,6 +237,3 @@ final notificationPreferenceControllerProvider =
       NotificationPreferenceController.new,
     );
 
-final dailyDigestWorkerProvider = Provider((ref) {
-  return const DailyDigestWorker();
-});

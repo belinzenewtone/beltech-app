@@ -10,7 +10,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 class SmsAutoImportService {
   SmsAutoImportService(this._expensesRepository, this._accountRepository);
 
-  static const Duration defaultInterval = Duration(minutes: 5);
+  static const Duration defaultInterval = Duration(minutes: 30);
   static const Duration initialWindow = Duration(days: 90);
   static const String _keyPrefix = 'mpesa_auto_sync_last_ms';
   static const String _errorPrefix = 'mpesa_auto_sync_last_error';
@@ -27,8 +27,14 @@ class SmsAutoImportService {
     _nativeReceiver ??= NativeSmsReceiver(
       onSmsReceived: (message) {
         final body = message['body'] as String?;
+        final sender = message['sender'] as String?;
         if (body != null && body.trim().isNotEmpty) {
-          unawaited(_expensesRepository.importSmsMessages([body.trim()]));
+          unawaited(
+            _expensesRepository.importSmsMessages(
+              [body.trim()],
+              sender: sender,
+            ),
+          );
         }
       },
     );

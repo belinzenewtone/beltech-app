@@ -1,4 +1,5 @@
 import 'package:beltech/core/di/expenses_providers.dart';
+import 'package:beltech/core/widgets/loading_indicator.dart';
 import 'package:beltech/core/widgets/app_toast.dart';
 import 'package:beltech/core/theme/app_spacing.dart';
 import 'package:beltech/core/theme/app_typography.dart';
@@ -53,7 +54,7 @@ class _QuarantineExportScreenState
       title: 'Export Quarantine History',
       child: quarantineDataAsync.when(
         data: (items) => _buildExportInterface(context, items),
-        loading: () => const Center(child: CircularProgressIndicator()),
+        loading: () => const Center(child: LoadingIndicator()),
         error: (err, _) => Center(child: Text('Error: $err')),
       ),
     );

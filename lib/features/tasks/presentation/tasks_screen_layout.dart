@@ -32,13 +32,14 @@ class _TasksLayout extends StatelessWidget {
               AppSearchBar(
                 controller: state._searchController,
                 hint: 'Search tasks',
-                onChanged: (_) => state._refreshSearchResults(),
               ),
               const SizedBox(height: AppSpacing.sectionGap),
               Expanded(
-                child: tasksState.when(
+                child: ValueListenableBuilder<TextEditingValue>(
+                  valueListenable: state._searchController,
+                  builder: (context, textValue, _) => tasksState.when(
                   data: (tasks) {
-                    final query = state._searchController.text.trim();
+                    final query = textValue.text.trim();
                     final filtered = _filterForQuery(tasks, query);
                     if (filtered.isEmpty) {
                       return const SizedBox(
@@ -78,6 +79,7 @@ class _TasksLayout extends StatelessWidget {
                     label: 'Unable to load tasks',
                     onRetry: () => state.ref.invalidate(filteredTasksProvider),
                   ),
+                ),
                 ),
               ),
             ],

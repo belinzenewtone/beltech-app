@@ -17,12 +17,16 @@ class _AppDriftSchema {
       'source TEXT NOT NULL,'
       'source_hash TEXT,'
       'transaction_type TEXT NOT NULL DEFAULT \'expense\','
-      'balance_after REAL'
+      'balance_after REAL,'
+      'fee REAL,'
+      'raw_sms TEXT,'
+      'mpesa_code TEXT'
       ')',
     );
     await _AppDriftSchemaMigrations.tryAddSourceHashColumn(store);
     await _AppDriftSchemaMigrations.tryAddBalanceAfterColumn(store);
     await _AppDriftSchemaMigrations.tryAddTransactionTypeColumn(store);
+    await _AppDriftSchemaMigrations.tryAddTransactionSmsColumns(store);
 
     await store._db.runCustom(
       'CREATE TABLE IF NOT EXISTS tasks('
@@ -80,7 +84,8 @@ class _AppDriftSchema {
       'title TEXT NOT NULL,'
       'amount REAL NOT NULL,'
       'received_at INTEGER NOT NULL,'
-      'source TEXT NOT NULL DEFAULT \'manual\''
+      'source TEXT NOT NULL DEFAULT \'manual\','
+      'source_hash TEXT'
       ')',
     );
     await store._db.runCustom(
@@ -105,6 +110,8 @@ class _AppDriftSchema {
       ')',
     );
     await _AppDriftSchemaMigrations.tryAddIncomesSourceColumn(store);
+    await _AppDriftSchemaMigrations.tryAddIncomesSourceHashColumn(store);
+    await _AppDriftSchemaMigrations.tryAddTransactionSourceHashIndex(store);
     await _AppDriftSchemaMigrations.tryAddRecurringPriorityColumn(store);
     await store._db.runCustom(
       'CREATE TABLE IF NOT EXISTS sms_import_queue('
@@ -170,9 +177,14 @@ class _AppDriftSchema {
       'reason TEXT NOT NULL,'
       'confidence REAL NOT NULL,'
       'status TEXT NOT NULL DEFAULT \'pending\','
-      'created_at INTEGER NOT NULL'
+      'created_at INTEGER NOT NULL,'
+      'title TEXT NOT NULL DEFAULT \'\','
+      'category TEXT NOT NULL DEFAULT \'Other\','
+      'amount REAL NOT NULL DEFAULT 0,'
+      'occurred_at INTEGER NOT NULL DEFAULT 0'
       ')',
     );
+    await _AppDriftSchemaMigrations.tryAddQuarantineDataColumns(store);
     await store._db.runCustom(
       'CREATE TABLE IF NOT EXISTS paybill_registry('
       'id INTEGER PRIMARY KEY AUTOINCREMENT,'
@@ -303,6 +315,9 @@ class _AppDriftSchema {
       'CREATE INDEX IF NOT EXISTS idx_incomes_received_at ON incomes(received_at)',
     );
     await store._db.runCustom(
+      'CREATE UNIQUE INDEX IF NOT EXISTS idx_incomes_source_hash ON incomes(source_hash)',
+    );
+    await store._db.runCustom(
       'CREATE UNIQUE INDEX IF NOT EXISTS idx_budgets_category ON budgets(LOWER(category))',
     );
     await store._db.runCustom(
@@ -322,6 +337,9 @@ class _AppDriftSchema {
     );
     await store._db.runCustom(
       'CREATE INDEX IF NOT EXISTS idx_import_audit_semantic_hash_decision ON sms_import_audit(scope, semantic_hash, decision)',
+    );
+    await store._db.runCustom(
+      'CREATE INDEX IF NOT EXISTS idx_import_audit_scope_decision ON sms_import_audit(scope, decision)',
     );
     await store._db.runCustom(
       'CREATE UNIQUE INDEX IF NOT EXISTS idx_review_scope_source_hash ON sms_review_queue(scope, source_hash)',
@@ -355,6 +373,24 @@ class _AppDriftSchema {
     );
     await store._db.runCustom(
       'CREATE INDEX IF NOT EXISTS idx_learning_date ON learning_sessions(date)',
+    );
+
+    await store._db.runCustom(
+      'CREATE TABLE IF NOT EXISTS ml_training_samples('
+      'id INTEGER PRIMARY KEY AUTOINCREMENT,'
+      'scope TEXT NOT NULL,'
+      'source_hash TEXT NOT NULL,'
+      'semantic_hash TEXT NOT NULL,'
+      'raw_message TEXT NOT NULL,'
+      'feature_json TEXT NOT NULL,'
+      'parser_confidence TEXT NOT NULL,'
+      'user_label TEXT NOT NULL,'
+      'created_at INTEGER NOT NULL'
+      ')',
+    );
+    await store._db.runCustom(
+      'CREATE UNIQUE INDEX IF NOT EXISTS idx_ml_samples_source_hash '
+      'ON ml_training_samples(scope, source_hash)',
     );
 
     await _AppDriftSchemaMigrations.removeLegacySeedIncome(store);
