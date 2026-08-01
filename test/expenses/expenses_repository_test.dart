@@ -83,7 +83,7 @@ void main() {
             ? [
                 _sms(
                   body:
-                      'AA11BB22CC Confirmed. Ksh120.00 sent to SKY CAFE sometime.',
+                      'AA11BB22CC Confirmed. Ksh120.00 sent to SKY CAFE sometime. New M-PESA balance is Ksh0.00.',
                   sender: 'MPESA',
                   date: smsAt,
                 ),
@@ -163,7 +163,7 @@ void main() {
     );
 
     final imported = await repository.importSmsMessages([
-      'ZX11CV22BN Confirmed. Ksh500.00 sent to SKY CAFE on 7/3/26 at 6:24 PM.',
+      'ZX11CV22BN Confirmed. Ksh500.00 sent to SKY CAFE on 7/3/26 at 6:24 PM. New M-PESA balance is Ksh0.00.',
     ]);
     expect(imported, 1);
 
@@ -184,7 +184,7 @@ void main() {
 
   test('category inference overrides type-based fallback for known merchants', () async {
     final imported = await repository.importSmsMessages([
-      'BB22CC33DD Confirmed. Ksh2,500.00 paid to SHELL KILIMANI on 7/3/26 at 9:00 AM.',
+      'BB22CC33DD Confirmed. Ksh2,500.00 paid to SHELL KILIMANI on 7/3/26 at 9:00 AM. New M-PESA balance is Ksh0.00.',
     ]);
     expect(imported, 1);
 
@@ -204,7 +204,7 @@ void main() {
     );
 
     final imported = await repository.importSmsMessages([
-      'CC33DD44EE Confirmed. Ksh1,200.00 paid to JAVA HOUSE on 7/3/26 at 10:00 AM.',
+      'CC33DD44EE Confirmed. Ksh1,200.00 paid to JAVA HOUSE on 7/3/26 at 10:00 AM. New M-PESA balance is Ksh0.00.',
     ]);
     expect(imported, 1);
 
@@ -218,8 +218,8 @@ void main() {
 
   test('fuzzy dedupe skips same-day near-amount duplicate imports', () async {
     final imported = await repository.importSmsMessages([
-      'AA11BB22CC Confirmed. Ksh1000.00 sent to ACME SHOP on 7/3/26 at 8:00 AM.',
-      'DD33EE44FF Confirmed. Ksh1000.50 sent to ACME SHOP on 7/3/26 at 9:30 AM.',
+      'AA11BB22CC Confirmed. Ksh1000.00 sent to ACME SHOP on 7/3/26 at 8:00 AM. New M-PESA balance is Ksh0.00.',
+      'DD33EE44FF Confirmed. Ksh1000.50 sent to ACME SHOP on 7/3/26 at 9:30 AM. New M-PESA balance is Ksh0.00.',
     ]);
 
     expect(imported, 1);
@@ -241,7 +241,7 @@ void main() {
         flaky,
       );
       const message =
-          'LM11NO22PQ Confirmed. Ksh900.00 sent to CITY MART on 7/3/26 at 6:24 PM.';
+          'LM11NO22PQ Confirmed. Ksh900.00 sent to CITY MART on 7/3/26 at 6:24 PM. New M-PESA balance is Ksh0.00.';
 
       final importedFirst = await firstPass.importSmsMessages([message]);
       expect(importedFirst, 0);

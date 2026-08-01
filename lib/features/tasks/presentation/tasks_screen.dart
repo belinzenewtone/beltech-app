@@ -71,10 +71,6 @@ class _TasksScreenState extends ConsumerState<TasksScreen> {
     );
   }
 
-  void _refreshSearchResults() {
-    setState(() {});
-  }
-
   String _buildCountSubtitle(AsyncValue<List<TaskItem>> tasksState) {
     final tasks = tasksState.value;
     if (tasks == null) {

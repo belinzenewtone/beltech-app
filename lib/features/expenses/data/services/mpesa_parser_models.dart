@@ -37,6 +37,7 @@ class ParsedMpesaCandidate {
     this.reason,
     this.paybillAccount,
     this.balanceAfterKes,
+    this.feeKes,
     this.isReceivedReversal = false,
     this.fulizaOutstandingKes,
     this.fulizaAvailableLimitKes,
@@ -58,6 +59,9 @@ class ParsedMpesaCandidate {
   final String? paybillAccount;
   final double? balanceAfterKes;
 
+  /// Transaction cost / service charge extracted from the SMS, if present.
+  final double? feeKes;
+
   /// True when a *received* payment was reversed (net effect: outgoing debit).
   final bool isReceivedReversal;
 
@@ -72,6 +76,33 @@ class ParsedMpesaCandidate {
     MpesaConfidence.medium => 0.68,
     MpesaConfidence.low => 0.42,
   };
+
+  ParsedMpesaCandidate copyWith({
+    MpesaConfidence? confidence,
+    MpesaParseRoute? route,
+  }) {
+    return ParsedMpesaCandidate(
+      mpesaCode: mpesaCode,
+      title: title,
+      category: category,
+      amountKes: amountKes,
+      occurredAt: occurredAt,
+      rawMessage: rawMessage,
+      transactionType: transactionType,
+      confidence: confidence ?? this.confidence,
+      route: route ?? this.route,
+      sourceHash: sourceHash,
+      semanticHash: semanticHash,
+      counterparty: counterparty,
+      reason: reason,
+      paybillAccount: paybillAccount,
+      balanceAfterKes: balanceAfterKes,
+      feeKes: feeKes,
+      isReceivedReversal: isReceivedReversal,
+      fulizaOutstandingKes: fulizaOutstandingKes,
+      fulizaAvailableLimitKes: fulizaAvailableLimitKes,
+    );
+  }
 }
 
 class ParsedMpesaTransaction {

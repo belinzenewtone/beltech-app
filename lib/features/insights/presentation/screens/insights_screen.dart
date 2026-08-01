@@ -12,16 +12,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-class InsightsScreen extends ConsumerStatefulWidget {
+class InsightsScreen extends ConsumerWidget {
   const InsightsScreen({super.key});
 
   @override
-  ConsumerState<InsightsScreen> createState() => _InsightsScreenState();
-}
-
-class _InsightsScreenState extends ConsumerState<InsightsScreen> {
-  @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(insightsProvider);
 
     return SecondaryPageShell(

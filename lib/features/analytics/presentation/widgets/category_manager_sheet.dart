@@ -1,5 +1,6 @@
 
 import 'package:beltech/core/theme/app_typography.dart';
+import 'package:beltech/core/widgets/loading_indicator.dart';
 import 'package:beltech/core/utils/category_visual.dart';
 import 'package:beltech/core/widgets/app_button.dart';
 import 'package:beltech/core/widgets/app_card.dart';
@@ -71,7 +72,7 @@ class _CategoryManagerSheetState extends ConsumerState<_CategoryManagerSheet> {
           if (categoriesAsync.isLoading)
             const SizedBox(
               height: 120,
-              child: Center(child: CircularProgressIndicator()),
+              child: Center(child: LoadingIndicator()),
             )
           else
             ReorderableColumn(

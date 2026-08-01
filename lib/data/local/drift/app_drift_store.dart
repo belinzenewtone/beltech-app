@@ -52,6 +52,7 @@ class AppDriftStore {
       'goals',
       'learning_sessions',
       'app_updates',
+      'ml_training_samples',
     ];
     for (final table in tables) {
       await _db.runDelete('DELETE FROM $table', const []);
@@ -90,11 +91,17 @@ class AppDriftStore {
     String? sourceHash,
     String transactionType = 'expense',
     double? balanceAfterKes,
+    double? feeKes,
+    String? rawSms,
+    String? mpesaCode,
   }) async {
     await _ensureInitialized();
     final timestamp = (occurredAt ?? DateTime.now()).millisecondsSinceEpoch;
     await _db.runInsert(
-      'INSERT INTO transactions(title, category, amount, occurred_at, source, source_hash, transaction_type, balance_after) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+      'INSERT OR IGNORE INTO transactions('
+      'title, category, amount, occurred_at, source, source_hash, '
+      'transaction_type, balance_after, fee, raw_sms, mpesa_code'
+      ') VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
       [
         title,
         category,
@@ -104,6 +111,9 @@ class AppDriftStore {
         sourceHash,
         transactionType,
         balanceAfterKes,
+        feeKes,
+        rawSms,
+        mpesaCode,
       ],
     );
     _emitChange();
@@ -117,7 +127,10 @@ class AppDriftStore {
     await _db.runBatched(
       BatchedStatements(
         const [
-          'INSERT INTO transactions(title, category, amount, occurred_at, source, source_hash, transaction_type, balance_after) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+          'INSERT OR IGNORE INTO transactions('
+              'title, category, amount, occurred_at, source, source_hash, '
+              'transaction_type, balance_after, raw_sms, mpesa_code, fee'
+              ') VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
         ],
         rows.map((r) => ArgumentsForBatchedStatement(0, r)).toList(),
       ),
@@ -146,8 +159,9 @@ class AppDriftStore {
       BatchedStatements(
         const [
           'INSERT OR IGNORE INTO sms_quarantine('
-          'scope, source_hash, semantic_hash, raw_message, reason, confidence, status, created_at'
-          ') VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+          'scope, source_hash, semantic_hash, raw_message, reason, confidence, status, created_at,'
+          'title, category, amount, occurred_at'
+          ') VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
         ],
         rows.map((r) => ArgumentsForBatchedStatement(0, r)).toList(),
       ),

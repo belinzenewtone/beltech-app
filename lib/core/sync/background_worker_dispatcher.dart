@@ -4,17 +4,13 @@ import 'package:beltech/core/feature_flags/feature_flag.dart';
 import 'package:beltech/core/feature_flags/feature_flag_store.dart';
 import 'package:beltech/core/notifications/local_notification_service.dart';
 import 'package:beltech/core/notifications/notification_insights_service.dart';
-import 'package:beltech/core/sync/bill_reminder_service.dart';
-import 'package:beltech/core/sync/learning_reminder_service.dart';
 import 'package:beltech/core/telemetry/revamp_telemetry_service.dart';
 import 'package:beltech/core/sync/sms_auto_import_service.dart';
 import 'package:beltech/data/local/drift/app_drift_store.dart';
 import 'package:beltech/features/analytics/data/repositories/analytics_repository_impl.dart';
 import 'package:beltech/features/auth/data/repositories/local_account_repository_impl.dart';
-import 'package:beltech/features/bills/data/repositories/bills_repository_impl.dart';
 import 'package:beltech/features/budget/data/repositories/budget_repository_impl.dart';
 import 'package:beltech/features/calendar/data/repositories/calendar_repository_impl.dart';
-import 'package:beltech/features/learning/data/repositories/learning_repository_impl.dart';
 import 'package:beltech/features/expenses/data/repositories/expenses_repository_impl.dart';
 import 'package:beltech/features/expenses/data/services/device_sms_data_source.dart';
 import 'package:beltech/features/expenses/data/services/merchant_learning_service.dart';
@@ -22,7 +18,6 @@ import 'package:beltech/features/expenses/data/services/mpesa_parser_service.dar
 import 'package:beltech/features/income/data/repositories/income_repository_impl.dart';
 import 'package:beltech/features/recurring/data/repositories/recurring_repository_impl.dart';
 import 'package:beltech/features/recurring/data/services/recurring_materializer_service.dart';
-import 'package:beltech/features/notifications/data/services/daily_digest_scheduler.dart';
 import 'package:beltech/features/review/domain/usecases/build_week_review_data_use_case.dart';
 import 'package:beltech/features/review/domain/usecases/build_week_review_ritual_use_case.dart';
 import 'package:beltech/features/tasks/data/repositories/tasks_repository_impl.dart';
@@ -49,7 +44,9 @@ class BackgroundWorkerRuntime {
     AppDriftStore? localStore;
     try {
       final accountRepository = LocalAccountRepositoryImpl();
-      final store = AppDriftStore();
+      // Must use the on-disk store — an in-memory store would sync into a
+      // throwaway DB and discard every imported transaction on dispose.
+      final store = AppDriftStore.persistent();
       localStore = store;
 
       final parser = const MpesaParserService();
@@ -68,18 +65,10 @@ class BackgroundWorkerRuntime {
       final tasks = TasksRepositoryImpl(store);
       final calendar = CalendarRepositoryImpl(store);
       final analytics = AnalyticsRepositoryImpl(store);
-      final bills = BillsRepositoryImpl(store);
-      final learning = LearningRepositoryImpl(store);
 
       final smsService = SmsAutoImportService(expenses, accountRepository);
       final recurringService = RecurringMaterializerService(recurring);
       final notifications = LocalNotificationService();
-      final billReminder = BillReminderService(bills, notifications);
-      final learningReminder = LearningReminderService(learning, notifications);
-      final digestScheduler = DailyDigestScheduler(
-        expensesRepository: expenses,
-        notificationService: notifications,
-      );
       final flagStore = FeatureFlagStore();
       final insights = NotificationInsightsService(
         notifications,
@@ -101,11 +90,11 @@ class BackgroundWorkerRuntime {
         FeatureFlag.backgroundSync,
         userId: rolloutUserId,
       )) {
+        // Data sync only. Bill / learning / daily-digest reminders are now
+        // OS-scheduled (survive app-kill and fire on time), so they are no
+        // longer polled here — that would double-fire them.
         await smsService.syncNow();
         await recurringService.syncNow();
-        await billReminder.checkAndNotify();
-        await learningReminder.checkAndNotify();
-        await digestScheduler.checkAndScheduleDaily();
       }
       if (await flagStore.isEnabledFor(
         FeatureFlag.smartNotifications,

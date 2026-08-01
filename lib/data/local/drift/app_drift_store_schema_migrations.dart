@@ -250,4 +250,48 @@ class _AppDriftSchemaMigrations {
       );
     } catch (_) {}
   }
+
+  static Future<void> tryAddQuarantineDataColumns(AppDriftStore store) async {
+    for (final ddl in [
+      "ALTER TABLE sms_quarantine ADD COLUMN title TEXT NOT NULL DEFAULT ''",
+      "ALTER TABLE sms_quarantine ADD COLUMN category TEXT NOT NULL DEFAULT 'Other'",
+      'ALTER TABLE sms_quarantine ADD COLUMN amount REAL NOT NULL DEFAULT 0',
+      'ALTER TABLE sms_quarantine ADD COLUMN occurred_at INTEGER NOT NULL DEFAULT 0',
+    ]) {
+      try {
+        await store._db.runCustom(ddl);
+      } catch (_) {}
+    }
+  }
+
+  static Future<void> tryAddTransactionSmsColumns(AppDriftStore store) async {
+    for (final ddl in [
+      'ALTER TABLE transactions ADD COLUMN fee REAL',
+      'ALTER TABLE transactions ADD COLUMN raw_sms TEXT',
+      'ALTER TABLE transactions ADD COLUMN mpesa_code TEXT',
+    ]) {
+      try {
+        await store._db.runCustom(ddl);
+      } catch (_) {}
+    }
+  }
+
+  static Future<void> tryAddIncomesSourceHashColumn(AppDriftStore store) async {
+    try {
+      await store._db.runCustom(
+        'ALTER TABLE incomes ADD COLUMN source_hash TEXT',
+      );
+    } catch (_) {}
+  }
+
+  static Future<void> tryAddTransactionSourceHashIndex(
+    AppDriftStore store,
+  ) async {
+    try {
+      await store._db.runCustom(
+        'CREATE UNIQUE INDEX IF NOT EXISTS idx_transactions_source_hash '
+        'ON transactions(source_hash) WHERE source_hash IS NOT NULL',
+      );
+    } catch (_) {}
+  }
 }

@@ -1,7 +1,7 @@
 import 'package:beltech/core/feedback/app_haptics.dart';
+import 'package:beltech/core/widgets/page_header.dart';
 import 'package:beltech/core/theme/app_colors.dart';
 import 'package:beltech/core/theme/app_spacing.dart';
-import 'package:beltech/core/theme/app_typography.dart';
 import 'package:beltech/core/widgets/app_button.dart';
 import 'package:beltech/core/widgets/app_empty_state.dart';
 import 'package:beltech/core/widgets/app_skeleton.dart';
@@ -26,13 +26,16 @@ class HomeScreen extends ConsumerStatefulWidget {
 }
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
-  // Cached once per mount — date label does not change within a session.
+  // Cached once per mount — date label and greeting hour don't change mid-session.
   late final String _todayLabel;
+  late final int _greetingHour;
 
   @override
   void initState() {
     super.initState();
-    _todayLabel = _buildTodayLabel(DateTime.now());
+    final now = DateTime.now();
+    _todayLabel = _buildTodayLabel(now);
+    _greetingHour = now.hour;
   }
 
   @override
@@ -62,43 +65,20 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // ── Header ──────────────────────────────────────────────────────────
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('DAILY FOCUS', style: AppTypography.eyebrow(context)),
-              const SizedBox(height: AppSpacing.xs),
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  Expanded(
-                    child: Text(
-                      greeting,
-                      style: AppTypography.pageTitle(context),
-                      maxLines: 1,
-                      softWrap: false,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                  IconButton(
-                    onPressed: () {
-                      AppHaptics.lightImpact();
-                      context.pushNamed('settings');
-                    },
-                    padding: EdgeInsets.zero,
-                    visualDensity: VisualDensity.compact,
-                    icon: const Icon(Icons.settings_outlined),
-                    tooltip: 'Settings',
-                  ),
-                ],
-              ),
-              const SizedBox(height: AppSpacing.sm),
-              Text(
-                _todayLabel,
-                style: AppTypography.bodyMd(context),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ],
+          PageHeader(
+            eyebrow: 'Daily Focus',
+            title: greeting,
+            subtitle: _todayLabel,
+            action: IconButton(
+              onPressed: () {
+                AppHaptics.lightImpact();
+                context.pushNamed('settings');
+              },
+              padding: EdgeInsets.zero,
+              visualDensity: VisualDensity.compact,
+              icon: const Icon(Icons.settings_outlined),
+              tooltip: 'Settings',
+            ),
           ),
           const SizedBox(height: AppSpacing.lg),
 
@@ -125,8 +105,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   String _greeting(String firstName) {
-    final hour = DateTime.now().hour;
-    final salutation = switch (hour) {
+    final salutation = switch (_greetingHour) {
       >= 5 && < 12 => 'Good Morning',
       >= 12 && < 17 => 'Good Afternoon',
       >= 17 && < 21 => 'Good Evening',

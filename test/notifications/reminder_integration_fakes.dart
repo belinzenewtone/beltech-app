@@ -41,6 +41,7 @@ class FakeLocalNotificationService extends LocalNotificationService {
     CalendarEventKind kind = CalendarEventKind.event,
     bool allDay = false,
     int reminderTimeOfDayMinutes = 480,
+    RepeatRule repeatRule = RepeatRule.never,
   }) async {
     if (reminderOffsets.isEmpty) return;
     scheduledEventIds.add(eventId);

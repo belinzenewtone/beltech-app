@@ -46,7 +46,6 @@ class NotificationInsightsService {
   static const String _weeklyReviewEnabledKey =
       'notifications_weekly_review_ritual';
   static const String _budgetStagePrefix = 'notification_budget_stage';
-  static const String _dailyDigestPrefix = 'notification_daily_digest';
   static const String _weeklyReviewPrefix = 'notification_weekly_review';
 
   final LocalNotificationService _notifications;
@@ -80,6 +79,8 @@ class NotificationInsightsService {
   Future<void> setDailyDigestEnabled(bool enabled) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_dailyDigestEnabledKey, enabled);
+    // Reflect the toggle immediately on the OS-scheduled digest reminder.
+    await _notifications.scheduleDailyDigest();
   }
 
   Future<bool> isWeeklyReviewEnabled() async {
@@ -96,8 +97,10 @@ class NotificationInsightsService {
     if (!await _notifications.isNotificationsEnabled()) {
       return;
     }
+    // The daily spending summary is now delivered by an OS-scheduled repeating
+    // reminder (LocalNotificationService.scheduleDailyDigest) so it fires on
+    // time even when the app is killed — running it here too would double-fire.
     await _runBudgetThresholdAlerts();
-    await _runDailyDigest();
     await _runWeeklyReviewRitual();
   }
 
@@ -147,46 +150,6 @@ class NotificationInsightsService {
     }
   }
 
-  Future<void> _runDailyDigest() async {
-    if (!await isDailyDigestEnabled()) {
-      return;
-    }
-    final now = DateTime.now();
-    if (now.hour < 7) {
-      return;
-    }
-    final scope = _scope();
-    final dateKey =
-        '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
-    final digestKey = '$_dailyDigestPrefix.$scope.$dateKey';
-    final prefs = await SharedPreferences.getInstance();
-    if (prefs.getBool(digestKey) == true) {
-      return;
-    }
-
-    final expenses = await _readExpenses();
-    final tasks = await _readTasks();
-    final upcomingEvents = await _readUpcomingEvents(now);
-    final pendingTasks = tasks.where((task) => !task.completed).length;
-
-    final body =
-        'Today: ${CurrencyFormatter.money(expenses?.todayKes ?? 0)} spent, '
-        '$pendingTasks pending tasks, ${upcomingEvents.length} upcoming events.';
-    await _notifications.showInsight(
-      insightId: digestKey.hashCode.abs(),
-      title: 'Daily Summary',
-      body: body,
-    );
-    await _telemetryService.track(
-      'daily_digest_sent',
-      attributes: {
-        'scope': scope,
-        'pending_tasks': pendingTasks,
-        'upcoming_events': upcomingEvents.length,
-      },
-    );
-    await prefs.setBool(digestKey, true);
-  }
 
   Future<BudgetSnapshot?> _readBudgetSnapshot() async {
     try {
@@ -205,6 +168,8 @@ class NotificationInsightsService {
     }
   }
 
+  // Used by the weekly-review ritual (see the part file). The daily digest that
+  // formerly shared these is now delivered by an OS-scheduled reminder.
   Future<ExpensesSnapshot?> _readExpenses() async {
     try {
       return await _expensesRepository.watchSnapshot().first.timeout(
@@ -212,7 +177,7 @@ class NotificationInsightsService {
       );
     } catch (error, stackTrace) {
       AppLogger.warning(
-        'Expenses snapshot unavailable for daily digest',
+        'Expenses snapshot unavailable for notification sweep',
         error: error,
         stackTrace: stackTrace,
         tag: 'NotificationInsights',
@@ -228,7 +193,7 @@ class NotificationInsightsService {
       );
     } catch (error, stackTrace) {
       AppLogger.warning(
-        'Tasks unavailable for daily digest',
+        'Tasks unavailable for notification sweep',
         error: error,
         stackTrace: stackTrace,
         tag: 'NotificationInsights',
@@ -246,7 +211,7 @@ class NotificationInsightsService {
       return events.where((event) => !event.completed).toList();
     } catch (error, stackTrace) {
       AppLogger.warning(
-        'Calendar events unavailable for daily digest',
+        'Calendar events unavailable for notification sweep',
         error: error,
         stackTrace: stackTrace,
         tag: 'NotificationInsights',
@@ -254,6 +219,7 @@ class NotificationInsightsService {
       return const [];
     }
   }
+
 
   int _budgetStage(double ratio) {
     if (ratio >= 1.2) {

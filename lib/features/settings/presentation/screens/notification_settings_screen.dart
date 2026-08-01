@@ -27,6 +27,8 @@ class NotificationSettingsScreen extends ConsumerWidget {
     final budgetAlertsState = ref.watch(budgetAlertsEnabledProvider);
     final dailyDigestState = ref.watch(dailyDigestEnabledProvider);
     final dailyDigestTimeState = ref.watch(dailyDigestScheduleTimeProvider);
+    final learningReminderState = ref.watch(learningReminderEnabledProvider);
+    final learningReminderTimeState = ref.watch(learningReminderTimeProvider);
     final budgetThresholdsState = ref.watch(budgetAlertThresholdsProvider);
     final notificationWriteState = ref.watch(
       notificationPreferenceControllerProvider,
@@ -37,6 +39,9 @@ class NotificationSettingsScreen extends ConsumerWidget {
     final dailyDigestEnabled = dailyDigestState.value ?? true;
     final (digestHour, digestMinute) =
         dailyDigestTimeState.value ?? (7, 0);
+    final learningReminderEnabled = learningReminderState.value ?? true;
+    final (learningHour, learningMinute) =
+        learningReminderTimeState.value ?? (19, 0);
     final (budgetHigh, budgetMedium, budgetLow) =
         budgetThresholdsState.value ?? (90.0, 70.0, 50.0);
 
@@ -45,6 +50,8 @@ class NotificationSettingsScreen extends ConsumerWidget {
         budgetAlertsState.isLoading ||
         dailyDigestState.isLoading ||
         dailyDigestTimeState.isLoading ||
+        learningReminderState.isLoading ||
+        learningReminderTimeState.isLoading ||
         budgetThresholdsState.isLoading ||
         notificationWriteState.isLoading;
     final childPreferencesReadOnly = readOnly || !notificationsEnabled;
@@ -131,6 +138,42 @@ class NotificationSettingsScreen extends ConsumerWidget {
                   await ref
                       .read(notificationPreferenceControllerProvider.notifier)
                       .setDailyDigestScheduleTime(picked.hour, picked.minute);
+                }
+              },
+            ),
+            SettingsRow(
+              icon: Icons.school_outlined,
+              title: 'Learning Reminder',
+              subtitle:
+                  'Daily streak nudge at ${learningHour.toString().padLeft(2, '0')}:${learningMinute.toString().padLeft(2, '0')}',
+              trailing: Switch.adaptive(
+                value: learningReminderEnabled,
+                onChanged: childPreferencesReadOnly
+                    ? null
+                    : (value) async {
+                        await ref
+                            .read(notificationPreferenceControllerProvider.notifier)
+                            .setLearningReminderEnabled(value);
+                      },
+              ),
+              dividerAbove: true,
+            ),
+            _DigestTimeRow(
+              hour: learningHour,
+              minute: learningMinute,
+              label: 'Reminder time',
+              enabled:
+                  !childPreferencesReadOnly && learningReminderEnabled,
+              onTap: () async {
+                final picked = await showTimePicker(
+                  context: context,
+                  initialTime:
+                      TimeOfDay(hour: learningHour, minute: learningMinute),
+                );
+                if (picked != null) {
+                  await ref
+                      .read(notificationPreferenceControllerProvider.notifier)
+                      .setLearningReminderTime(picked.hour, picked.minute);
                 }
               },
             ),
@@ -314,12 +357,14 @@ class _DigestTimeRow extends StatelessWidget {
     required this.hour,
     required this.minute,
     required this.onTap,
+    this.label = 'Digest time',
     this.enabled = true,
   });
 
   final int hour;
   final int minute;
   final VoidCallback onTap;
+  final String label;
   final bool enabled;
 
   @override
@@ -338,7 +383,7 @@ class _DigestTimeRow extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Digest time',
+                    label,
                     style: AppTypography.body(
                       context,
                     ).copyWith(

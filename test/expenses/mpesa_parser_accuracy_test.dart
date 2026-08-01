@@ -7,7 +7,7 @@ void main() {
 
   group('sender-aware confidence', () {
     const message =
-        'QW12AB34CD Confirmed. Ksh1,250.00 sent to SKY CAFE on 7/3/26 at 6:24 PM.';
+        'QW12AB34CD Confirmed. Ksh1,250.00 sent to SKY CAFE on 7/3/26 at 6:24 PM. New M-PESA balance is Ksh0.00.';
 
     test('MPESA sender keeps high confidence', () {
       final r = parser.parseSingleDetailed(message, sender: 'MPESA');
@@ -41,7 +41,7 @@ void main() {
   group('message variant detection', () {
     test('"You have received Ksh..." from MPESA is parsed as received', () {
       final r = parser.parseSingleDetailed(
-        'You have received Ksh500.00 from JANE DOE on 7/3/26 at 6:24 PM.',
+        'You have received Ksh500.00 from JANE DOE on 7/3/26 at 6:24 PM. New M-PESA balance is Ksh500.00.',
         sender: 'MPESA',
       );
       expect(r, isNotNull);
@@ -96,7 +96,7 @@ void main() {
   group('isolate parsing preserves sender-aware accuracy', () {
     test('parseJobsInIsolate applies sender downgrades', () async {
       const message =
-          'QW12AB34CD Confirmed. Ksh1,250.00 sent to SKY CAFE on 7/3/26 at 6:24 PM.';
+          'QW12AB34CD Confirmed. Ksh1,250.00 sent to SKY CAFE on 7/3/26 at 6:24 PM. New M-PESA balance is Ksh0.00.';
       final jobs = [
         const SmsParseJob(message, sender: '12345'),
         const SmsParseJob(message, sender: 'MPESA'),

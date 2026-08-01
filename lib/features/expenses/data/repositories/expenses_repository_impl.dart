@@ -117,9 +117,10 @@ class ExpensesRepositoryImpl implements ExpensesRepository {
   Future<int> importSmsMessages(
     List<String> rawMessages, {
     DateTime? from,
+    String? sender,
   }) async {
     final envelopes = rawMessages
-        .map((message) => _QueuedSmsImport(message: message))
+        .map((message) => _QueuedSmsImport(message: message, sender: sender))
         .toList(growable: false);
     await _enqueueSmsImports(envelopes);
     return _processDueQueueImpl(this, from: from);

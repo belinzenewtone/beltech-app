@@ -1,4 +1,5 @@
 import 'package:beltech/core/di/repository_providers.dart';
+import 'package:beltech/core/widgets/loading_indicator.dart';
 import 'package:beltech/core/theme/app_colors.dart';
 import 'package:beltech/core/theme/app_spacing.dart';
 import 'package:beltech/core/theme/app_typography.dart';
@@ -112,7 +113,7 @@ class FeeAnalyticsScreen extends ConsumerWidget {
             ],
           );
         },
-        loading: () => const Center(child: CircularProgressIndicator()),
+        loading: () => const Center(child: LoadingIndicator()),
         error: (e, _) => Center(child: Text('Error: $e')),
       ),
     );

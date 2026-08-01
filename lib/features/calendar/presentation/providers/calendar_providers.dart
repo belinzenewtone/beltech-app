@@ -103,6 +103,7 @@ class CalendarWriteController extends AsyncNotifier<void> {
           alarmEnabled: alarmEnabled,
           allDay: allDay,
           reminderTimeOfDayMinutes: reminderTimeOfDayMinutes,
+          repeatRule: repeatRule,
         );
       }
     });
@@ -156,6 +157,7 @@ class CalendarWriteController extends AsyncNotifier<void> {
           alarmEnabled: alarmEnabled,
           allDay: allDay,
           reminderTimeOfDayMinutes: reminderTimeOfDayMinutes,
+          repeatRule: repeatRule,
         );
       } else {
         await notifications.cancelEventReminder(eventId);
@@ -199,6 +201,7 @@ class CalendarWriteController extends AsyncNotifier<void> {
     bool alarmEnabled = false,
     bool allDay = false,
     int reminderTimeOfDayMinutes = 480,
+    RepeatRule repeatRule = RepeatRule.never,
   }) async {
     try {
       final dayStart = DateTime(startAt.year, startAt.month, startAt.day);
@@ -221,6 +224,7 @@ class CalendarWriteController extends AsyncNotifier<void> {
         alarmEnabled: alarmEnabled,
         allDay: allDay,
         reminderTimeOfDayMinutes: reminderTimeOfDayMinutes,
+        repeatRule: repeatRule,
       );
     } catch (_) {
       return;

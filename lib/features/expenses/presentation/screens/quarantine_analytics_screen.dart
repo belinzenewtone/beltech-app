@@ -1,4 +1,5 @@
 import 'package:beltech/core/di/expenses_providers.dart';
+import 'package:beltech/core/widgets/loading_indicator.dart';
 import 'package:beltech/core/theme/app_colors.dart';
 import 'package:beltech/core/theme/app_radius.dart';
 import 'package:beltech/core/theme/app_spacing.dart';
@@ -19,7 +20,7 @@ class QuarantineAnalyticsScreen extends ConsumerWidget {
       title: 'Quarantine Analytics',
       child: quarantineDataAsync.when(
         data: (items) => _buildAnalytics(context, items),
-        loading: () => const Center(child: CircularProgressIndicator()),
+        loading: () => const Center(child: LoadingIndicator()),
         error: (err, _) => Center(child: Text('Error: $err')),
       ),
     );

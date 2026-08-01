@@ -27,7 +27,7 @@ void main() {
     );
 
     await repository.importSmsMessages(const [
-      'QW12AB34CD Confirmed. Ksh1,250.00 sent to KPLC PREPAID for account 998877 on 7/3/26 at 6:24 PM.',
+      'QW12AB34CD Confirmed. Ksh1,250.00 sent to KPLC PREPAID for account 998877 on 7/3/26 at 6:24 PM. New M-PESA balance is Ksh0.00.',
       'AA12BB34CC Confirmed. Ksh500.00 Fuliza M-PESA amount credited on 8/3/26 at 10:00 AM.',
       'DD56EE78FF Confirmed. Ksh200.00 paid from your Fuliza M-PESA on 8/3/26 at 2:30 PM.',
     ]);
@@ -44,6 +44,20 @@ void main() {
       fuliza.any((item) => item.kind == FulizaLifecycleKind.repayment),
       isTrue,
     );
+
+    // The repayment (Ksh200) settles the earlier draw (Ksh500) despite the
+    // differing amounts — time-window linking cross-populates linked_code.
+    final linked = await store.executor.runSelect(
+      'SELECT event_kind, linked_code FROM fuliza_lifecycle_events '
+      'WHERE scope = ? ORDER BY occurred_at',
+      ['local'],
+    );
+    expect(linked.length, 2);
+    expect(
+      linked.every((row) => (row['linked_code'] as String?)?.isNotEmpty ?? false),
+      isTrue,
+      reason: 'both draw and repayment should be cross-linked',
+    );
   });
 
   test('replay import queue retries previously failed rows', () async {
@@ -54,7 +68,7 @@ void main() {
     );
 
     await repository.importSmsMessages(const [
-      'ZX12CV34BN Confirmed. Ksh350.00 sent to SKY MART on 8/3/26 at 8:10 AM.',
+      'ZX12CV34BN Confirmed. Ksh350.00 sent to SKY MART on 8/3/26 at 8:10 AM. New M-PESA balance is Ksh0.00.',
     ]);
 
     final initialMetrics = await repository.fetchImportMetrics();

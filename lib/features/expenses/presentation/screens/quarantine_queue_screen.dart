@@ -1,4 +1,5 @@
 import 'package:beltech/core/di/expenses_providers.dart';
+import 'package:beltech/core/widgets/loading_indicator.dart';
 import 'package:beltech/core/forms/form_schemas.dart';
 import 'package:beltech/core/theme/app_colors.dart';
 import 'package:beltech/core/theme/app_radius.dart';
@@ -86,7 +87,7 @@ class _QuarantineQueueScreenState extends ConsumerState<QuarantineQueueScreen> {
           const SizedBox(height: AppSpacing.md),
           Expanded(
             child: quarantineState.when(
-              loading: () => const Center(child: CircularProgressIndicator()),
+              loading: () => const Center(child: LoadingIndicator()),
               error: (error, stackTrace) => Center(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,

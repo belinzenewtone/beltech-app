@@ -96,7 +96,7 @@ class _AppShellState extends ConsumerState<AppShell>
     unawaited(_refreshFeatureFlags());
     unawaited(_startBackgroundSync());
     unawaited(_initializeBiometricLock());
-    unawaited(cleanupNotificationReminders(ref));
+    unawaited(resyncNotificationSchedules(ref));
     unawaited(_initNotificationDeepLink());
   }
 

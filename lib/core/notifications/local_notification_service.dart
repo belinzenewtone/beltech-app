@@ -114,15 +114,25 @@ class LocalNotificationService {
     CalendarEventKind kind = CalendarEventKind.event,
     bool allDay = false,
     int reminderTimeOfDayMinutes = 480,
+    RepeatRule repeatRule = RepeatRule.never,
   }) async {
     await cancelEventReminder(eventId);
     final now = DateTime.now();
+    // Yearly-recurring occasions (anniversaries, birthdays, or any event the
+    // user marked "Yearly") must fire every year, not once. We anchor each
+    // reminder at its next future occurrence and let the OS repeat it annually
+    // via matchDateTimeComponents.dateAndTime.
+    final yearly = repeatRule == RepeatRule.yearly ||
+        kind == CalendarEventKind.anniversary ||
+        kind == CalendarEventKind.birthday;
+    final effectiveStart = yearly ? _nextYearlyOccurrence(startAt, now) : startAt;
     final triggers = _computeEventReminderTriggers(
-      startAt: startAt,
+      startAt: effectiveStart,
       offsets: reminderOffsets,
       now: now,
       allDay: allDay,
       reminderTimeOfDayMinutes: reminderTimeOfDayMinutes,
+      allowPast: yearly,
     );
     for (var i = 0; i < triggers.length; i++) {
       await _scheduleAt(
@@ -132,8 +142,26 @@ class LocalNotificationService {
         when: triggers[i],
         payload: '/calendar',
         alarmEnabled: alarmEnabled,
+        matchDateTimeComponents:
+            yearly ? DateTimeComponents.dateAndTime : null,
       );
     }
+  }
+
+  /// Returns [anchor] advanced to its next occurrence on/after [now], keeping
+  /// the same month/day/time (used for yearly-recurring reminders).
+  static DateTime _nextYearlyOccurrence(DateTime anchor, DateTime now) {
+    var candidate = anchor;
+    while (candidate.isBefore(now)) {
+      candidate = DateTime(
+        candidate.year + 1,
+        anchor.month,
+        anchor.day,
+        anchor.hour,
+        anchor.minute,
+      );
+    }
+    return candidate;
   }
 
   List<DateTime> _computeEventReminderTriggers({
@@ -142,20 +170,27 @@ class LocalNotificationService {
     required DateTime now,
     required bool allDay,
     required int reminderTimeOfDayMinutes,
+    bool allowPast = false,
   }) {
     final hour = reminderTimeOfDayMinutes ~/ 60;
     final minute = reminderTimeOfDayMinutes % 60;
     final useAllDayStyle = allDay ||
         startAt.hour == 0 && startAt.minute == 0;
 
-    return offsets.map((offset) {
+    final triggers = offsets.map((offset) {
       if (useAllDayStyle) {
         // offset is in days; fire at the configured time of day.
         final day = startAt.subtract(Duration(days: offset));
         return DateTime(day.year, day.month, day.day, hour, minute);
       }
       return startAt.subtract(Duration(minutes: offset));
-    }).where((trigger) => trigger.isAfter(now)).toList()..sort();
+    });
+    // For yearly reminders the anchor is already the next occurrence, so a
+    // trigger slightly in the past is fine — the OS rolls it to next year.
+    return (allowPast
+            ? triggers.toList()
+            : triggers.where((trigger) => trigger.isAfter(now)).toList())
+      ..sort();
   }
 
   Future<void> cancelEventReminder(int eventId) async {
@@ -235,6 +270,7 @@ class LocalNotificationService {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setInt('daily_digest_hour', hour);
     await prefs.setInt('daily_digest_minute', minute);
+    await scheduleDailyDigest();
   }
 
   Future<(double, double, double)> getBudgetAlertThresholds() async {
@@ -309,40 +345,130 @@ class LocalNotificationService {
     return true;
   }
 
-  Future<void> showBillReminder({
+  // Days-before-due at which a bill reminder fires, all at [_billReminderHour].
+  static const List<int> _billOffsetDays = [3, 1, 0];
+  static const int _billReminderHour = 9;
+
+  /// Schedules OS-level reminders for a single bill at its due date (and 1/3
+  /// days before). Content is fully known now, so these fire on time even when
+  /// the app is killed. Cancel-then-reschedule makes it idempotent.
+  Future<void> scheduleBillReminder({
     required int billId,
     required String billName,
     required double amount,
-    required int daysUntil,
+    required DateTime dueDate,
   }) async {
-    final enabled = await isNotificationsEnabled();
-    if (!enabled) return;
-    await _ensureInitialized();
-    final body = daysUntil <= 0
-        ? 'Bill "$billName" is overdue! Amount: ${amount.toStringAsFixed(0)}'
-        : 'Bill "$billName" is due in $daysUntil day(s). Amount: ${amount.toStringAsFixed(0)}';
-    await _plugin.show(
-      id: _notifId(_nsBill, billId),
-      title: 'Bill Reminder',
-      body: body,
-      notificationDetails: _details,
-      payload: '/bills',
+    await cancelBillReminder(billId);
+    final now = DateTime.now();
+    final dueAtHour = DateTime(
+      dueDate.year,
+      dueDate.month,
+      dueDate.day,
+      _billReminderHour,
+    );
+    for (var i = 0; i < _billOffsetDays.length; i++) {
+      final offset = _billOffsetDays[i];
+      final when = dueAtHour.subtract(Duration(days: offset));
+      if (!when.isAfter(now)) continue;
+      final body = offset == 0
+          ? 'Bill "$billName" is due today. Amount: ${amount.toStringAsFixed(0)}'
+          : 'Bill "$billName" is due in $offset day(s). Amount: ${amount.toStringAsFixed(0)}';
+      await _scheduleAt(
+        id: _notifId(_nsBill, billId * 100 + i),
+        title: 'Bill Reminder',
+        body: body,
+        when: when,
+        payload: '/bills',
+      );
+    }
+  }
+
+  Future<void> cancelBillReminder(int billId) async {
+    for (var i = 0; i < _maxOffsets; i++) {
+      await _cancelById(_notifId(_nsBill, billId * 100 + i));
+    }
+  }
+
+  // Reserved record-ids for the singleton daily repeating reminders. Chosen
+  // high to avoid colliding with real insight/learning record ids.
+  static const int _digestSlot = 999001;
+  static const int _learningDailySlot = 999002;
+
+  /// Daily repeating "your summary is ready" reminder at the user's chosen
+  /// digest time. Fires every day even when the app is closed; tapping it opens
+  /// the app which renders the live figures.
+  Future<void> scheduleDailyDigest() async {
+    await cancelDailyDigest();
+    if (!await isNotificationsEnabled()) return;
+    final prefs = await SharedPreferences.getInstance();
+    // Respects the Settings "Daily Summary" toggle (defaults on).
+    if (!(prefs.getBool('notifications_daily_digest') ?? true)) return;
+    final (hour, minute) = await getDailyDigestScheduleTime();
+    await _scheduleAt(
+      id: _notifId(_nsInsight, _digestSlot),
+      title: 'Daily Summary',
+      body: 'Your spending summary is ready — tap to review today.',
+      when: _nextTimeOfDay(hour, minute, DateTime.now()),
+      payload: '/home',
+      matchDateTimeComponents: DateTimeComponents.time,
     );
   }
 
-  Future<void> showLearningReminder({required int dayOffset}) async {
-    final enabled = await isNotificationsEnabled();
-    if (!enabled) return;
-    await _ensureInitialized();
-    await _plugin.show(
-      id: _notifId(_nsLearning, dayOffset),
+  Future<void> cancelDailyDigest() =>
+      _cancelById(_notifId(_nsInsight, _digestSlot));
+
+  /// Daily repeating learning-streak nudge at the user's chosen time.
+  Future<void> scheduleLearningDailyReminder() async {
+    await cancelLearningDailyReminder();
+    if (!await isNotificationsEnabled()) return;
+    if (!await isLearningReminderEnabled()) return;
+    final (hour, minute) = await getLearningReminderTime();
+    await _scheduleAt(
+      id: _notifId(_nsLearning, _learningDailySlot),
       title: 'Learning Streak',
-      body: dayOffset == 0
-          ? 'Log a learning session today to keep your streak alive!'
-          : 'You have not logged a learning session recently. Keep the momentum!',
-      notificationDetails: _details,
+      body: 'Keep your streak alive — log a learning session today.',
+      when: _nextTimeOfDay(hour, minute, DateTime.now()),
       payload: '/learning',
+      matchDateTimeComponents: DateTimeComponents.time,
     );
+  }
+
+  Future<void> cancelLearningDailyReminder() =>
+      _cancelById(_notifId(_nsLearning, _learningDailySlot));
+
+  Future<(int, int)> getLearningReminderTime() async {
+    final prefs = await SharedPreferences.getInstance();
+    final hour = prefs.getInt('learning_reminder_hour') ?? 19;
+    final minute = prefs.getInt('learning_reminder_minute') ?? 0;
+    return (hour, minute);
+  }
+
+  Future<void> setLearningReminderTime(int hour, int minute) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt('learning_reminder_hour', hour);
+    await prefs.setInt('learning_reminder_minute', minute);
+    await scheduleLearningDailyReminder();
+  }
+
+  Future<bool> isLearningReminderEnabled() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool('notifications_learning_reminder') ?? true;
+  }
+
+  Future<void> setLearningReminderEnabled(bool enabled) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('notifications_learning_reminder', enabled);
+    await scheduleLearningDailyReminder();
+  }
+
+  /// Returns the next [hour]:[minute] on/after [now] (today, or tomorrow if
+  /// that time already passed today).
+  static DateTime _nextTimeOfDay(int hour, int minute, DateTime now) {
+    var when = DateTime(now.year, now.month, now.day, hour, minute);
+    if (!when.isAfter(now)) {
+      when = when.add(const Duration(days: 1));
+    }
+    return when;
   }
 
   Future<void> cancelAllReminders() async {
@@ -353,16 +479,26 @@ class LocalNotificationService {
   Future<void> cleanupOrphanedReminders({
     required Iterable<int> activeTaskIds,
     required Iterable<int> activeEventIds,
+    Iterable<int> activeBillIds = const [],
   }) async {
     await _ensureInitialized();
     final pending = await _plugin.pendingNotificationRequests();
 
-    // Build the complete set of IDs that should currently be scheduled.
-    // Insights use show() (immediate) so they never appear in pending — safe
-    // to cancel anything not in this whitelist.
+    // Build the complete set of IDs that SHOULD currently be scheduled. Each
+    // task/event/bill fans out to up to _maxOffsets scheduled ids using the
+    // same (recordId * 100 + offsetIndex) scheme used when scheduling — the
+    // previous version whitelisted only the bare recordId, so every real
+    // reminder was treated as orphaned and cancelled on the next app open.
     final validIds = <int>{
-      for (final id in activeTaskIds) _notifId(_nsTask, id),
-      for (final id in activeEventIds) _notifId(_nsEvent, id),
+      for (final id in activeTaskIds)
+        for (var i = 0; i < _maxOffsets; i++) _notifId(_nsTask, id * 100 + i),
+      for (final id in activeEventIds)
+        for (var i = 0; i < _maxOffsets; i++) _notifId(_nsEvent, id * 100 + i),
+      for (final id in activeBillIds)
+        for (var i = 0; i < _maxOffsets; i++) _notifId(_nsBill, id * 100 + i),
+      // Singleton daily-repeating reminders.
+      _notifId(_nsInsight, _digestSlot),
+      _notifId(_nsLearning, _learningDailySlot),
     };
 
     for (final item in pending) {
@@ -391,28 +527,39 @@ class LocalNotificationService {
     required DateTime when,
     String? payload,
     bool alarmEnabled = false,
+    DateTimeComponents? matchDateTimeComponents,
   }) async {
     final enabled = await isNotificationsEnabled();
     if (!enabled) {
       return;
     }
-    if (!when.isAfter(DateTime.now())) {
-      return;
-    }
-    final canScheduleExact = await _ensureExactAlarmPermission();
-    if (!canScheduleExact) {
+    // Repeating notifications (matchDateTimeComponents != null) may legitimately
+    // have a first anchor in the past — the OS advances them to the next match.
+    if (matchDateTimeComponents == null && !when.isAfter(DateTime.now())) {
       return;
     }
     await _ensureInitialized();
+    // Choose the strongest schedule mode the OS will allow, but NEVER silently
+    // drop the reminder: if exact-alarm permission is denied, fall back to an
+    // inexact (but still while-idle) alarm so it still fires — just less
+    // precisely — instead of not firing at all.
+    final canScheduleExact = await _ensureExactAlarmPermission();
+    final AndroidScheduleMode scheduleMode;
+    if (!canScheduleExact) {
+      scheduleMode = AndroidScheduleMode.inexactAllowWhileIdle;
+    } else if (alarmEnabled) {
+      scheduleMode = AndroidScheduleMode.alarmClock;
+    } else {
+      scheduleMode = AndroidScheduleMode.exactAllowWhileIdle;
+    }
     await _plugin.zonedSchedule(
       id: id,
       title: title,
       body: body,
       scheduledDate: tz.TZDateTime.from(when, tz.local),
       notificationDetails: _details,
-      androidScheduleMode: alarmEnabled
-          ? AndroidScheduleMode.alarmClock
-          : AndroidScheduleMode.exactAllowWhileIdle,
+      androidScheduleMode: scheduleMode,
+      matchDateTimeComponents: matchDateTimeComponents,
       payload: payload,
     );
   }
@@ -442,6 +589,19 @@ class LocalNotificationService {
   /// Public entry point so callers (e.g. [AppShell]) can eagerly initialise
   /// the plugin on startup without scheduling a notification first.
   Future<void> initialize() => _ensureInitialized();
+
+  /// Requests the OS-level permissions that gate delivery — POST_NOTIFICATIONS
+  /// (Android 13+) and exact-alarm scheduling (Android 12+). Safe to call on
+  /// every launch: the OS only prompts once and no-ops thereafter. Without
+  /// this, a fresh Android 13+ install never shows the notification prompt and
+  /// nothing fires at all.
+  Future<void> ensurePlatformPermissions() async {
+    if (kIsWeb) return;
+    if (!await isNotificationsEnabled()) return;
+    await _ensureInitialized();
+    await _requestPlatformPermission();
+    await _ensureExactAlarmPermission();
+  }
 
   Future<void> _requestPlatformPermission() async {
     await _ensureInitialized();

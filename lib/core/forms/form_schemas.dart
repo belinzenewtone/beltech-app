@@ -3,59 +3,6 @@ import 'package:beltech/core/forms/form_schema.dart';
 class FormSchemas {
   FormSchemas._();
 
-  static const authSignIn = FormSchema(
-    fields: [
-      FieldRule(
-        fieldName: 'email',
-        label: 'Email',
-        required: true,
-        isEmail: true,
-      ),
-      FieldRule(
-        fieldName: 'password',
-        label: 'Password',
-        required: true,
-        minLength: 6,
-      ),
-    ],
-  );
-
-  static const authSignUp = FormSchema(
-    fields: [
-      FieldRule(
-        fieldName: 'name',
-        label: 'Name',
-        required: true,
-        minLength: 2,
-        maxLength: 50,
-      ),
-      FieldRule(
-        fieldName: 'email',
-        label: 'Email',
-        required: true,
-        isEmail: true,
-      ),
-      FieldRule(
-        fieldName: 'phone',
-        label: 'Phone',
-        required: true,
-        minLength: 10,
-      ),
-      FieldRule(
-        fieldName: 'password',
-        label: 'Password',
-        required: true,
-        minLength: 6,
-      ),
-      FieldRule(
-        fieldName: 'confirmPassword',
-        label: 'Confirm Password',
-        required: true,
-        minLength: 6,
-      ),
-    ],
-  );
-
   static const taskSchema = FormSchema(
     fields: [
       FieldRule(
