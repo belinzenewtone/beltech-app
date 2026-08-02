@@ -95,20 +95,24 @@ class AppButton extends StatelessWidget {
                 Icon(icon, size: fontSize + 2, color: fgColor),
                 const SizedBox(width: 6),
               ],
-              Text(
-                label,
-                style: TextStyle(
-                  fontSize: fontSize,
-                  fontWeight: FontWeight.w600,
-                  color: fgColor,
-                  height: 1.2,
+              Flexible(
+                child: Text(
+                  label,
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
+                  style: TextStyle(
+                    fontSize: fontSize,
+                    fontWeight: FontWeight.w600,
+                    color: fgColor,
+                    height: 1.2,
+                  ),
                 ),
               ),
             ],
           );
 
     final shape = RoundedRectangleBorder(
-      borderRadius: BorderRadius.circular(AppRadius.full),
+      borderRadius: BorderRadius.circular(AppRadius.lg),
       side: borderColor == Colors.transparent
           ? BorderSide.none
           : BorderSide(color: borderColor),
@@ -127,7 +131,7 @@ class AppButton extends StatelessWidget {
                 foregroundColor: fgColor,
                 side: BorderSide(color: borderColor),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(AppRadius.full),
+                  borderRadius: BorderRadius.circular(AppRadius.lg),
                 ),
                 padding: EdgeInsets.symmetric(horizontal: hPad),
               ),

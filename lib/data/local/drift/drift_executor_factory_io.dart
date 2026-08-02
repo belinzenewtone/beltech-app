@@ -6,6 +6,7 @@ import 'package:drift/drift.dart' show LazyDatabase;
 import 'package:drift/native.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
+import 'package:sqlcipher_flutter_libs/sqlcipher_flutter_libs.dart';
 
 QueryExecutor openDriftExecutor({required String name, bool inMemory = false}) {
   if (inMemory) {
@@ -16,12 +17,18 @@ QueryExecutor openDriftExecutor({required String name, bool inMemory = false}) {
     final directory = await getApplicationSupportDirectory();
     final path = p.join(directory.path, name);
     final key = await DbEncryptionKeyStore.loadOrGenerate();
-    return NativeDatabase(
+    // Run SQLite on a background isolate so heavy writes (SMS import batches,
+    // rollup recomputation) never block the UI thread. The SQLCipher native
+    // library is loaded inside the isolate, and the key is applied in `setup`
+    // (also executed in the isolate) before any other statement.
+    return NativeDatabase.createInBackground(
       File(path),
+      isolateSetup: () {
+        if (Platform.isAndroid) {
+          openCipherOnAndroid();
+        }
+      },
       setup: (db) {
-        // SQLCipher key — must be set before any other statement.
-        // With sqlite3_flutter_libs this is a no-op; with
-        // sqlcipher_flutter_libs it enables AES-256 encryption.
         db.execute("PRAGMA key = '$key'");
       },
     );

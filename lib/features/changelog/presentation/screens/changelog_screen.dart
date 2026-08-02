@@ -107,7 +107,7 @@ class _EntryCard extends StatelessWidget {
                     ),
                     decoration: BoxDecoration(
                       color: AppColors.success.withValues(alpha: 0.15),
-                      borderRadius: BorderRadius.circular(20),
+                      borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
                       'Latest',

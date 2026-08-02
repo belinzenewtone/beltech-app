@@ -100,13 +100,13 @@ void main() {
       expect(r.route, MpesaParseRoute.directLedger);
     });
 
-    test('withdrawal → medium confidence → reviewQueue', () {
+    test('withdrawal → high confidence → directLedger (structurally clear)', () {
       final r = parser.parseSingleDetailed(
         'AB12CD34EF Confirmed. Ksh300.00 withdrawn at ATM on 8/3/26 at 10:00 AM.',
       );
       expect(r, isNotNull);
-      expect(r!.confidence, MpesaConfidence.medium);
-      expect(r.route, MpesaParseRoute.reviewQueue);
+      expect(r!.confidence, MpesaConfidence.high);
+      expect(r.route, MpesaParseRoute.directLedger);
     });
 
     test('unknown type → low confidence → quarantine', () {
@@ -791,7 +791,7 @@ BB22CC33DD Confirmed. Ksh800.00 received from BOB on 2/2/26 at 10:00 AM.
 
     test('medium confidence → score between 0.5 and 0.9', () {
       final r = parser.parseSingleDetailed(
-        'AA11BB22CC Confirmed. Ksh500.00 withdraw at agent on 1/1/26 at 9:00 AM.',
+        'AA11BB22CC Confirmed. Ksh500.00 sent to JANE on 1/1/26 at 9:00 AM.',
       );
       expect(r!.confidenceScore, inInclusiveRange(0.5, 0.9));
     });

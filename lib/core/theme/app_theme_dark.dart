@@ -89,7 +89,7 @@ ThemeData buildDarkTheme() {
         side: BorderSide(color: AppColors.border.withValues(alpha: 0.75)),
         minimumSize: const Size(38, 38),
         padding: const EdgeInsets.all(9),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
     ),
     appBarTheme: const AppBarTheme(
@@ -101,13 +101,13 @@ ThemeData buildDarkTheme() {
       backgroundColor: AppColors.surface.withValues(alpha: 0.92),
       contentTextStyle: const TextStyle(color: AppColors.textPrimary),
       behavior: SnackBarBehavior.floating,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
     ),
     filledButtonTheme: FilledButtonThemeData(
       style: FilledButton.styleFrom(
         backgroundColor: AppColors.accent,
         foregroundColor: AppColors.textPrimary,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
         padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 13),
         elevation: 0,
       ),
@@ -117,14 +117,14 @@ ThemeData buildDarkTheme() {
         foregroundColor: AppColors.accent,
         backgroundColor: AppColors.surfaceMuted,
         side: const BorderSide(color: AppColors.border),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       ),
     ),
     textButtonTheme: TextButtonThemeData(
       style: TextButton.styleFrom(
         foregroundColor: AppColors.accent,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       ),
     ),
@@ -137,15 +137,15 @@ ThemeData buildDarkTheme() {
       suffixIconColor: AppColors.textSecondary,
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
       border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(10),
         borderSide: BorderSide(color: AppColors.border.withValues(alpha: 0.65)),
       ),
       enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(10),
         borderSide: BorderSide(color: AppColors.border.withValues(alpha: 0.65)),
       ),
       focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(10),
         borderSide: const BorderSide(color: AppColors.accent, width: 1.4),
       ),
     ),
@@ -174,7 +174,7 @@ ThemeData buildDarkTheme() {
           );
         }),
         shape: WidgetStatePropertyAll(
-          RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
         ),
       ),
     ),
@@ -182,7 +182,7 @@ ThemeData buildDarkTheme() {
       color: AppColors.surface.withValues(alpha: 0.98),
       surfaceTintColor: Colors.transparent,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(12),
         side: BorderSide(color: AppColors.border.withValues(alpha: 0.45)),
       ),
       textStyle: const TextStyle(color: AppColors.textPrimary),
@@ -197,7 +197,7 @@ ThemeData buildDarkTheme() {
           BorderSide(color: AppColors.border.withValues(alpha: 0.45)),
         ),
         shape: WidgetStatePropertyAll(
-          RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+          RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         ),
       ),
     ),
@@ -218,11 +218,11 @@ ThemeData buildDarkTheme() {
       selectedColor: AppColors.accentSoft,
       side: BorderSide(color: AppColors.border.withValues(alpha: 0.6)),
       labelStyle: const TextStyle(color: AppColors.textPrimary),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
     ),
     dialogTheme: DialogThemeData(
       backgroundColor: AppColors.surface.withValues(alpha: 0.95),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
     ),
   );
 }

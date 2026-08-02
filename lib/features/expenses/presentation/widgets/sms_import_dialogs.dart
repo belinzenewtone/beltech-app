@@ -18,14 +18,14 @@ enum SmsImportMethod { deviceInbox, pasteMessages }
 
 Future<SmsImportInput?> showSmsImportDialog(BuildContext context) async {
   final controller = TextEditingController();
-  const selectedWindow = ExpenseImportWindow.last30Days;
+  const selectedWindow = ExpenseImportWindow.lastMonth;
 
   return showModalBottomSheet<SmsImportInput>(
     context: context,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
     builder: (context) => AppFormSheet(
-      title: 'Import MPESA SMS',
+      title: 'Paste SMS',
       onClose: () => Navigator.of(context).pop(),
       footer: Row(
         children: [
@@ -57,7 +57,7 @@ Future<SmsImportInput?> showSmsImportDialog(BuildContext context) async {
             minLines: 6,
             maxLines: 12,
             decoration: const InputDecoration(
-              hintText: 'Paste MPESA messages here',
+              hintText: 'Paste M-Pesa or bank messages here',
             ),
           ),
         ],
@@ -69,9 +69,9 @@ Future<SmsImportInput?> showSmsImportDialog(BuildContext context) async {
 Future<ExpenseImportWindow?> showSmsWindowDialog(BuildContext context) async {
   const windows = [
     ExpenseImportWindow.last24Hours,
-    ExpenseImportWindow.last7Days,
-    ExpenseImportWindow.last30Days,
-    ExpenseImportWindow.last90Days,
+    ExpenseImportWindow.lastMonth,
+    ExpenseImportWindow.last3Months,
+    ExpenseImportWindow.last6Months,
   ];
 
   return showAppDialog<ExpenseImportWindow>(
@@ -164,8 +164,59 @@ Future<SmsImportMethod?> showSmsImportMethodDialog(BuildContext context) {
 String importWindowLabel(ExpenseImportWindow window) {
   return switch (window) {
     ExpenseImportWindow.last24Hours => 'Last 24 hours',
-    ExpenseImportWindow.last7Days => 'Last 7 days',
-    ExpenseImportWindow.last30Days => 'Last 30 days',
-    ExpenseImportWindow.last90Days => 'Last 90 days',
+    ExpenseImportWindow.lastMonth => 'Last month',
+    ExpenseImportWindow.last3Months => 'Last 3 months',
+    ExpenseImportWindow.last6Months => 'Last 6 months',
   };
+}
+
+String importFilterLabel(ImportSourceFilter filter) {
+  return switch (filter) {
+    ImportSourceFilter.mpesa => 'M-Pesa only',
+    ImportSourceFilter.banks => 'Banks only',
+    ImportSourceFilter.both => 'M-Pesa + Banks',
+  };
+}
+
+/// Lets the user choose which providers to scan for — mirrors the Kotlin
+/// reference (M-Pesa only / Banks only / both).
+Future<ImportSourceFilter?> showSmsFilterDialog(BuildContext context) {
+  return showModalBottomSheet<ImportSourceFilter>(
+    context: context,
+    isScrollControlled: true,
+    backgroundColor: Colors.transparent,
+    builder: (context) => AppFormSheet(
+      title: 'What to import',
+      onClose: () => Navigator.of(context).pop(),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          for (final option in const [
+            (ImportSourceFilter.both, Icons.all_inbox_rounded),
+            (ImportSourceFilter.mpesa, Icons.smartphone_rounded),
+            (ImportSourceFilter.banks, Icons.account_balance_rounded),
+          ]) ...[
+            AppCard(
+              tone: AppCardTone.muted,
+              onTap: () => Navigator.of(context).pop(option.$1),
+              child: Row(
+                children: [
+                  Icon(option.$2, color: AppColors.accent),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      importFilterLabel(option.$1),
+                      style: AppTypography.bodyMd(context),
+                    ),
+                  ),
+                  const Icon(Icons.chevron_right_rounded),
+                ],
+              ),
+            ),
+            const SizedBox(height: 10),
+          ],
+        ],
+      ),
+    ),
+  );
 }

@@ -1,6 +1,7 @@
 import 'package:beltech/core/theme/app_colors.dart';
 import 'package:beltech/core/theme/app_radius.dart';
 import 'package:beltech/core/theme/app_typography.dart';
+import 'package:beltech/core/widgets/app_background.dart';
 import 'package:flutter/material.dart';
 
 class AuthLoadingScreen extends StatefulWidget {
@@ -70,10 +71,10 @@ class _AuthLoadingScreenState extends State<AuthLoadingScreen>
 
   @override
   Widget build(BuildContext context) {
-    final brightness = Theme.of(context).brightness;
     return Scaffold(
-      backgroundColor: AppColors.backgroundFor(brightness),
-      body: Center(
+      backgroundColor: Colors.transparent,
+      body: AppBackground(
+        child: Center(
         child: FadeTransition(
           opacity: _fadeIn,
           child: Column(
@@ -132,6 +133,7 @@ class _AuthLoadingScreenState extends State<AuthLoadingScreen>
             ],
           ),
         ),
+      ),
       ),
     );
   }

@@ -136,7 +136,7 @@ class _DayCell extends StatelessWidget {
             width: 34,
             height: 34,
             decoration: BoxDecoration(
-              shape: BoxShape.circle,
+              borderRadius: BorderRadius.circular(AppRadius.md),
               color: isSelected ? AppColors.accent : Colors.transparent,
               border: !isSelected && isToday
                   ? Border.all(color: AppColors.accentLight, width: 1.5)

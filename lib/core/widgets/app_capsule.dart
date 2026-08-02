@@ -62,7 +62,7 @@ class AppCapsule extends StatelessWidget {
 
     // sm badges use a full pill; md/lg use the sm corner token
     final pillRadius = size == AppCapsuleSize.sm
-        ? BorderRadius.circular(AppRadius.full)
+        ? BorderRadius.circular(AppRadius.md)
         : BorderRadius.circular(AppRadius.sm);
 
     final pill = Container(

@@ -1,4 +1,5 @@
 import 'package:beltech/core/di/feature_flag_providers.dart';
+import 'package:beltech/core/diagnostics/device_sms_miner.dart';
 import 'package:beltech/core/platform/runtime_env.dart';
 import 'package:beltech/core/routing/app_router.dart';
 import 'package:beltech/core/theme/app_theme.dart';
@@ -18,6 +19,12 @@ Future<void> main() async {
 
   void appRunner() {
     runApp(const ProviderScope(child: PersonalManagementApp()));
+    if (kDebugMode) {
+      // One-shot real-device SMS mining for parser improvement (debug only).
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        DeviceSmsMiner.runIfDebug();
+      });
+    }
   }
 
   if (_sentryDsn.isNotEmpty && !hasRuntimeEnv('FLUTTER_TEST')) {

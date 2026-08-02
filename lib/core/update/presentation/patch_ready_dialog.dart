@@ -61,7 +61,7 @@ class PatchReadyDialog extends StatelessWidget {
               width: 62,
               height: 62,
               decoration: BoxDecoration(
-                shape: BoxShape.circle,
+                borderRadius: BorderRadius.circular(16),
                 color: AppColors.accent.withValues(alpha: 0.14),
                 border: Border.all(
                   color: AppColors.accent.withValues(alpha: 0.24),

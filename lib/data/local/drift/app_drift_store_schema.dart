@@ -393,8 +393,30 @@ class _AppDriftSchema {
       'ON ml_training_samples(scope, source_hash)',
     );
 
+    // ── Rollup aggregate tables (Phase P3, anti-jank core) ──────────────────
+    // Incrementally-maintained materialized aggregates so the dashboard reads a
+    // handful of small rows instead of a full-table GROUP BY / SUM scan on every
+    // change. `rollup_daily.day_start_ms` is the LOCAL-midnight epoch of a
+    // transaction's occurred_at; `rollup_category` is all-time per category.
+    // Both are additive — a fresh column-less rebuild reproduces them exactly.
+    await store._db.runCustom(
+      'CREATE TABLE IF NOT EXISTS rollup_daily('
+      'day_start_ms INTEGER PRIMARY KEY,'
+      'total_amount REAL NOT NULL DEFAULT 0,'
+      'txn_count INTEGER NOT NULL DEFAULT 0'
+      ')',
+    );
+    await store._db.runCustom(
+      'CREATE TABLE IF NOT EXISTS rollup_category('
+      'category TEXT PRIMARY KEY,'
+      'total_amount REAL NOT NULL DEFAULT 0,'
+      'txn_count INTEGER NOT NULL DEFAULT 0'
+      ')',
+    );
+
     await _AppDriftSchemaMigrations.removeLegacySeedIncome(store);
     store._initialized = true;
+    await _rebuildRollupsImpl(store);
   }
 
 }

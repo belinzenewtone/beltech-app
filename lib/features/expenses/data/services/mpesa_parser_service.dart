@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:isolate';
 
+import 'package:beltech/features/expenses/data/services/airtel_money_parser.dart';
 import 'package:beltech/features/expenses/data/services/generic_bank_parser.dart';
 import 'package:beltech/features/expenses/data/services/mpesa_parser_filters.dart';
 import 'package:beltech/features/expenses/data/services/mpesa_parser_models.dart';
@@ -29,6 +30,7 @@ class MpesaParserService {
   const MpesaParserService();
 
   static const _bankParser = GenericBankParser();
+  static const _airtelParser = AirtelMoneyParser();
   static const _decisionTree = TransactionDecisionTree();
 
   // Matches any 10-char alphanumeric token not surrounded by alphanumerics.
@@ -67,6 +69,13 @@ class MpesaParserService {
     r'sent to\s+([a-z0-9 .,&-]{3,}?)(?=\s+(?:for\s+(?:account|acc(?:ount)?)(?:\s*(?:no\.?|number|#))?|on)\b|[.]|$)',
     caseSensitive: false,
   );
+  // Fallback for the newer "Customer transfer of Ksh X to NAME" and
+  // "paybill payment to BILLER" phrasings that lack the literal "sent to".
+  // The name class excludes digits so it stops before a trailing phone number.
+  static final RegExp _transferToPattern = RegExp(
+    r"\bto\s+([a-z .,&'-]{3,}?)(?=\s+\d|\s+for\b|\s+on\b|[.]|$)",
+    caseSensitive: false,
+  );
   static final RegExp _receivedFromPattern = RegExp(
     r'received\b.*?\s+from\s+([a-z0-9 .,&-]{3,}?)(?=\s+on\b|[.]|$)',
     caseSensitive: false,
@@ -78,11 +87,11 @@ class MpesaParserService {
 
   // Fuliza-specific extraction patterns
   static final RegExp _fulizaOutstandingPattern = RegExp(
-    r'total\s+fuliza[^.]*outstanding\s+amount\s+is\s+(?:ksh|kes)\s*([\d,]+(?:\.\d{1,2})?)',
+    r'(?:total\s+fuliza[^.]*outstanding\s+amount\s+is|outstanding\s+amount\s+of)\s+(?:ksh|kes)\s*([\d,]+(?:\.\d{1,2})?)',
     caseSensitive: false,
   );
   static final RegExp _fulizaAvailableLimitPattern = RegExp(
-    r'available\s+fuliza[^.]*limit\s+is\s+(?:ksh|kes)\s*([\d,]+(?:\.\d{1,2})?)',
+    r'(?:(?:your\s+)?available\s+)?fuliza\s+m-?pesa\s+limit\s+is\s+(?:ksh|kes)\s*([\d,]+(?:\.\d{1,2})?)',
     caseSensitive: false,
   );
 
@@ -124,6 +133,11 @@ class MpesaParserService {
 
   /// Parses a list of [SmsParseJob]s off the main thread when the batch is
   /// large enough to justify isolate serialization overhead.
+  ///
+  /// NOTE: this drops unparseable jobs, so the result is NOT positionally
+  /// aligned with the input. Callers that need to map results back to their
+  /// source rows must key by [ParsedMpesaCandidate.sourceHash], or use
+  /// [parseJobsInIsolateAligned] instead.
   static Future<List<ParsedMpesaCandidate>> parseJobsInIsolate(
     List<SmsParseJob> jobs,
   ) async {
@@ -133,6 +147,30 @@ class MpesaParserService {
       return _parseJobsImpl(jobs);
     }
     return Isolate.run(() => _parseJobsImpl(jobs));
+  }
+
+  /// Synchronous, position-preserving batch parse. `result[i]` is the parse of
+  /// `jobs[i]` (or `null`). Runs on the calling thread — this is the entry the
+  /// [ParseIsolatePool] workers invoke inside their own isolate, so it must NOT
+  /// spawn further isolates.
+  static List<ParsedMpesaCandidate?> parseJobsAlignedSync(
+    List<SmsParseJob> jobs,
+  ) => _parseJobsAlignedImpl(jobs);
+
+  /// Like [parseJobsInIsolate] but returns a list **1:1 aligned** with [jobs]:
+  /// `result[i]` is the candidate for `jobs[i]`, or `null` when that job did
+  /// not parse. This is the index-safe API for the import pipeline, which maps
+  /// results back to queue rows positionally — dropping nulls (as the
+  /// non-aligned variant does) silently misaligns every row after the first
+  /// unparseable message.
+  static Future<List<ParsedMpesaCandidate?>> parseJobsInIsolateAligned(
+    List<SmsParseJob> jobs,
+  ) async {
+    if (jobs.isEmpty) return const [];
+    if (jobs.length < 50) {
+      return _parseJobsAlignedImpl(jobs);
+    }
+    return Isolate.run(() => _parseJobsAlignedImpl(jobs));
   }
 
   ParsedMpesaTransaction? parseSingle(String message) {
@@ -172,6 +210,61 @@ class MpesaParserService {
         bodyLower.contains('confirmed');
     if (!hasFinancialHint) return null;
 
+    // Airtel Money is dispatched first: its SMS use KES + AIR-prefixed IDs and
+    // would otherwise be misread by the M-Pesa path (a 10-char AIR code trips
+    // the M-Pesa "looks like" heuristic).
+    if (_airtelParser.canParse(message, sender: sender)) {
+      final airtel = _airtelParser.tryParse(
+        message,
+        sender: sender,
+        fallbackOccurredAt: fallbackOccurredAt,
+      );
+      if (airtel != null) return airtel;
+    }
+
+    // Bank senders (LOOP / I&M / PesaLink / NCBA / KCB / Equity …) are
+    // dispatched to the bank parser before the M-Pesa path. Their messages
+    // contain "KES"/"Ksh" so they'd otherwise pass `looksLikeMpesaMessage` and
+    // get mis-parsed or quarantined as M-Pesa.
+    //
+    // Guard: a *canonical* M-Pesa transaction (true alphanumeric 10-char code
+    // + "Confirmed" + M-Pesa keyword) is never hijacked — e.g. an M-Pesa SMS
+    // forwarded from a bank sender like "KCB: QQ12345678 Confirmed.
+    // Ksh1,250.00 sent to ..." must stay on the M-Pesa path (with the
+    // sender-aware downgrade). A bare 10-digit phone number does NOT count as
+    // an M-Pesa code, so Equity "Payment of KES to ... Till No. 0723853033"
+    // still goes to the bank parser.
+    final hasMpesaCode = RegExp(
+      r'(?<![a-z0-9])(?=[a-z0-9]*[A-Za-z])(?=[a-z0-9]*\d)[a-z0-9]{10}(?![a-z0-9])',
+      caseSensitive: false,
+    ).hasMatch(message);
+    final lowerBody = message.toLowerCase();
+    // A canonical M-Pesa transaction (true alphanumeric 10-char code +
+    // "Confirmed") stays on the M-Pesa path even from a bank sender — e.g.
+    // "KCB: QW12AB34CD Confirmed. Ksh1,250.00 sent to SKY CAFE..." is an
+    // M-Pesa message forwarded from a bank (sender-aware downgrade applies).
+    // Bank messages like Equity "Your transaction of Kshs. X has been
+    // credited ... MPESA Ref SL62FVV2H6" do NOT say "Confirmed" and their
+    // refs are longer codes, so they dispatch to the bank parser.
+    final canonicalMpesa = hasMpesaCode &&
+        lowerBody.contains('confirmed') &&
+        (lowerBody.contains('mpesa') || lowerBody.contains('m-pesa'));
+    if (!canonicalMpesa &&
+        GenericBankParser.looksLikeBankSms(message, sender: sender)) {
+      // OTP / verification codes and zero-amount card holds from bank senders
+      // are non-transactions — reject hard so the M-Pesa path doesn't
+      // resurrect them as quarantined rows.
+      if (GenericBankParser.isIgnorableBankSms(message)) {
+        return null;
+      }
+      final bankResult = _bankParser.tryParse(
+        message,
+        sender: sender,
+        fallbackOccurredAt: fallbackOccurredAt,
+      );
+      if (bankResult != null) return bankResult;
+    }
+
     final cleaned = normalizeParserText(message);
     if (cleaned.isEmpty ||
         !looksLikeMpesaMessage(cleaned) ||
@@ -196,6 +289,7 @@ class MpesaParserService {
     String? code = _extractMpesaCode(cleaned);
     if (code == null) {
       if (type == MpesaTransactionType.fulizaCharge ||
+          type == MpesaTransactionType.fulizaRepayment ||
           _isTrustedCodelessTransaction(
             cleaned,
             type: type,
@@ -203,9 +297,11 @@ class MpesaParserService {
           )) {
         // Derive a synthetic identifier from the message hash.
         final hash = sourceHash(cleaned);
-        final prefix = type == MpesaTransactionType.fulizaCharge
-            ? 'FCHG'
-            : 'SYN${type.name.substring(0, 3).toUpperCase()}';
+        final prefix = switch (type) {
+          MpesaTransactionType.fulizaCharge => 'FCHG',
+          MpesaTransactionType.fulizaRepayment => 'FREP',
+          _ => 'SYN${type.name.substring(0, 3).toUpperCase()}',
+        };
         code = '$prefix${hash.substring(0, 10 - prefix.length).toUpperCase()}';
       } else {
         return _buildQuarantine(
@@ -218,6 +314,7 @@ class MpesaParserService {
 
     final amount = _extractAmount(cleaned);
     if (type != MpesaTransactionType.fulizaCharge &&
+        type != MpesaTransactionType.fulizaRepayment &&
         (amount == null || amount <= 0)) {
       return _buildQuarantine(
         cleaned,
@@ -271,9 +368,12 @@ class MpesaParserService {
 
     // Structural cross-check: a real (non-synthetic) 10-char code must appear
     // verbatim in the message. If not, the regex extracted something spurious.
+    // Synthetic codes (SYN/FCHG/FREP prefixes) are derived from the message
+    // hash and never appear verbatim — they are exempt.
     final isRealCode = code.length == 10 &&
         !code.startsWith('SYN') &&
-        !code.startsWith('FCHG');
+        !code.startsWith('FCHG') &&
+        !code.startsWith('FREP');
     if (isRealCode && !cleaned.toUpperCase().contains(code.toUpperCase())) {
       return _buildQuarantine(
         cleaned,
@@ -319,7 +419,21 @@ class MpesaParserService {
     // Stage 2 — decision-tree second opinion on the final confidence. If the
     // tree sees no reliable signals (tree=LOW) while confidence is still HIGH,
     // demote to review. The tree never upgrades — parser/scorer win on that.
-    if (_decisionTree.shouldDemote(cleaned, finalConfidence)) {
+    //
+    // Structurally unambiguous types (airtime, deposit, withdrawal, Fuliza
+    // charge) are exempt: their classification comes from a distinctive
+    // keyword + amount, not from a transaction code or date corroboration, so
+    // the tree's signal tests would spuriously demote perfectly good entries
+    // to the review queue.
+    final isStructurallyClear = switch (candidate.transactionType) {
+      MpesaTransactionType.airtime ||
+      MpesaTransactionType.deposit ||
+      MpesaTransactionType.withdrawal ||
+      MpesaTransactionType.fulizaCharge => true,
+      _ => false,
+    };
+    if (!isStructurallyClear &&
+        _decisionTree.shouldDemote(cleaned, finalConfidence)) {
       finalConfidence = MpesaConfidence.medium;
     }
 
@@ -444,14 +558,22 @@ class MpesaParserService {
   }
 
   String? _extractCounterparty(String message, MpesaTransactionType type) {
-    final pattern = switch (type) {
-      MpesaTransactionType.sent => _sentToPattern,
-      MpesaTransactionType.received => _receivedFromPattern,
-      MpesaTransactionType.paybill => _sentToPattern,
-      MpesaTransactionType.buyGoods => _paidToPattern,
-      _ => null,
-    };
-    final value = pattern?.firstMatch(message)?.group(1)?.trim();
+    String? value;
+    switch (type) {
+      case MpesaTransactionType.sent:
+      case MpesaTransactionType.paybill:
+        // "sent to NAME" / "sent to BILLER for account …" first, then the
+        // "customer transfer of … to NAME" / "paybill payment to BILLER"
+        // fallback so the newer phrasings still get a counterparty.
+        value = _sentToPattern.firstMatch(message)?.group(1)?.trim() ??
+            _transferToPattern.firstMatch(message)?.group(1)?.trim();
+      case MpesaTransactionType.received:
+        value = _receivedFromPattern.firstMatch(message)?.group(1)?.trim();
+      case MpesaTransactionType.buyGoods:
+        value = _paidToPattern.firstMatch(message)?.group(1)?.trim();
+      default:
+        value = null;
+    }
     return value == null || value.isEmpty
         ? null
         : cleanCounterparty(titleCaseWords(value));
@@ -583,14 +705,50 @@ List<ParsedMpesaCandidate> _parseJobsImpl(List<SmsParseJob> jobs) {
       fallbackOccurredAt: job.fallbackOccurredAt,
       sender: job.sender,
     );
-    parsed ??= parser.parseSingleDetailed(
-      'UNKNOWN Confirmed. Ksh0.00 ${job.rawMessage}',
-      fallbackOccurredAt: job.fallbackOccurredAt,
-      sender: job.sender,
-    );
+    // Only apply the "UNKNOWN Confirmed" fallback when the message isn't a
+    // known-ignore (failed transaction, balance-only notice, etc.) — the
+    // fallback prepends "Confirmed", which would otherwise defeat the ignore
+    // filters and resurrect these as quarantined rows.
+    if (parsed == null &&
+        !shouldIgnoreMpesaSms(normalizeParserText(job.rawMessage))) {
+      parsed = parser.parseSingleDetailed(
+        'UNKNOWN Confirmed. Ksh0.00 ${job.rawMessage}',
+        fallbackOccurredAt: job.fallbackOccurredAt,
+        sender: job.sender,
+      );
+    }
     if (parsed != null) {
       results.add(parsed);
     }
+  }
+  return results;
+}
+
+/// Position-preserving variant of [_parseJobsImpl]: `result[i]` corresponds to
+/// `jobs[i]` (or `null` when unparseable), so callers can zip results back to
+/// their source rows by index safely.
+List<ParsedMpesaCandidate?> _parseJobsAlignedImpl(List<SmsParseJob> jobs) {
+  const parser = MpesaParserService();
+  final results = List<ParsedMpesaCandidate?>.filled(jobs.length, null);
+  for (var i = 0; i < jobs.length; i++) {
+    final job = jobs[i];
+    var parsed = parser.parseSingleDetailed(
+      job.rawMessage,
+      fallbackOccurredAt: job.fallbackOccurredAt,
+      sender: job.sender,
+    );
+    // Skip the "UNKNOWN Confirmed" fallback for known-ignore messages (failed
+    // transactions, balance-only notices) — it would resurrect them as
+    // quarantined rows.
+    if (parsed == null &&
+        !shouldIgnoreMpesaSms(normalizeParserText(job.rawMessage))) {
+      parsed = parser.parseSingleDetailed(
+        'UNKNOWN Confirmed. Ksh0.00 ${job.rawMessage}',
+        fallbackOccurredAt: job.fallbackOccurredAt,
+        sender: job.sender,
+      );
+    }
+    results[i] = parsed;
   }
   return results;
 }

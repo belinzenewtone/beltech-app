@@ -6,13 +6,17 @@ class AppSpacing {
   AppSpacing._();
 
   // ── Tokens ───────────────────────────────────────────────────────────────────
+  // Kotlin-parity compact scale: 4 / 8 / 12 / 16 / 24 / 32 / 48.
+  // The mid-range (md/lg/xl) was previously inflated (16/24/32) which made
+  // gaps and whitespace feel oversized. These are the primary spacing units
+  // (md is used ~145×, sm ~147×), so tightening them compacts the whole app.
   static const double xs = 4;
   static const double sm = 8;
-  static const double md = 16;
-  static const double lg = 24;
-  static const double xl = 32;
-  static const double xxl = 48;
-  static const double xxxl = 64;
+  static const double md = 12; // was 16 — Kotlin md
+  static const double lg = 16; // was 24 — Kotlin lg
+  static const double xl = 24; // was 32 — Kotlin xl
+  static const double xxl = 32; // was 48 — Kotlin xxl
+  static const double xxxl = 48; // was 64
 
   // ── Layout ───────────────────────────────────────────────────────────────────
   static const double screenHorizontal =
@@ -21,12 +25,12 @@ class AppSpacing {
   static const double shellHorizontal = sm; // 8 (was 16)
   static const double contentBottomSafe =
       20; // Consistent bottom padding across all screens
-  static const double sectionBottom = 16; // reduced from 20
+  static const double sectionBottom = 12; // reduced from 16
   static const double fabBottomOffset = 132; // RN fabBottom
 
   // ── Gaps ─────────────────────────────────────────────────────────────────────
   /// Between two sibling section blocks
-  static const double sectionGap = 20; // RN sectionGap
+  static const double sectionGap = 16; // was 20 — tighter section rhythm
 
   /// Between a section header and its first card
   static const double sectionHeaderGap = md; // RN headerGap

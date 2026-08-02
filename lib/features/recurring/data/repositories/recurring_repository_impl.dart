@@ -128,6 +128,15 @@ class RecurringRepositoryImpl implements RecurringRepository {
               null,
             ],
           );
+          // Keep the P3 rollup aggregates in sync — this raw insert bypasses
+          // addTransaction, so the dashboard (which now reads rollups) would
+          // otherwise miss materialized recurring expenses until a restart.
+          await _store.applyRollupDelta(
+            category: category ?? 'Other',
+            amount: amount,
+            occurredAtMs: when.millisecondsSinceEpoch,
+            sign: 1,
+          );
           inserted += 1;
         case RecurringKind.income:
           await _store.executor.runInsert(

@@ -5,6 +5,8 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:beltech/core/widgets/sms_permission_rationale.dart';
 import 'package:beltech/features/expenses/data/services/generic_bank_parser.dart';
 import 'package:beltech/features/expenses/data/services/mpesa_parser_filters.dart';
+import 'package:beltech/features/expenses/domain/entities/expense_import_detection.dart';
+import 'package:beltech/features/expenses/domain/entities/expense_import_window.dart';
 import 'package:beltech/features/expenses/data/services/mpesa_parser_text.dart';
 
 typedef SmsPermissionRequester = Future<bool> Function();
@@ -69,7 +71,10 @@ class DeviceSmsDataSource {
     return entries.map((entry) => entry.body).toList(growable: false);
   }
 
-  Future<List<SmsInboxEntry>> loadLikelyMpesaEntries({DateTime? from}) async {
+  Future<List<SmsInboxEntry>> loadLikelyMpesaEntries({
+    DateTime? from,
+    ImportSourceFilter filter = ImportSourceFilter.both,
+  }) async {
     if (!_isAndroid()) {
       return const [];
     }
@@ -112,7 +117,14 @@ class DeviceSmsDataSource {
           normalized,
           sender: message.address,
         );
-        if (!mpesaSender && !mpesaBody && !bankBody) {
+        final isMpesa = mpesaSender || mpesaBody;
+        final isBank = bankBody;
+        final matchesFilter = switch (filter) {
+          ImportSourceFilter.mpesa => isMpesa,
+          ImportSourceFilter.banks => isBank && !isMpesa,
+          ImportSourceFilter.both => isMpesa || isBank,
+        };
+        if (!matchesFilter) {
           continue;
         }
         result.add(
@@ -139,6 +151,82 @@ class DeviceSmsDataSource {
       }
     }
     return result;
+  }
+
+  /// Detect-only scan: counts financial messages per institution for the time
+  /// window, without importing or parsing anything. Mirrors the Kotlin
+  /// `AndroidMpesaHistoricalImportScanner.detect()`: it uses a loose
+  /// sender/institution classifier so the preview reflects everything an
+  /// import would find, not just what the strict parser accepts.
+  Future<Map<String, int>> detectInstitutionCounts({
+    DateTime? from,
+    ImportSourceFilter filter = ImportSourceFilter.both,
+  }) async {
+    if (!_isAndroid()) {
+      return const {};
+    }
+    if (!await _requestPermission()) {
+      return const {};
+    }
+
+    final counts = <String, int>{};
+    for (var start = 0;; start += _chunkSize) {
+      final messages = await _queryRunner(
+        _query,
+        start: start,
+        count: _chunkSize,
+      );
+      if (messages.isEmpty) {
+        break;
+      }
+
+      DateTime? oldestInChunk;
+      for (final message in messages) {
+        final body = message.body?.trim() ?? '';
+        if (body.isEmpty) {
+          continue;
+        }
+        final at = message.date;
+        if (from != null && (at == null || at.isBefore(from))) {
+          continue;
+        }
+        if (at != null &&
+            (oldestInChunk == null || at.isBefore(oldestInChunk))) {
+          oldestInChunk = at;
+        }
+
+        final sender = (message.address ?? '').toLowerCase();
+        final isMpesa =
+            sender.contains('mpesa') ||
+            body.toLowerCase().contains('m-pesa') ||
+            body.toLowerCase().contains('mpesa');
+        final isBank = GenericBankParser.looksLikeBankSms(
+          body,
+          sender: message.address,
+        );
+        final matchesFilter = switch (filter) {
+          ImportSourceFilter.mpesa => isMpesa,
+          ImportSourceFilter.banks => isBank && !isMpesa,
+          ImportSourceFilter.both => isMpesa || isBank,
+        };
+        if (!matchesFilter) {
+          continue;
+        }
+
+        final id = detectInstitutionId(sender, body);
+        counts[id] = (counts[id] ?? 0) + 1;
+      }
+
+      if (from != null &&
+          oldestInChunk != null &&
+          oldestInChunk.isBefore(from)) {
+        break;
+      }
+      if (messages.length < _chunkSize) {
+        break;
+      }
+    }
+    return counts;
   }
 
   static bool _defaultIsAndroid() =>

@@ -103,7 +103,7 @@ class _ToolPill extends StatelessWidget {
           border: Border.all(
             color: iconColor.withValues(alpha: isLight ? 0.24 : 0.32),
           ),
-          borderRadius: BorderRadius.circular(AppRadius.full),
+          borderRadius: BorderRadius.circular(AppRadius.lg),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,

@@ -40,7 +40,7 @@ class AppFab extends StatelessWidget {
           padding: EdgeInsets.symmetric(horizontal: showLabel ? 20 : 17),
           decoration: BoxDecoration(
             color: AppColors.accent,
-            borderRadius: BorderRadius.circular(999),
+            borderRadius: BorderRadius.circular(16),
             boxShadow: [
               BoxShadow(
                 color: AppColors.accent.withValues(alpha: 0.30),
@@ -71,6 +71,7 @@ class AppFab extends StatelessWidget {
                           fontSize: 15,
                           fontWeight: FontWeight.w600,
                           height: 1.2,
+                          decoration: TextDecoration.none,
                         ),
                       ),
                     ],

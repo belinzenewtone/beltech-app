@@ -38,9 +38,14 @@ class _AssistantScreenState extends ConsumerState<AssistantScreen> {
     final secondaryText = AppColors.textSecondaryFor(brightness);
     final messagesState = ref.watch(assistantMessagesProvider);
     final suggestions = ref.watch(assistantSuggestionsProvider);
-    final writeState = ref.watch(assistantWriteControllerProvider);
-    final conversationState = ref.watch(
-      assistantConversationControllerProvider,
+    // Narrowed to the loading bool: sending a message flips this controller,
+    // and watching the whole AsyncValue would rebuild the entire screen (prompt
+    // grid + full conversation list) just to toggle the send spinner.
+    final sending = ref.watch(
+      assistantWriteControllerProvider.select((s) => s.isLoading),
+    );
+    final conversationBusy = ref.watch(
+      assistantConversationControllerProvider.select((s) => s.isLoading),
     );
 
     ref.listen<AsyncValue<void>>(assistantWriteControllerProvider, (
@@ -78,7 +83,7 @@ class _AssistantScreenState extends ConsumerState<AssistantScreen> {
             action: AssistantPillButton(
               icon: Icons.add_rounded,
               label: 'New chat',
-              onTap: hasMessages && !conversationState.isLoading
+              onTap: hasMessages && !conversationBusy
                   ? _confirmClearChats
                   : null,
             ),
@@ -116,7 +121,7 @@ class _AssistantScreenState extends ConsumerState<AssistantScreen> {
             padding: const EdgeInsets.fromLTRB(0, 6, 0, 8),
             child: AppCard(
               tone: AppCardTone.muted,
-              borderRadius: AppRadius.full,
+              borderRadius: AppRadius.xxl,
               padding: const EdgeInsets.fromLTRB(16, 6, 6, 6),
               child: Row(
                 children: [
@@ -140,7 +145,7 @@ class _AssistantScreenState extends ConsumerState<AssistantScreen> {
                   ),
                   const SizedBox(width: 6),
                   AssistantSendButton(
-                    loading: writeState.isLoading,
+                    loading: sending,
                     onTap: () => _sendMessage(_messageController.text),
                   ),
                 ],

@@ -3,6 +3,7 @@ import 'package:beltech/core/theme/app_colors.dart';
 import 'package:beltech/core/theme/app_spacing.dart';
 import 'package:beltech/core/theme/app_typography.dart';
 import 'package:beltech/core/widgets/app_button.dart';
+import 'package:beltech/core/widgets/app_background.dart';
 import 'package:beltech/core/widgets/app_card.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -113,11 +114,11 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final brightness = Theme.of(context).brightness;
     return Scaffold(
-      backgroundColor: AppColors.backgroundFor(brightness),
-      body: SafeArea(
-        child: Column(
+      backgroundColor: Colors.transparent,
+      body: AppBackground(
+        child: SafeArea(
+          child: Column(
           children: [
             Align(
               alignment: Alignment.topRight,
@@ -158,7 +159,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                             height: 96,
                             decoration: BoxDecoration(
                               color: AppColors.accent.withValues(alpha: 0.12),
-                              shape: BoxShape.circle,
+                              borderRadius: BorderRadius.circular(18),
                               border: Border.all(
                                 color: AppColors.accent.withValues(alpha: 0.25),
                                 width: 1.5,
@@ -231,6 +232,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             ),
           ],
         ),
+      ),
       ),
     );
   }

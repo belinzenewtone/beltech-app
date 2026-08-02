@@ -13,6 +13,7 @@ class _DirectInsert {
 Future<int> _processDueQueueImpl(
   ExpensesRepositoryImpl repo, {
   DateTime? from,
+  void Function(int done, int total)? onProgress,
 }) async {
   final now = DateTime.now();
   final rows = await repo._store.executor.runSelect(
@@ -26,46 +27,89 @@ Future<int> _processDueQueueImpl(
     return 0;
   }
 
+  // P6: a large drain parses the WHOLE batch in parallel across a reused
+  // isolate pool up front (behind the bulkImportV2 flag), then persists
+  // chunk-by-chunk. Parsing chunk-at-a-time through the pool would keep every
+  // worker but one idle; parseAll spreads the batch across all of them.
+  final pool = (repo.useIsolatePool && rows.length >= _queueProcessChunkSize)
+      ? ParseIsolatePool()
+      : null;
+
   var imported = 0;
-  for (var i = 0; i < rows.length; i += _queueProcessChunkSize) {
-    final chunk = rows.sublist(
-      i,
-      (i + _queueProcessChunkSize).clamp(0, rows.length),
-    );
-    try {
-      imported += await _processQueueChunk(repo, chunk, from: from);
-    } catch (error) {
-      // If a batch fails (e.g. constraint violation in one row), fall back to
-      // the original one-by-one path so retries and per-row failures work.
-      imported += await _processQueueChunkRowByRow(repo, chunk, from: from);
+  try {
+    List<ParsedMpesaCandidate?>? allCandidates;
+    if (pool != null) {
+      final allJobs = rows
+          .map((row) => _jobForRow(repo, row))
+          .toList(growable: false);
+      // Aligned 1:1 with rows, in order — safe to slice per chunk below.
+      allCandidates = await pool.parseAll(
+        allJobs,
+        chunkSize: _queueProcessChunkSize,
+      );
     }
+
+    for (var i = 0; i < rows.length; i += _queueProcessChunkSize) {
+      final end = (i + _queueProcessChunkSize).clamp(0, rows.length);
+      final chunk = rows.sublist(i, end);
+      final preParsed = allCandidates?.sublist(i, end);
+      try {
+        imported += await _processQueueChunk(
+          repo,
+          chunk,
+          from: from,
+          preParsed: preParsed,
+        );
+      } catch (error) {
+        // If a batch fails (e.g. constraint violation in one row), fall back to
+        // the original one-by-one path so retries and per-row failures work.
+        imported += await _processQueueChunkRowByRow(repo, chunk, from: from);
+      }
+      onProgress?.call(end, rows.length);
+      // Yield to the UI thread between chunks so the app stays responsive
+      // during large (e.g. 90-day) imports instead of becoming unusable.
+      await Future<void>.delayed(Duration.zero);
+    }
+  } finally {
+    await pool?.dispose();
   }
   repo._store.emitChange();
   return imported;
+}
+
+/// Builds the parse job for a queue row (raw body + source-timestamp fallback).
+SmsParseJob _jobForRow(ExpensesRepositoryImpl repo, Map<String, Object?> row) {
+  final raw = '${row['raw_message'] ?? ''}';
+  final sourceTimestampRaw = row['source_timestamp'];
+  final fallback = sourceTimestampRaw == null
+      ? null
+      : DateTime.fromMillisecondsSinceEpoch(repo._asInt(sourceTimestampRaw));
+  return SmsParseJob(raw, fallbackOccurredAt: fallback);
 }
 
 Future<int> _processQueueChunk(
   ExpensesRepositoryImpl repo,
   List<Map<String, Object?>> rows, {
   DateTime? from,
+  List<ParsedMpesaCandidate?>? preParsed,
 }) async {
   final nowMs = DateTime.now().millisecondsSinceEpoch;
-  final jobs = rows.map((row) {
-    final raw = '${row['raw_message'] ?? ''}';
-    final sourceTimestampRaw = row['source_timestamp'];
-    final fallback = sourceTimestampRaw == null
-        ? null
-        : DateTime.fromMillisecondsSinceEpoch(
-            repo._asInt(sourceTimestampRaw),
-          );
-    return SmsParseJob(raw, fallbackOccurredAt: fallback);
-  }).toList(growable: false);
 
-  final candidates = await MpesaParserService.parseJobsInIsolate(jobs);
+  // Aligned parse: candidates[i] corresponds 1:1 to rows[i] (with `null` for
+  // unparseable rows). [preParsed] is supplied when the whole drain was parsed
+  // up front through the isolate pool; otherwise parse this chunk now. Mapping
+  // by index is only safe because the list is guaranteed 1:1 with rows — the
+  // non-aligned parseJobsInIsolate dropped nulls and would misalign every
+  // subsequent row after the first unparseable message.
+  final candidates = preParsed ??
+      await MpesaParserService.parseJobsInIsolateAligned(
+        rows.map((row) => _jobForRow(repo, row)).toList(growable: false),
+      );
   final candidateByQueueId = <int, ParsedMpesaCandidate>{};
-  for (var i = 0; i < candidates.length && i < rows.length; i++) {
-    final queueId = repo._asInt(rows[i]['id']);
-    candidateByQueueId[queueId] = candidates[i];
+  for (var i = 0; i < rows.length && i < candidates.length; i++) {
+    final candidate = candidates[i];
+    if (candidate == null) continue;
+    candidateByQueueId[repo._asInt(rows[i]['id'])] = candidate;
   }
 
   final directRows = <_DirectInsert>[];
@@ -137,6 +181,20 @@ Future<int> _processQueueChunk(
     final queueId = direct.queueId;
     final candidate = direct.candidate;
     try {
+      // A Fuliza limit notice ("Your available Fuliza M-PESA limit is Ksh X")
+      // carries no ledger transaction, but it updates the tracked limit.
+      // Persist it so the Fuliza card reflects the latest value after import.
+      final parsedLimit = candidate.fulizaAvailableLimitKes;
+      if (parsedLimit != null && parsedLimit > 0) {
+        await _persistFulizaLimitIfHigher(parsedLimit);
+      }
+      // The authoritative outstanding balance stated in a charge notice or
+      // limit summary ("Total Fuliza M-PESA outstanding amount is Ksh X") is
+      // far more accurate than summing draw/repayment events. Persist it.
+      final parsedOutstanding = candidate.fulizaOutstandingKes;
+      if (parsedOutstanding != null && parsedOutstanding >= 0) {
+        await _persistFulizaOutstanding(parsedOutstanding);
+      }
       if (candidate.transactionType == MpesaTransactionType.fulizaCharge) {
         await _upsertPaybillAndFulizaImpl(repo, candidate);
         auditBatch.add(_auditRow(candidate, 'fuliza_balance_update'));
@@ -430,6 +488,26 @@ Future<int> _replayImportQueueImpl(ExpensesRepositoryImpl repo) async {
     ['pending', nowMs, 'local', 'retry', 'failed'],
   );
   return _processDueQueueImpl(repo);
+}
+
+/// Persists a Fuliza available-limit value parsed from SMS, only raising the
+/// stored limit (a limit increase notice is authoritative; never lower it
+/// from an older message that imported out of order).
+Future<void> _persistFulizaLimitIfHigher(double limit) async {
+  final prefs = await SharedPreferences.getInstance();
+  final current = prefs.getDouble('fuliza_limit') ?? 0.0;
+  if (limit > current) {
+    await prefs.setDouble('fuliza_limit', limit);
+  }
+}
+
+/// Persists the authoritative Fuliza outstanding balance stated in a charge
+/// notice or limit summary. Uses the *most recent* value (not the max), since
+/// outstanding decreases as the user repays and a stale higher value would be
+/// wrong.
+Future<void> _persistFulizaOutstanding(double outstanding) async {
+  final prefs = await SharedPreferences.getInstance();
+  await prefs.setDouble('fuliza_outstanding', outstanding);
 }
 
 Future<void> _insertDirectImpl(

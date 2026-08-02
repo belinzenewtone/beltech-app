@@ -1,8 +1,10 @@
 import 'dart:async';
 
 import 'package:beltech/core/di/database_providers.dart';
+import 'package:beltech/core/di/notification_providers.dart';
 import 'package:beltech/core/di/repository_providers.dart';
 import 'package:beltech/features/expenses/domain/services/balance_reconciliation_service.dart';
+import 'package:beltech/features/expenses/domain/entities/expense_import_detection.dart';
 import 'package:beltech/features/expenses/domain/entities/expense_import_window.dart';
 import 'package:beltech/features/expenses/domain/entities/expense_import_intelligence.dart';
 import 'package:beltech/features/expenses/domain/entities/expense_import_review.dart';
@@ -100,10 +102,21 @@ final balanceReconciliationProvider =
   },
 );
 
-/// Computes the current outstanding Fuliza balance from all recorded events.
-/// Positive = money owed; 0 = fully repaid or no activity.
+/// Computes the current outstanding Fuliza balance.
+///
+/// Prefers the authoritative value last stated in an SMS charge notice /
+/// limit summary ("Total Fuliza M-PESA outstanding amount is Ksh X"), which is
+/// far more accurate than summing draw/repayment events (those drift when the
+/// wallet is topped up via other channels). Falls back to the event-sum when
+/// no authoritative value has been seen.
 final fulizaOutstandingBalanceProvider = FutureProvider<double>((ref) async {
   ref.watch(expensesSnapshotProvider);
+  final authoritative = await ref
+      .watch(localNotificationServiceProvider)
+      .getFulizaOutstanding();
+  if (authoritative > 0) {
+    return authoritative;
+  }
   final events = await ref
       .watch(expensesRepositoryProvider)
       .fetchFulizaLifecycle(limit: 500);
@@ -179,6 +192,15 @@ class ExpenseWriteController extends AsyncNotifier<void> {
     });
   }
 
+  void _reportProgress(int done, int total) {
+    ref.read(importProgressProvider.notifier).state =
+        ImportProgress(done: done, total: total);
+  }
+
+  void _clearProgress() {
+    ref.read(importProgressProvider.notifier).state = null;
+  }
+
   Future<int> importSmsPayload(
     String payload, {
     required ExpenseImportWindow window,
@@ -193,11 +215,13 @@ class ExpenseWriteController extends AsyncNotifier<void> {
     }
     final from = fromWindow(window);
     state = const AsyncLoading();
+    _reportProgress(0, lines.length);
     final result = await AsyncValue.guard(
       () => ref
           .read(importExpensesUseCaseProvider)
-          .importRawMessages(lines, from: from),
+          .importRawMessages(lines, from: from, onProgress: _reportProgress),
     );
+    _clearProgress();
     if (result.hasError) {
       state = AsyncError(
         result.error!,
@@ -210,13 +234,19 @@ class ExpenseWriteController extends AsyncNotifier<void> {
     return result.value ?? 0;
   }
 
-  Future<int> importFromDevice({required ExpenseImportWindow window}) async {
+  Future<int> importFromDevice({
+    required ExpenseImportWindow window,
+    ImportSourceFilter filter = ImportSourceFilter.both,
+  }) async {
     state = const AsyncLoading();
     final result = await AsyncValue.guard(
-      () => ref
-          .read(importExpensesUseCaseProvider)
-          .importFromDevice(from: fromWindow(window)),
+      () => ref.read(importExpensesUseCaseProvider).importFromDevice(
+            from: fromWindow(window),
+            filter: filter,
+            onProgress: _reportProgress,
+          ),
     );
+    _clearProgress();
     if (result.hasError) {
       state = AsyncError(
         result.error!,
@@ -227,6 +257,18 @@ class ExpenseWriteController extends AsyncNotifier<void> {
     state = const AsyncData(null);
     _invalidateImportReviewCaches();
     return result.value ?? 0;
+  }
+
+  /// Detect-only scan: counts financial messages per institution for the
+  /// window/filter so the UI can preview before the user commits to importing.
+  Future<ExpenseImportDetection> detectFromDevice({
+    required ExpenseImportWindow window,
+    ImportSourceFilter filter = ImportSourceFilter.both,
+  }) async {
+    return ref.read(importExpensesUseCaseProvider).detectFromDevice(
+          from: fromWindow(window),
+          filter: filter,
+        );
   }
 
   Future<void> approveReviewItem(int reviewId) async {
@@ -282,6 +324,8 @@ class ExpenseWriteController extends AsyncNotifier<void> {
     ref.invalidate(expenseQuarantineQueueProvider);
     ref.invalidate(expensePaybillProfilesProvider);
     ref.invalidate(expenseFulizaLifecycleProvider);
+    // Imported SMS may carry an updated Fuliza available-limit value.
+    ref.invalidate(fulizaLimitProvider);
   }
 }
 
@@ -289,11 +333,14 @@ DateTime fromWindow(ExpenseImportWindow window) {
   final now = DateTime.now();
   return switch (window) {
     ExpenseImportWindow.last24Hours => now.subtract(const Duration(hours: 24)),
-    ExpenseImportWindow.last7Days => now.subtract(const Duration(days: 7)),
-    ExpenseImportWindow.last30Days => now.subtract(const Duration(days: 30)),
-    ExpenseImportWindow.last90Days => now.subtract(const Duration(days: 90)),
+    ExpenseImportWindow.lastMonth => now.subtract(const Duration(days: 30)),
+    ExpenseImportWindow.last3Months => now.subtract(const Duration(days: 90)),
+    ExpenseImportWindow.last6Months => now.subtract(const Duration(days: 180)),
   };
 }
+
+/// Live import progress for the UI (null when no import is running).
+final importProgressProvider = StateProvider<ImportProgress?>((ref) => null);
 
 final expenseWriteControllerProvider =
     AsyncNotifierProvider<ExpenseWriteController, void>(

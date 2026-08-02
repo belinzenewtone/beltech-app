@@ -16,6 +16,11 @@ import 'package:beltech/core/theme/app_colors.dart';
 class AppTypography {
   AppTypography._();
 
+  /// Base Inter style, resolved once. Every helper builds from this via
+  /// `copyWith` instead of re-invoking `GoogleFonts.inter(...)` per Text per
+  /// frame — the font lookup happens a single time, not on every text render.
+  static final TextStyle _inter = GoogleFonts.inter();
+
   // ── Font Sizes ──────────────────────────────────────────────────────────────
   static const double xs = 12;
   static const double sm = 13;
@@ -28,7 +33,7 @@ class AppTypography {
   // ── Page-level ───────────────────────────────────────────────────────────────
 
   /// 26px w600 — screen main title
-  static TextStyle pageTitle(BuildContext context) => GoogleFonts.inter(
+  static TextStyle pageTitle(BuildContext context) => _inter.copyWith(
     fontSize: 26,
     fontWeight: FontWeight.w600,
     height: 32 / 26,
@@ -40,7 +45,7 @@ class AppTypography {
   static TextStyle screenTitle(BuildContext context) => pageTitle(context);
 
   /// 11px w600 uppercase + letter-spacing — label above a title
-  static TextStyle eyebrow(BuildContext context) => GoogleFonts.inter(
+  static TextStyle eyebrow(BuildContext context) => _inter.copyWith(
     fontSize: 11,
     fontWeight: FontWeight.w600,
     letterSpacing: 0.5,
@@ -52,7 +57,7 @@ class AppTypography {
   // ── Section-level ────────────────────────────────────────────────────────────
 
   /// 17px w600 — section label
-  static TextStyle sectionTitle(BuildContext context) => GoogleFonts.inter(
+  static TextStyle sectionTitle(BuildContext context) => _inter.copyWith(
     fontSize: 17,
     fontWeight: FontWeight.w600,
     height: 24 / 17,
@@ -63,7 +68,7 @@ class AppTypography {
   // ── Card-level ───────────────────────────────────────────────────────────────
 
   /// 15px w600 — card heading
-  static TextStyle cardTitle(BuildContext context) => GoogleFonts.inter(
+  static TextStyle cardTitle(BuildContext context) => _inter.copyWith(
     fontSize: 15,
     fontWeight: FontWeight.w600,
     height: 22 / 15,
@@ -75,7 +80,7 @@ class AppTypography {
   static TextStyle title(BuildContext context) => sectionTitle(context);
 
   /// 20px w600 — small headline
-  static TextStyle headlineSm(BuildContext context) => GoogleFonts.inter(
+  static TextStyle headlineSm(BuildContext context) => _inter.copyWith(
     fontSize: 20,
     fontWeight: FontWeight.w600,
     height: 28 / 20,
@@ -84,7 +89,7 @@ class AppTypography {
   );
 
   /// 24px w600 — medium headline
-  static TextStyle headlineMd(BuildContext context) => GoogleFonts.inter(
+  static TextStyle headlineMd(BuildContext context) => _inter.copyWith(
     fontSize: 24,
     fontWeight: FontWeight.w600,
     height: 32 / 24,
@@ -95,7 +100,7 @@ class AppTypography {
   // ── Body ─────────────────────────────────────────────────────────────────────
 
   /// 15px w400 — default body copy
-  static TextStyle bodyMd(BuildContext context) => GoogleFonts.inter(
+  static TextStyle bodyMd(BuildContext context) => _inter.copyWith(
     fontSize: 15,
     fontWeight: FontWeight.w400,
     height: 22 / 15,
@@ -107,7 +112,7 @@ class AppTypography {
   static TextStyle body(BuildContext context) => bodyMd(context);
 
   /// 13px w400 — small supporting text, metadata
-  static TextStyle bodySm(BuildContext context) => GoogleFonts.inter(
+  static TextStyle bodySm(BuildContext context) => _inter.copyWith(
     fontSize: 13,
     fontWeight: FontWeight.w400,
     height: 20 / 13,
@@ -118,7 +123,7 @@ class AppTypography {
   // ── Numeric / financial ──────────────────────────────────────────────────────
 
   /// 22px w700 — inline amounts on cards
-  static TextStyle amount(BuildContext context) => GoogleFonts.inter(
+  static TextStyle amount(BuildContext context) => _inter.copyWith(
     fontSize: 22,
     fontWeight: FontWeight.w700,
     height: 28 / 22,
@@ -130,7 +135,7 @@ class AppTypography {
   static TextStyle statNumber(BuildContext context) => amount(context);
 
   /// 30px w700 — hero amounts (balance, total)
-  static TextStyle amountLg(BuildContext context) => GoogleFonts.inter(
+  static TextStyle amountLg(BuildContext context) => _inter.copyWith(
     fontSize: 30,
     fontWeight: FontWeight.w700,
     height: 36 / 30,
@@ -143,7 +148,7 @@ class AppTypography {
   /// 12px w400 — chart axis labels, timestamp chips, fine-print metadata
   ///
   /// Use this instead of inline `TextStyle(fontSize: 12)` calls.
-  static TextStyle metaText(BuildContext context) => GoogleFonts.inter(
+  static TextStyle metaText(BuildContext context) => _inter.copyWith(
     fontSize: 12,
     fontWeight: FontWeight.w400,
     height: 18 / 12,
@@ -152,7 +157,7 @@ class AppTypography {
   );
 
   /// 12px w500 — small uppercase labels, form section headers
-  static TextStyle label(BuildContext context) => GoogleFonts.inter(
+  static TextStyle label(BuildContext context) => _inter.copyWith(
     fontSize: 12,
     fontWeight: FontWeight.w500,
     height: 18 / 12,

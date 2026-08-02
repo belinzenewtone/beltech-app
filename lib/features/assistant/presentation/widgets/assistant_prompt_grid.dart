@@ -55,7 +55,7 @@ class _PromptPill extends StatelessWidget {
         decoration: BoxDecoration(
           color: AppColors.surfaceMutedFor(brightness),
           border: Border.all(color: AppColors.accent.withValues(alpha: 0.35)),
-          borderRadius: BorderRadius.circular(AppRadius.full),
+          borderRadius: BorderRadius.circular(AppRadius.lg),
         ),
         child: Text(
           label,

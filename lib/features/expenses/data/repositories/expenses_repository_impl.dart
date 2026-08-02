@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:beltech/core/isolate/parse_isolate_pool.dart';
 import 'package:beltech/data/local/drift/app_drift_store.dart';
 import 'package:beltech/data/local/drift/app_drift_store_mutations.dart';
 import 'package:beltech/features/expenses/data/services/category_inference_engine.dart';
@@ -7,13 +8,16 @@ import 'package:beltech/features/expenses/data/services/device_sms_data_source.d
 import 'package:beltech/features/expenses/data/services/merchant_learning_service.dart';
 import 'package:beltech/features/expenses/data/services/mpesa_parser_models.dart';
 import 'package:beltech/features/expenses/data/services/mpesa_parser_service.dart';
+import 'package:beltech/features/expenses/domain/entities/expense_import_detection.dart';
 import 'package:beltech/features/expenses/domain/entities/expense_import_intelligence.dart';
 import 'package:beltech/features/expenses/domain/entities/expense_import_review.dart';
+import 'package:beltech/features/expenses/domain/entities/expense_import_window.dart';
 import 'package:beltech/features/expenses/domain/entities/expense_item.dart';
 import 'package:beltech/features/expenses/domain/entities/fee_analytics.dart';
 import 'package:beltech/features/expenses/domain/entities/merchant_detail.dart';
 import 'package:beltech/features/expenses/domain/entities/merchant_registry_entry.dart';
 import 'package:beltech/features/expenses/domain/repositories/expenses_repository.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 part 'expenses_repository_impl_import_pipeline.dart';
 part 'expenses_repository_impl_intelligence.dart';
@@ -34,6 +38,12 @@ class ExpensesRepositoryImpl implements ExpensesRepository {
   final MpesaParserService _parser;
   final MerchantLearningService _merchantLearningService;
   final DeviceSmsDataSource _deviceSmsDataSource;
+
+  /// Phase P6 — when true, large queue drains parse through a reused
+  /// [ParseIsolatePool] instead of spawning an isolate per chunk. Enabled by
+  /// default: the pooled workers keep the UI thread free and reuse the same
+  /// isolates end to end for a 50k-row import.
+  bool useIsolatePool = true;
 
   @override
   Stream<ExpensesSnapshot> watchSnapshot() {
@@ -118,20 +128,26 @@ class ExpensesRepositoryImpl implements ExpensesRepository {
     List<String> rawMessages, {
     DateTime? from,
     String? sender,
+    void Function(int done, int total)? onProgress,
   }) async {
     final envelopes = rawMessages
         .map((message) => _QueuedSmsImport(message: message, sender: sender))
         .toList(growable: false);
     await _enqueueSmsImports(envelopes);
-    return _processDueQueueImpl(this, from: from);
+    return _processDueQueueImpl(this, from: from, onProgress: onProgress);
   }
 
 
 
   @override
-  Future<int> importFromDevice({DateTime? from}) async {
+  Future<int> importFromDevice({
+    DateTime? from,
+    ImportSourceFilter filter = ImportSourceFilter.both,
+    void Function(int done, int total)? onProgress,
+  }) async {
     final entries = await _deviceSmsDataSource.loadLikelyMpesaEntries(
       from: from,
+      filter: filter,
     );
     if (entries.isNotEmpty) {
       await _enqueueSmsImports(
@@ -146,7 +162,40 @@ class ExpensesRepositoryImpl implements ExpensesRepository {
             .toList(growable: false),
       );
     }
-    return _processDueQueueImpl(this, from: from);
+    return _processDueQueueImpl(this, from: from, onProgress: onProgress);
+  }
+
+  @override
+  Future<ExpenseImportDetection> detectFromDevice({
+    DateTime? from,
+    ImportSourceFilter filter = ImportSourceFilter.both,
+  }) async {
+    // Use the loose sender/institution detect scan (mirrors Kotlin's
+    // `detect()`), so the preview reflects everything an import would find
+    // rather than only what the strict parser accepts.
+    final counts = await _deviceSmsDataSource.detectInstitutionCounts(
+      from: from,
+      filter: filter,
+    );
+    final total = counts.values.fold<int>(0, (sum, count) => sum + count);
+    final window = from == null
+        ? ExpenseImportWindow.lastMonth
+        : _windowFor(from);
+    return ExpenseImportDetection(
+      institutionCounts: counts,
+      totalMessages: total,
+      permissionGranted: true,
+      window: window,
+      filter: filter,
+    );
+  }
+
+  ExpenseImportWindow _windowFor(DateTime from) {
+    final days = DateTime.now().difference(from).inDays;
+    if (days <= 1) return ExpenseImportWindow.last24Hours;
+    if (days <= 31) return ExpenseImportWindow.lastMonth;
+    if (days <= 92) return ExpenseImportWindow.last3Months;
+    return ExpenseImportWindow.last6Months;
   }
 
   Future<void> _enqueueSmsImports(List<_QueuedSmsImport> envelopes) async {

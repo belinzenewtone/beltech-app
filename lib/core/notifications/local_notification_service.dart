@@ -302,6 +302,13 @@ class LocalNotificationService {
     await prefs.setDouble('fuliza_limit', limit);
   }
 
+  /// Authoritative outstanding Fuliza balance, last stated in an SMS charge
+  /// notice or limit summary. `0` when never seen.
+  Future<double> getFulizaOutstanding() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getDouble('fuliza_outstanding') ?? 0.0;
+  }
+
   Future<(int, int)> getDoNotDisturbHours() async {
     final prefs = await SharedPreferences.getInstance();
     final startHour = prefs.getInt('dnd_start_hour') ?? 22;
