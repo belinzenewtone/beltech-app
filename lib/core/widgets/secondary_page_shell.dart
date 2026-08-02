@@ -1,6 +1,6 @@
-import 'package:beltech/core/theme/app_colors.dart';
 import 'package:beltech/core/theme/app_spacing.dart';
 import 'package:beltech/core/theme/app_typography.dart';
+import 'package:beltech/core/widgets/app_background.dart';
 import 'package:flutter/material.dart';
 
 /// Consistent wrapper for all secondary (non-tab) screens.
@@ -25,10 +25,8 @@ class SecondaryPageShell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final brightness = Theme.of(context).brightness;
     final bottomSafe = MediaQuery.paddingOf(context).bottom;
-    return Container(
-      color: AppColors.backgroundFor(brightness),
+    return AppBackground(
       child: SafeArea(
         bottom: false,
         child: Scaffold(

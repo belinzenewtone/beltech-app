@@ -51,16 +51,18 @@ class ProfileToolHub extends StatelessWidget {
   Widget build(BuildContext context) {
     return AppCard(
       tone: AppCardTone.muted,
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text('TOOL HUB', style: AppTypography.eyebrow(context)),
+          Center(
+            child: Text('TOOL HUB', style: AppTypography.eyebrow(context)),
+          ),
           const SizedBox(height: 10),
           const ToolShortcutGrid(
             shortcuts: _profileShortcuts,
-            childAspectRatio: 1.35,
+            childAspectRatio: 1.5,
           ),
         ],
       ),

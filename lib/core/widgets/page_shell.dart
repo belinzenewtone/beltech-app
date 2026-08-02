@@ -1,6 +1,6 @@
-import 'package:beltech/core/theme/app_colors.dart';
 import 'package:beltech/core/theme/app_motion.dart';
 import 'package:beltech/core/theme/app_spacing.dart';
+import 'package:beltech/core/widgets/app_background.dart';
 import 'package:flutter/material.dart';
 
 /// The unified page wrapper every tab screen and secondary screen uses.
@@ -115,11 +115,18 @@ class _PageShellState extends State<PageShell>
       );
     }
 
-    final brightness = Theme.of(context).brightness;
-
-    return Container(
-      color: AppColors.backgroundFor(brightness),
-      child: SafeArea(bottom: false, child: content),
+    return RepaintBoundary(
+      child: AppBackground(
+        child: SafeArea(
+          bottom: false,
+          // Material ancestor for pushed full-screen routes (e.g. Events,
+          // Tasks) that are not hosted inside the tab shell's Scaffold.
+          child: Material(
+            type: MaterialType.transparency,
+            child: content,
+          ),
+        ),
+      ),
     );
   }
 }

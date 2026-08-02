@@ -48,6 +48,7 @@ class CalendarScreen extends ConsumerStatefulWidget {
 class _CalendarScreenState extends ConsumerState<CalendarScreen> {
   _CalendarView _view = _CalendarView.calendar;
   bool _swiping = false; // blocks events list during a calendar swipe
+  double _swipeDelta = 0; // accumulated horizontal drag distance
   bool _showCompletedEvents = false;
   bool _showCompletedTasks = false;
   final _searchController = TextEditingController();
@@ -142,7 +143,14 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
   }
 
   void _beginSwipe() {
-    setState(() => _swiping = true);
+    setState(() {
+      _swiping = true;
+      _swipeDelta = 0;
+    });
+  }
+
+  void _handleSwipeUpdate(DragUpdateDetails details) {
+    _swipeDelta += details.delta.dx;
   }
 
   void _cancelSwipe() {
@@ -170,8 +178,14 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
   void _handleSwipeEnd(DragEndDetails details) {
     setState(() => _swiping = false);
     final velocity = details.primaryVelocity ?? 0;
-    if (velocity < -120) _changeMonth(ref, 1);
-    if (velocity > 120) _changeMonth(ref, -1);
+    final dx = _swipeDelta;
+    final distance = dx.abs();
+    // Trigger on either a fast fling (velocity) or a deliberate drag
+    // (accumulated distance). Thresholds are lowered so light swipes register.
+    final left = velocity < -150 || (distance >= 48 && dx < 0);
+    final right = velocity > 150 || (distance >= 48 && dx > 0);
+    if (left) _changeMonth(ref, 1);
+    if (right) _changeMonth(ref, -1);
   }
 
   void _syncSearchTargetDay(WidgetRef ref, DateTime selectedDay) {

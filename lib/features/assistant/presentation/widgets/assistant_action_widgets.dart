@@ -31,13 +31,13 @@ class AssistantPillButton extends StatelessWidget {
         child: Material(
           color: Colors.transparent,
           child: InkWell(
-            borderRadius: BorderRadius.circular(AppRadius.full),
+            borderRadius: BorderRadius.circular(AppRadius.lg),
             onTap: onTap,
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
                 color: AppColors.surfaceMutedFor(brightness),
-                borderRadius: BorderRadius.circular(AppRadius.full),
+                borderRadius: BorderRadius.circular(AppRadius.lg),
                 border: Border.all(color: borderColor),
               ),
               child: Row(
@@ -96,7 +96,7 @@ class AssistantSendButton extends StatelessWidget {
                 color: loading
                     ? AppColors.accent.withValues(alpha: 0.4)
                     : AppColors.accent,
-                shape: BoxShape.circle,
+                borderRadius: BorderRadius.circular(12),
               ),
               child: Center(
                 child: loading

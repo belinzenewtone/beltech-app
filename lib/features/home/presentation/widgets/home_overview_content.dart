@@ -127,7 +127,7 @@ class HomeInfoCard extends StatelessWidget {
             height: 40,
             decoration: BoxDecoration(
               color: AppColors.surfaceMutedFor(brightness),
-              shape: BoxShape.circle,
+              borderRadius: BorderRadius.circular(12),
             ),
             child: Icon(icon, color: AppColors.accent, size: 20),
           ),
@@ -191,7 +191,7 @@ class HomeTransactionCard extends StatelessWidget {
             height: 40,
             decoration: BoxDecoration(
               color: AppColors.surfaceMutedFor(brightness),
-              shape: BoxShape.circle,
+              borderRadius: BorderRadius.circular(12),
             ),
             child: const Icon(
               Icons.payments_outlined,

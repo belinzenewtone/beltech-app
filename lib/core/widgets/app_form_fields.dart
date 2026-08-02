@@ -1,8 +1,46 @@
 import 'package:beltech/core/theme/app_colors.dart';
 import 'package:beltech/core/theme/app_radius.dart';
-import 'package:beltech/core/theme/app_spacing.dart';
 import 'package:beltech/core/theme/app_typography.dart';
 import 'package:flutter/material.dart';
+
+/// Shared input decoration for single unified text boxes — a hairline border
+/// with an accent focus ring, matching [AppSearchBar] (instead of a borderless
+/// field nested inside a separate container). Use this for every plain text /
+/// dropdown field so inputs read the same across the app.
+InputDecoration appFieldDecoration(
+  BuildContext context, {
+  required String hint,
+  String? errorText,
+  Widget? prefixIcon,
+  Widget? suffixIcon,
+}) {
+  final brightness = Theme.of(context).brightness;
+  final fillColor = AppColors.surfaceMutedFor(brightness)
+      .withValues(alpha: brightness == Brightness.light ? 0.95 : 0.72);
+  final borderColor = AppColors.borderFor(brightness).withValues(alpha: 0.5);
+
+  OutlineInputBorder border(Color color, [double width = 1]) =>
+      OutlineInputBorder(
+        borderRadius: BorderRadius.circular(AppRadius.xl),
+        borderSide: BorderSide(color: color, width: width),
+      );
+
+  return InputDecoration(
+    hintText: hint,
+    errorText: errorText,
+    prefixIcon: prefixIcon,
+    suffixIcon: suffixIcon,
+    hintStyle: AppTypography.bodyMd(context).copyWith(
+      color: AppColors.textSecondaryFor(brightness).withValues(alpha: 0.55),
+    ),
+    filled: true,
+    fillColor: fillColor,
+    contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+    border: border(borderColor),
+    enabledBorder: border(borderColor),
+    focusedBorder: border(AppColors.accent.withValues(alpha: 0.7), 1.4),
+  );
+}
 
 /// Consistent title field used across task/event/countdown/birthday forms.
 class AppTitleField extends StatelessWidget {
@@ -22,27 +60,25 @@ class AppTitleField extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final brightness = Theme.of(context).brightness;
-    return _FieldCard(
-      child: TextField(
-        controller: controller,
-        onChanged: onChanged,
-        style: AppTypography.bodyMd(context).copyWith(
-          color: AppColors.textPrimaryFor(brightness),
-          fontWeight: FontWeight.w500,
+    // The title being composed should read as a heading, not body text.
+    final titleStyle = AppTypography.sectionTitle(context).copyWith(
+      fontSize: 18,
+      height: 24 / 18,
+      fontWeight: FontWeight.w600,
+      color: AppColors.textPrimaryFor(brightness),
+    );
+    final decoration = appFieldDecoration(context, hint: hint, errorText: errorText);
+    return TextField(
+      controller: controller,
+      onChanged: onChanged,
+      style: titleStyle,
+      decoration: decoration.copyWith(
+        hintStyle: titleStyle.copyWith(
+          color: AppColors.textSecondaryFor(brightness).withValues(alpha: 0.55),
         ),
-        decoration: InputDecoration(
-          hintText: hint,
-          errorText: errorText,
-          hintStyle: AppTypography.bodyMd(context).copyWith(
-            color: AppColors.textSecondaryFor(brightness).withValues(alpha: 0.55),
-          ),
-          border: InputBorder.none,
-          contentPadding: EdgeInsets.zero,
-          isDense: true,
-        ),
-        maxLines: null,
-        textCapitalization: TextCapitalization.sentences,
       ),
+      maxLines: null,
+      textCapitalization: TextCapitalization.sentences,
     );
   }
 }
@@ -67,46 +103,17 @@ class AppNoteField extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final brightness = Theme.of(context).brightness;
-    return _FieldCard(
-      child: TextField(
-        controller: controller,
-        onChanged: onChanged,
-        minLines: minLines,
-        maxLines: maxLines,
-        style: AppTypography.bodyMd(context).copyWith(
-          color: AppColors.textPrimaryFor(brightness),
-          fontWeight: FontWeight.w400,
-        ),
-        decoration: InputDecoration(
-          hintText: hint,
-          hintStyle: AppTypography.bodyMd(context).copyWith(
-            color: AppColors.textSecondaryFor(brightness).withValues(alpha: 0.55),
-          ),
-          border: InputBorder.none,
-          contentPadding: EdgeInsets.zero,
-          isDense: true,
-        ),
-        textCapitalization: TextCapitalization.sentences,
+    return TextField(
+      controller: controller,
+      onChanged: onChanged,
+      minLines: minLines,
+      maxLines: maxLines,
+      style: AppTypography.bodyMd(context).copyWith(
+        color: AppColors.textPrimaryFor(brightness),
+        fontWeight: FontWeight.w400,
       ),
-    );
-  }
-}
-
-class _FieldCard extends StatelessWidget {
-  const _FieldCard({required this.child});
-
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    final brightness = Theme.of(context).brightness;
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.surfaceMutedFor(brightness),
-        borderRadius: BorderRadius.circular(AppRadius.lg),
-      ),
-      padding: const EdgeInsets.all(AppSpacing.md),
-      child: child,
+      decoration: appFieldDecoration(context, hint: hint),
+      textCapitalization: TextCapitalization.sentences,
     );
   }
 }

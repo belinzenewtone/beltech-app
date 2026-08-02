@@ -1,5 +1,7 @@
 import 'package:beltech/features/expenses/domain/entities/expense_item.dart';
+import 'package:beltech/features/expenses/domain/entities/expense_import_detection.dart';
 import 'package:beltech/features/expenses/domain/entities/expense_import_intelligence.dart';
+import 'package:beltech/features/expenses/domain/entities/expense_import_window.dart';
 import 'package:beltech/features/expenses/domain/entities/expense_import_review.dart';
 import 'package:beltech/features/expenses/domain/entities/fee_analytics.dart';
 import 'package:beltech/features/expenses/domain/entities/merchant_detail.dart';
@@ -29,9 +31,22 @@ abstract class ExpensesRepository {
     List<String> rawMessages, {
     DateTime? from,
     String? sender,
+    void Function(int done, int total)? onProgress,
   });
 
-  Future<int> importFromDevice({DateTime? from});
+  Future<int> importFromDevice({
+    DateTime? from,
+    ImportSourceFilter filter,
+    void Function(int done, int total)? onProgress,
+  });
+
+  /// Detect-only scan of the device inbox: counts financial messages per
+  /// institution for [from]/[filter] without importing anything. Used to show
+  /// the user what an import would find before they commit.
+  Future<ExpenseImportDetection> detectFromDevice({
+    DateTime? from,
+    ImportSourceFilter filter,
+  });
 
   Future<ExpenseImportMetrics> fetchImportMetrics();
 

@@ -110,7 +110,7 @@ class _MemberSincePill extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.accent.withValues(alpha: 0.12),
         border: Border.all(color: AppColors.accent.withValues(alpha: 0.22)),
-        borderRadius: BorderRadius.circular(AppRadius.full),
+        borderRadius: BorderRadius.circular(AppRadius.md),
       ),
       child: Text(
         'Member since $label',

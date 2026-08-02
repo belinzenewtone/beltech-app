@@ -1,4 +1,5 @@
 import 'package:beltech/core/theme/app_colors.dart';
+import 'package:beltech/core/theme/app_radius.dart';
 import 'package:beltech/core/theme/app_spacing.dart';
 import 'package:beltech/core/theme/app_typography.dart';
 import 'package:beltech/features/calendar/domain/entities/calendar_event.dart';
@@ -62,15 +63,17 @@ class CalendarMonthGrid extends StatelessWidget {
                 eventTypes.containsKey(day) || taskDays.contains(day);
 
             return Center(
-              child: InkWell(
-                customBorder: const CircleBorder(),
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                borderRadius: BorderRadius.circular(AppRadius.md),
                 onTap: () => onSelect(current),
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 240),
                   width: 38,
                   height: 38,
                   decoration: BoxDecoration(
-                    shape: BoxShape.circle,
+                    borderRadius: BorderRadius.circular(AppRadius.md),
                     color: isSelected ? AppColors.accent : Colors.transparent,
                     border: !isSelected && isToday
                         ? Border.all(color: AppColors.accentLight, width: 1.5)
@@ -108,6 +111,7 @@ class CalendarMonthGrid extends StatelessWidget {
                   ),
                 ),
               ),
+            ),
             );
           },
         ),

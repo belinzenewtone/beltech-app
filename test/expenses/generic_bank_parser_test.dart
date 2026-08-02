@@ -46,8 +46,9 @@ void main() {
       expect(result, isNotNull);
       expect(result!.amountKes, closeTo(2500.0, 0.01));
       expect(result.transactionType, MpesaTransactionType.sent);
-      expect(result.route, MpesaParseRoute.reviewQueue);
-      expect(result.confidence, MpesaConfidence.medium);
+      // Clear direction verb + date → high confidence, imports directly.
+      expect(result.route, MpesaParseRoute.directLedger);
+      expect(result.confidence, MpesaConfidence.high);
       expect(result.title, contains('KCB'));
     });
 

@@ -152,7 +152,7 @@ class _ToggleChip extends StatelessWidget {
           color: active
               ? AppColors.accent.withValues(alpha: 0.16)
               : AppColors.textMuted.withValues(alpha: 0.10),
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: active
                 ? AppColors.accent.withValues(alpha: 0.5)
@@ -329,7 +329,7 @@ class _QuickPickChip extends StatelessWidget {
           color: isActive
               ? visual.foreground.withValues(alpha: 0.18)
               : visual.background,
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: isActive
                 ? visual.foreground.withValues(alpha: 0.6)
@@ -376,7 +376,7 @@ class _MoreChip extends StatelessWidget {
         ),
         decoration: BoxDecoration(
           color: AppColors.textMuted.withValues(alpha: 0.08),
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: AppColors.textMuted.withValues(alpha: 0.20),
           ),
@@ -419,7 +419,7 @@ class _MoreChip extends StatelessWidget {
                   color: isActive
                       ? visual.foreground.withValues(alpha: 0.18)
                       : visual.background,
-                  borderRadius: BorderRadius.circular(20),
+                  borderRadius: BorderRadius.circular(12),
                   border: Border.all(
                     color: isActive
                         ? visual.foreground.withValues(alpha: 0.6)

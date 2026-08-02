@@ -29,9 +29,9 @@ class TaskSwipeBackground extends StatelessWidget {
     final content = Container(
       decoration: BoxDecoration(
         color: color,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(8),
       ),
-      padding: const EdgeInsets.symmetric(horizontal: 24),
+      padding: const EdgeInsets.symmetric(horizontal: 20),
       alignment: alignment,
       child: ExcludeSemantics(child: Icon(icon, color: Colors.white, size: 30)),
     );

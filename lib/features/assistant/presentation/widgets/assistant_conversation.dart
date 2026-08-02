@@ -64,7 +64,7 @@ class AssistantMessageBubble extends StatelessWidget {
                 ),
                 decoration: BoxDecoration(
                   color: AppColors.accent,
-                  borderRadius: BorderRadius.circular(22),
+                  borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
                   message.text.trim(),

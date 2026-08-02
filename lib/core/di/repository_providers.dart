@@ -60,14 +60,14 @@ final homeRepositoryProvider = Provider<HomeRepository>(
 final calendarRepositoryProvider = Provider<CalendarRepository>(
   (ref) => CalendarRepositoryImpl(ref.watch(appDriftStoreProvider)),
 );
-final expensesRepositoryProvider = Provider<ExpensesRepository>(
-  (ref) => ExpensesRepositoryImpl(
+final expensesRepositoryProvider = Provider<ExpensesRepository>((ref) {
+  return ExpensesRepositoryImpl(
     ref.watch(appDriftStoreProvider),
     const MpesaParserService(),
     ref.watch(merchantLearningServiceProvider),
     ref.watch(deviceSmsDataSourceProvider),
-  ),
-);
+  );
+});
 final incomeRepositoryProvider = Provider<IncomeRepository>(
   (ref) => IncomeRepositoryImpl(ref.watch(appDriftStoreProvider)),
 );

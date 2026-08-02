@@ -129,7 +129,7 @@ class SettingsSegmentedPill<T> extends StatelessWidget {
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
         color: AppColors.surfaceSubtleFor(brightness),
-        borderRadius: BorderRadius.circular(AppRadius.full),
+        borderRadius: BorderRadius.circular(AppRadius.lg),
         border: Border.all(
           color: AppColors.borderFor(brightness).withValues(alpha: 0.5),
         ),
@@ -146,7 +146,7 @@ class SettingsSegmentedPill<T> extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(vertical: 8),
                 decoration: BoxDecoration(
                   color: isSelected ? AppColors.accent : Colors.transparent,
-                  borderRadius: BorderRadius.circular(AppRadius.full),
+                  borderRadius: BorderRadius.circular(AppRadius.sm),
                 ),
                 child: Center(
                   child: Text(

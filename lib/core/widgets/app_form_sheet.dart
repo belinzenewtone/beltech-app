@@ -1,6 +1,9 @@
+import 'dart:ui';
+
 import 'package:beltech/core/theme/app_colors.dart';
 import 'package:beltech/core/theme/app_radius.dart';
 import 'package:beltech/core/theme/app_typography.dart';
+import 'package:beltech/core/theme/glass_styles.dart';
 import 'package:flutter/material.dart';
 
 class AppFormSheet extends StatelessWidget {
@@ -26,6 +29,9 @@ class AppFormSheet extends StatelessWidget {
     final brightness = Theme.of(context).brightness;
     final viewInsets = MediaQuery.viewInsetsOf(context);
     final screenHeight = MediaQuery.sizeOf(context).height;
+    const sheetRadius = BorderRadius.vertical(
+      top: Radius.circular(AppRadius.xxl),
+    );
 
     return AnimatedPadding(
       duration: const Duration(milliseconds: 220),
@@ -35,90 +41,102 @@ class AppFormSheet extends StatelessWidget {
         alignment: Alignment.bottomCenter,
         child: ConstrainedBox(
           constraints: BoxConstraints(maxHeight: screenHeight * 0.92),
-          child: Container(
-            decoration: BoxDecoration(
-              color: AppColors.surfaceFor(brightness),
-              borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(AppRadius.xxl),
-              ),
-              border: Border(
-                top: BorderSide(
-                  color: AppColors.borderFor(
-                    brightness,
-                  ).withValues(alpha: 0.55),
-                ),
-              ),
+          child: DecoratedBox(
+            // Shadow sits on the outer (un-clipped) layer so it is not cropped
+            // by the ClipRRect that wraps the blur + fill.
+            decoration: const BoxDecoration(
+              borderRadius: sheetRadius,
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.28),
+                  color: Color(0x47000000),
                   blurRadius: 28,
-                  offset: const Offset(0, -6),
+                  offset: Offset(0, -6),
                 ),
               ],
             ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const SizedBox(height: 10),
-                Container(
-                  width: 42,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: AppColors.borderFor(
-                      brightness,
-                    ).withValues(alpha: 0.8),
-                    borderRadius: AppRadius.fullAll,
-                  ),
+            child: ClipRRect(
+              borderRadius: sheetRadius,
+              child: BackdropFilter(
+                filter: ImageFilter.blur(
+                  sigmaX: GlassStyles.sheetBlurSigma,
+                  sigmaY: GlassStyles.sheetBlurSigma,
                 ),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 18, 14, 12),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: GlassStyles.fillFor(brightness),
+                    borderRadius: sheetRadius,
+                    border: Border(
+                      top: BorderSide(
+                        color: GlassStyles.borderFor(brightness),
+                      ),
+                    ),
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      Expanded(
-                        child: Column(
+                      const SizedBox(height: 10),
+                      Container(
+                        width: 42,
+                        height: 4,
+                        decoration: BoxDecoration(
+                          color: AppColors.borderFor(
+                            brightness,
+                          ).withValues(alpha: 0.8),
+                          borderRadius: AppRadius.fullAll,
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 18, 14, 12),
+                        child: Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
-                              title,
-                              style: AppTypography.pageTitle(context),
-                            ),
-                            if (subtitle != null) ...[
-                              const SizedBox(height: 4),
-                              Text(
-                                subtitle!,
-                                style: AppTypography.bodySm(context),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    title,
+                                    style: AppTypography.pageTitle(context),
+                                  ),
+                                  if (subtitle != null) ...[
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      subtitle!,
+                                      style: AppTypography.bodySm(context),
+                                    ),
+                                  ],
+                                ],
                               ),
-                            ],
+                            ),
+                            const SizedBox(width: 12),
+                            _SheetCloseButton(onPressed: onClose),
                           ],
                         ),
                       ),
-                      const SizedBox(width: 12),
-                      _SheetCloseButton(onPressed: onClose),
+                      Flexible(
+                        child: SingleChildScrollView(
+                          controller: controller,
+                          physics: const ClampingScrollPhysics(),
+                          padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                          child: child,
+                        ),
+                      ),
+                      if (footer != null)
+                        Padding(
+                          padding: EdgeInsets.fromLTRB(
+                            16,
+                            0,
+                            16,
+                            16 + MediaQuery.paddingOf(context).bottom,
+                          ),
+                          child: footer,
+                        )
+                      else
+                        SizedBox(height: 16 + MediaQuery.paddingOf(context).bottom),
                     ],
                   ),
                 ),
-                Flexible(
-                  child: SingleChildScrollView(
-                    controller: controller,
-                    physics: const ClampingScrollPhysics(),
-                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                    child: child,
-                  ),
-                ),
-                if (footer != null)
-                  Padding(
-                    padding: EdgeInsets.fromLTRB(
-                      16,
-                      0,
-                      16,
-                      16 + MediaQuery.paddingOf(context).bottom,
-                    ),
-                    child: footer,
-                  )
-                else
-                  SizedBox(height: 16 + MediaQuery.paddingOf(context).bottom),
-              ],
+              ),
             ),
           ),
         ),
@@ -139,7 +157,7 @@ class _SheetCloseButton extends StatelessWidget {
       color: Colors.transparent,
       child: InkWell(
         onTap: onPressed,
-        borderRadius: AppRadius.fullAll,
+        borderRadius: AppRadius.mdAll,
         child: Container(
           width: 36,
           height: 36,
@@ -147,7 +165,7 @@ class _SheetCloseButton extends StatelessWidget {
             color: AppColors.surfaceMutedFor(
               brightness,
             ).withValues(alpha: 0.88),
-            borderRadius: AppRadius.fullAll,
+            borderRadius: AppRadius.mdAll,
             border: Border.all(
               color: AppColors.borderFor(brightness).withValues(alpha: 0.35),
             ),

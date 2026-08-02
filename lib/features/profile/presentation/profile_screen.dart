@@ -5,11 +5,9 @@ import 'package:beltech/core/widgets/error_message.dart';
 import 'package:beltech/core/widgets/loading_indicator.dart';
 import 'package:beltech/core/widgets/page_header.dart';
 import 'package:beltech/core/widgets/page_shell.dart';
-import 'package:beltech/features/auth/presentation/providers/account_providers.dart';
 import 'package:beltech/features/profile/presentation/providers/profile_providers.dart';
 import 'package:beltech/features/profile/presentation/widgets/profile_content_section.dart';
 import 'package:beltech/features/profile/presentation/widgets/profile_dialogs.dart';
-import 'package:beltech/features/profile/presentation/widgets/profile_security_section.dart';
 import 'package:beltech/features/profile/presentation/widgets/profile_tool_hub.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -23,7 +21,6 @@ class ProfileScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final profileState = ref.watch(profileProvider);
-    final authWriteState = ref.watch(accountAuthControllerProvider);
 
     ref.listen<AsyncValue<void>>(profileWriteControllerProvider, (
       previous,
@@ -39,22 +36,13 @@ class ProfileScreen extends ConsumerWidget {
         );
       }
     });
-    ref.listen<AsyncValue<void>>(accountAuthControllerProvider, (
-      previous,
-      next,
-    ) {
-      if (next.hasError) {
-        final message = '${next.error}'.replaceFirst('Exception: ', '');
-        AppFeedback.error(context, message, ref: ref);
-      }
-    });
 
     return PageShell(
       scrollable: true,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const PageHeader(title: 'Profile'),
+          const PageHeader(eyebrow: 'Account', title: 'Profile'),
           profileState.when(
             data: (profile) => Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -112,15 +100,6 @@ class ProfileScreen extends ConsumerWidget {
                 ),
                 const SizedBox(height: AppSpacing.sectionGap),
                 const ProfileToolHub(),
-                const SizedBox(height: AppSpacing.sectionGap),
-                ProfileSecuritySection(
-                  onSignOut: () async {
-                    await ref
-                        .read(accountAuthControllerProvider.notifier)
-                        .signOut();
-                  },
-                  signingOut: authWriteState.isLoading,
-                ),
                 const SizedBox(height: AppSpacing.sectionGap),
                 Center(
                   child: Text(

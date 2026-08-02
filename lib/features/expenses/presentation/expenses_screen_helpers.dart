@@ -2,6 +2,7 @@ import 'package:beltech/core/widgets/app_feedback.dart';
 import 'package:beltech/features/expenses/domain/entities/expense_item.dart';
 import 'package:beltech/features/expenses/presentation/providers/expenses_providers.dart';
 import 'package:beltech/features/expenses/presentation/widgets/expense_dialogs.dart';
+import 'package:beltech/features/expenses/presentation/widgets/sms_detect_import_dialog.dart';
 import 'package:beltech/features/expenses/presentation/widgets/sms_import_dialogs.dart';
 import 'package:beltech/features/search/domain/entities/global_search_result.dart';
 import 'package:beltech/features/search/presentation/providers/global_search_providers.dart';
@@ -17,17 +18,24 @@ Future<void> handleExpenseSmsImport(BuildContext context, WidgetRef ref) async {
     if (!context.mounted) {
       return;
     }
-    final window = await showSmsWindowDialog(context);
-    if (window == null) {
+    // Detect-then-confirm flow (mirrors the Kotlin reference): pick filter +
+    // time window, preview per-institution message counts, then Import/Cancel.
+    final plan = await showSmsDetectImportDialog(
+      context,
+      onDetect: (window, filter) => ref
+          .read(expenseWriteControllerProvider.notifier)
+          .detectFromDevice(window: window, filter: filter),
+    );
+    if (plan == null || !context.mounted) {
       return;
     }
     final count = await ref
         .read(expenseWriteControllerProvider.notifier)
-        .importFromDevice(window: window);
+        .importFromDevice(window: plan.window, filter: plan.filter);
     if (context.mounted) {
       final label = count == 0
-          ? 'No MPESA messages found in ${importWindowLabel(window)}'
-          : 'Imported $count MPESA transactions from device';
+          ? 'No messages found in ${importWindowLabel(plan.window)}'
+          : 'Imported $count transactions from device';
       AppFeedback.info(context, label, ref: ref);
     }
     return;
@@ -44,8 +52,8 @@ Future<void> handleExpenseSmsImport(BuildContext context, WidgetRef ref) async {
       .importSmsPayload(input.payload, window: input.window);
   if (context.mounted) {
     final label = count == 0
-        ? 'No MPESA messages found in ${importWindowLabel(input.window)}'
-        : 'Imported $count MPESA transactions';
+        ? 'No messages found in ${importWindowLabel(input.window)}'
+        : 'Imported $count transactions';
     AppFeedback.info(context, label, ref: ref);
   }
 }

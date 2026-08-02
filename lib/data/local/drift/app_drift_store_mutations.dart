@@ -9,6 +9,7 @@ extension AppDriftStoreMutations on AppDriftStore {
     required DateTime occurredAt,
   }) async {
     await ensureInitialized();
+    final before = await _transactionRollupFields(id);
     await executor.runUpdate(
       'UPDATE transactions SET title = ?, category = ?, amount = ?, occurred_at = ?, source = ?, source_hash = NULL, transaction_type = ?, balance_after = NULL WHERE id = ?',
       [
@@ -21,13 +22,55 @@ extension AppDriftStoreMutations on AppDriftStore {
         id,
       ],
     );
+    // Reverse the old contribution, add the new one. Only when the row existed
+    // — a no-op UPDATE (unknown id) must not inject a phantom +1.
+    if (before != null) {
+      await applyRollupDelta(
+        category: before.category,
+        amount: before.amount,
+        occurredAtMs: before.occurredAtMs,
+        sign: -1,
+      );
+      await applyRollupDelta(
+        category: category,
+        amount: amountKes,
+        occurredAtMs: occurredAt.millisecondsSinceEpoch,
+        sign: 1,
+      );
+    }
     emitChange();
   }
 
   Future<void> deleteTransaction(int id) async {
     await ensureInitialized();
+    final before = await _transactionRollupFields(id);
     await executor.runDelete('DELETE FROM transactions WHERE id = ?', [id]);
+    if (before != null) {
+      await applyRollupDelta(
+        category: before.category,
+        amount: before.amount,
+        occurredAtMs: before.occurredAtMs,
+        sign: -1,
+      );
+    }
     emitChange();
+  }
+
+  /// Reads the rollup-relevant fields of a transaction before it is mutated,
+  /// so the change can be reversed out of the aggregates.
+  Future<({String category, double amount, int occurredAtMs})?>
+  _transactionRollupFields(int id) async {
+    final rows = await executor.runSelect(
+      'SELECT category, amount, occurred_at FROM transactions WHERE id = ?',
+      [id],
+    );
+    if (rows.isEmpty) return null;
+    final r = rows.first;
+    return (
+      category: (r['category'] ?? 'Other') as String,
+      amount: (r['amount'] as num?)?.toDouble() ?? 0,
+      occurredAtMs: (r['occurred_at'] as num?)?.toInt() ?? 0,
+    );
   }
 
   Future<void> updateTask({

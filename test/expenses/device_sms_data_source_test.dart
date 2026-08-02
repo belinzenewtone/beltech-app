@@ -1,4 +1,5 @@
 import 'package:beltech/features/expenses/data/services/device_sms_data_source.dart';
+import 'package:beltech/features/expenses/domain/entities/expense_import_window.dart';
 import 'package:flutter_sms_inbox/flutter_sms_inbox.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -95,6 +96,49 @@ void main() {
 
     final entries = await source.loadLikelyMpesaEntries();
     expect(entries, isEmpty);
+  });
+
+  // Kotlin-parity import filter: M-Pesa only / Banks only / both.
+  group('ImportSourceFilter', () {
+    DeviceSmsDataSource sourceWith() => DeviceSmsDataSource(
+      isAndroid: () => true,
+      requestPermission: () async => true,
+      queryRunner: _runnerOnce([
+        _sms(
+          body: 'QW12AB34CD Confirmed. Ksh500.00 sent to SHOP on 7/3/26 at 6PM.',
+          sender: 'MPESA',
+          date: DateTime.now(),
+        ),
+        _sms(
+          body: 'Dear Customer, your KCB account has been debited with KES 1,200.00.',
+          sender: 'KCB',
+          date: DateTime.now(),
+        ),
+      ]),
+    );
+
+    test('both includes M-Pesa and bank', () async {
+      final e = await sourceWith().loadLikelyMpesaEntries(
+        filter: ImportSourceFilter.both,
+      );
+      expect(e.length, 2);
+    });
+
+    test('mpesa includes only the M-Pesa message', () async {
+      final e = await sourceWith().loadLikelyMpesaEntries(
+        filter: ImportSourceFilter.mpesa,
+      );
+      expect(e.length, 1);
+      expect(e.single.sender, 'MPESA');
+    });
+
+    test('banks includes only the bank message', () async {
+      final e = await sourceWith().loadLikelyMpesaEntries(
+        filter: ImportSourceFilter.banks,
+      );
+      expect(e.length, 1);
+      expect(e.single.sender, 'KCB');
+    });
   });
 }
 

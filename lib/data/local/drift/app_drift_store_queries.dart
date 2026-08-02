@@ -40,20 +40,9 @@ class _AppDriftQueries {
     final monthStart = DateTime(now.year, now.month, 1);
     final monthEnd = DateTime(now.year, now.month + 1, 1);
 
-    final categoryRows = await store._db.runSelect(
-      'SELECT category, SUM(amount) AS total FROM transactions GROUP BY category',
-      const [],
-    );
-    final categories =
-        categoryRows
-            .map(
-              (row) => CategoryTotalRecord(
-                category: (row['category'] ?? 'Other') as String,
-                totalKes: store._asDouble(row['total']),
-              ),
-            )
-            .toList()
-          ..sort((a, b) => b.totalKes.compareTo(a.totalKes));
+    // Read all-time per-category totals from the maintained rollup table
+    // (already sorted highest-first) instead of a full-table GROUP BY scan.
+    final categories = await _loadCategoryRollupsImpl(store);
 
     return ExpensesSnapshotRecord(
       todayKes: await sumTransactionsBetween(store, todayStart, tomorrowStart),
@@ -216,17 +205,17 @@ class _AppDriftQueries {
     return result;
   }
 
+  /// Sum of transaction amounts in a day-aligned range.
+  ///
+  /// Reads the incrementally-maintained `rollup_daily` table (≤31 rows for a
+  /// month) instead of scanning `transactions`. All callers pass local-midnight
+  /// bounds (today/week/month/day buckets), so this is exactly equivalent to the
+  /// old `SUM(amount) WHERE occurred_at >= start AND < end` scan.
   static Future<double> sumTransactionsBetween(
     AppDriftStore store,
     DateTime start,
     DateTime end,
-  ) async {
-    final rows = await store._db.runSelect(
-      'SELECT COALESCE(SUM(amount), 0) AS total FROM transactions WHERE occurred_at >= ? AND occurred_at < ?',
-      [start.millisecondsSinceEpoch, end.millisecondsSinceEpoch],
-    );
-    return store._asDouble(rows.first['total']);
-  }
+  ) => _sumDailyBetweenImpl(store, start, end);
 
   static Future<int> countRows(AppDriftStore store, String tableName) async {
     final rows = await store._db.runSelect(

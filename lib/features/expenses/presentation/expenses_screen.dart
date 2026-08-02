@@ -1,11 +1,11 @@
 import 'package:beltech/core/theme/app_motion.dart';
 import 'package:beltech/core/theme/app_spacing.dart';
-import 'package:beltech/core/theme/app_typography.dart';
 import 'package:beltech/core/widgets/app_feedback.dart';
 import 'package:beltech/core/widgets/app_toast.dart';
 import 'package:beltech/core/widgets/app_icon_pill_button.dart';
 import 'package:beltech/core/widgets/app_skeleton.dart';
 import 'package:beltech/core/widgets/error_message.dart';
+import 'package:beltech/core/widgets/page_header.dart';
 import 'package:beltech/core/widgets/page_shell.dart';
 import 'package:beltech/features/budget/presentation/providers/budget_providers.dart';
 import 'package:beltech/features/expenses/domain/entities/expense_import_review.dart';
@@ -15,6 +15,7 @@ import 'package:beltech/features/expenses/presentation/widgets/expense_dialogs.d
 import 'package:beltech/features/expenses/presentation/widgets/expenses_snapshot_content.dart';
 import 'package:beltech/features/expenses/presentation/widgets/fuliza_banner.dart';
 import 'package:beltech/features/expenses/presentation/widgets/import_health_banner.dart';
+import 'package:beltech/features/expenses/presentation/widgets/import_progress_banner.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -55,6 +56,9 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
     // Header items scroll with content inside ExpensesSnapshotContent's ListView.
     final headerItems = <Widget>[
       const SizedBox(height: AppSpacing.screenTop),
+      const PageHeader(eyebrow: 'Your Money', title: 'Finance'),
+      const SizedBox(height: AppSpacing.sm),
+      const ImportProgressBanner(),
       SingleChildScrollView(
         scrollDirection: Axis.horizontal,
         clipBehavior: Clip.none,
@@ -116,8 +120,6 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
         ),
       ),
       const SizedBox(height: AppSpacing.md),
-      Text('Finance', style: AppTypography.pageTitle(context)),
-      const SizedBox(height: AppSpacing.md),
       const FulizaBanner(),
     ];
 
@@ -134,16 +136,6 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
       }
     });
 
-    // Resolve import metrics for the health banner (safe fallback to zeros).
-    final importMetrics =
-        ref.watch(expenseImportMetricsProvider).value ??
-        const ExpenseImportMetrics(
-          reviewQueueCount: 0,
-          quarantineCount: 0,
-          retryQueueCount: 0,
-          failedQueueCount: 0,
-        );
-
     return PageShell(
       scrollable: false,
       topPadding: 0,
@@ -152,9 +144,24 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Fixed import health banner above the scrollable content.
-          ImportHealthBanner(
-            metrics: importMetrics,
-            onTap: () => context.pushNamed('import-health'),
+          // Isolated in its own Consumer: expenseImportMetricsProvider re-derives
+          // from the snapshot stream, so watching it at screen level rebuilt the
+          // whole Finance screen twice per emit. Only this strip rebuilds now.
+          Consumer(
+            builder: (context, ref, _) {
+              final metrics =
+                  ref.watch(expenseImportMetricsProvider).value ??
+                  const ExpenseImportMetrics(
+                    reviewQueueCount: 0,
+                    quarantineCount: 0,
+                    retryQueueCount: 0,
+                    failedQueueCount: 0,
+                  );
+              return ImportHealthBanner(
+                metrics: metrics,
+                onTap: () => context.pushNamed('import-health'),
+              );
+            },
           ),
           Expanded(
             child: AnimatedBuilder(

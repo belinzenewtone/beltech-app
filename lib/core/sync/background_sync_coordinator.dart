@@ -37,13 +37,17 @@ class BackgroundSyncCoordinator {
     if (!await _isEnabled(FeatureFlag.backgroundSync)) {
       return;
     }
-    await _historicalImportScanner.runOnce();
     await _osBackgroundSyncScheduler.initializeAndSchedule();
     await _smsAutoImportService.start(interval: _strategy.smsInterval);
     await _recurringMaterializerService.start(
       interval: _strategy.recurringInterval,
     );
     await _notificationInsightsService.runSweep();
+    // The first-run 10-year historical scan is the heaviest startup operation.
+    // Defer it to the end so lighter scheduling + initial UI render happen
+    // first; it is async and now runs off the UI thread via the background DB
+    // isolate, and is guarded by a "done" flag in SharedPreferences.
+    await _historicalImportScanner.runOnce();
   }
 
   Future<void> stop() async {

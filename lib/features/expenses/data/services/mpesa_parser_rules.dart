@@ -112,6 +112,70 @@ final List<MpesaParserRule> _primaryRules = [
     requiredPatterns: [RegExp('${_wb}received\\s+from')],
   ),
 
+  // Fuliza charge (interest / maintenance phrasings, 2024-2025 wording).
+  // Balance-update-only, like the "access fee" rule above.
+  MpesaParserRule(
+    type: MpesaTransactionType.fulizaCharge,
+    confidence: MpesaConfidence.high,
+    reason: 'fuliza_charge_interest',
+    requiredPatterns: [
+      RegExp('$_wb(?:interest\\s+(?:charged|accrued)|maintenance\\s+fee)'),
+      RegExp('${_wb}fuliza'),
+    ],
+  ),
+
+  // Fuliza limit / outstanding summary ("Dear BELINZE, your Fuliza M-PESA
+  // limit is Ksh 900.00. You have an outstanding amount of Ksh 799.89 due on
+  // 25/10/25."). Carries no transaction — it updates the tracked limit and
+  // outstanding balance only (balance-update, like fulizaCharge).
+  MpesaParserRule(
+    type: MpesaTransactionType.fulizaCharge,
+    confidence: MpesaConfidence.high,
+    reason: 'fuliza_limit_summary',
+    requiredPatterns: [
+      RegExp('${_wb}your\\s+fuliza\\s+m-?pesa\\s+limit\\s+is'),
+      RegExp('${_wb}outstanding\\s+amount'),
+    ],
+  ),
+
+  // Airtime — must beat the generic "sent to … for airtime" sent rule below.
+  MpesaParserRule(
+    type: MpesaTransactionType.airtime,
+    confidence: MpesaConfidence.high,
+    reason: 'airtime_structural',
+    requiredPatterns: [RegExp('${_wb}airtime')],
+  ),
+
+  // Agent deposit: "On DATE Give Ksh X cash to AGENT" (business-account form).
+  MpesaParserRule(
+    type: MpesaTransactionType.deposit,
+    confidence: MpesaConfidence.high,
+    reason: 'deposit_give_cash',
+    requiredPatterns: [
+      RegExp('$_wb(?:give|deposit)\\s+(?:ksh|kes)'),
+      RegExp('${_wb}cash'),
+    ],
+  ),
+
+  // Paybill keyword: "Ksh X paybill payment to BILLER" / "paybill to NHIF ...".
+  MpesaParserRule(
+    type: MpesaTransactionType.paybill,
+    confidence: MpesaConfidence.high,
+    reason: 'paybill_keyword',
+    requiredPatterns: [
+      RegExp('${_wb}paybill'),
+      RegExp('${_wb}to'),
+    ],
+  ),
+
+  // Sent: "Customer transfer of Ksh X to NAME ..." (no literal "sent to").
+  MpesaParserRule(
+    type: MpesaTransactionType.sent,
+    confidence: MpesaConfidence.high,
+    reason: 'sent_customer_transfer',
+    requiredPatterns: [RegExp('${_wb}customer\\s+transfer')],
+  ),
+
   // Paybill: "sent to BILLER for account ACCT"
   MpesaParserRule(
     type: MpesaTransactionType.paybill,
@@ -187,7 +251,12 @@ final List<MpesaParserRule> _fallbackRules = [
     type: MpesaTransactionType.withdrawal,
     confidence: MpesaConfidence.medium,
     reason: 'withdrawal',
-    requiredPatterns: [RegExp('${_wb}withdraw')],
+    // Handles both "withdrawn from agent", "cash withdrawal", and the
+    // concatenated "PMWithdraw"/"AMWithdraw" form seen in newer Safaricom
+    // templates ("... at 4:37 PMWithdraw Ksh500.00 from ...").
+    requiredPatterns: [
+      RegExp(r'(?<![a-z0-9])(?:withdraw|withdrawn|withdrawal|cash\s+withdrawal)(?![a-z0-9])|(?:am|pm)withdraw'),
+    ],
   ),
 
   // Airtime

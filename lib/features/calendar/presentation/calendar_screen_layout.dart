@@ -102,11 +102,13 @@ class _CalendarLayout extends StatelessWidget {
                   weekEventsState: weekEventsState,
                 )
               else
-                _DayBody(
-                  state: state,
-                  title: title,
-                  selectedDay: selectedDay,
-                  eventsState: eventsState,
+                Expanded(
+                  child: _DayBody(
+                    state: state,
+                    title: title,
+                    selectedDay: selectedDay,
+                    eventsState: eventsState,
+                  ),
                 ),
             ],
           ),
@@ -167,6 +169,7 @@ class _MonthBody extends StatelessWidget {
             behavior: HitTestBehavior.opaque,
             onHorizontalDragStart: (_) => state._beginSwipe(),
             onHorizontalDragEnd: state._handleSwipeEnd,
+            onHorizontalDragUpdate: state._handleSwipeUpdate,
             onHorizontalDragCancel: state._cancelSwipe,
             child: AppCard(
               child: Column(

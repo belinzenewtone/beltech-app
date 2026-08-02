@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:beltech/core/feedback/app_haptics.dart';
 import 'package:beltech/core/navigation/shell_providers.dart';
 import 'package:beltech/core/theme/app_colors.dart';
@@ -121,18 +123,29 @@ class ToolShortcutGrid extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     return LayoutBuilder(
       builder: (context, constraints) {
+        const crossSpacing = 10.0;
         final crossAxisCount = constraints.maxWidth < 260 ? 2 : 3;
         final aspectRatio = childAspectRatio ??
             (crossAxisCount == 3 ? 1.02 : 1.08);
+        // Tile height is content-driven so tiles can never overflow at any
+        // width: icon (36) + gap (8) + label line (~19) + vertical padding
+        // (16) + border (2), plus a little headroom for text scale.
+        const tileContentHeight = 36.0 + 8.0 + 19.0 + 16.0 + 2.0;
+        final tileWidth =
+            (constraints.maxWidth - (crossAxisCount - 1) * crossSpacing) /
+            crossAxisCount;
+        final aspectHeight = tileWidth / aspectRatio;
 
         return GridView.builder(
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
           gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: crossAxisCount,
-            crossAxisSpacing: 10,
-            mainAxisSpacing: 10,
-            childAspectRatio: aspectRatio,
+            crossAxisSpacing: crossSpacing,
+            mainAxisSpacing: crossSpacing,
+            // mainAxisExtent wins over childAspectRatio; keep the ratio for
+            // the fallback so default grids stay near-square when roomy.
+            mainAxisExtent: math.max(tileContentHeight, aspectHeight),
           ),
           itemCount: shortcuts.length,
           itemBuilder: (context, index) {
@@ -171,8 +184,7 @@ class _ToolShortcutTile extends StatelessWidget {
         borderRadius: BorderRadius.circular(AppRadius.lg),
         onTap: onTap,
         child: Container(
-          constraints: const BoxConstraints(minHeight: 88),
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(AppRadius.lg),
             border: Border.all(color: AppColors.borderFor(brightness)),
@@ -181,29 +193,36 @@ class _ToolShortcutTile extends StatelessWidget {
             ).withValues(alpha: 0.58),
           ),
           child: Column(
+            mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.center,
-            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisAlignment: MainAxisAlignment.start,
             children: [
               Container(
                 width: 36,
                 height: 36,
                 decoration: BoxDecoration(
-                  shape: BoxShape.circle,
+                  borderRadius: BorderRadius.circular(12),
                   color: shortcut.color.withValues(alpha: 0.18),
                 ),
                 child: Icon(shortcut.icon, color: shortcut.color, size: 18),
               ),
               const SizedBox(height: 8),
-              Text(
-                shortcut.label,
-                textAlign: TextAlign.center,
-                style: AppTypography.bodySm(context).copyWith(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w500,
-                  color: AppColors.textPrimaryFor(brightness),
+              // Flexible + FittedBox guarantee the label never overflows the
+              // tile at any text scale or tile size — it scales down instead.
+              Flexible(
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    shortcut.label,
+                    textAlign: TextAlign.center,
+                    maxLines: 1,
+                    style: AppTypography.bodySm(context).copyWith(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                      color: AppColors.textPrimaryFor(brightness),
+                    ),
+                  ),
                 ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
               ),
             ],
           ),

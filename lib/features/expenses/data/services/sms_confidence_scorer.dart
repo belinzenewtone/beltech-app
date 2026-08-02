@@ -99,6 +99,20 @@ class SmsConfidenceScorer {
 
   /// Score merchant/recipient clarity (0.0 to 1.0).
   double _scoreMerchantClarity(ParsedMpesaCandidate candidate) {
+    // Structurally unambiguous types (airtime, deposit, withdrawal, Fuliza
+    // charge) are identified by their keyword + amount — a missing
+    // counterparty is expected, not a sign of low confidence.
+    final isSelfDescriptive = switch (candidate.transactionType) {
+      MpesaTransactionType.airtime ||
+      MpesaTransactionType.deposit ||
+      MpesaTransactionType.withdrawal ||
+      MpesaTransactionType.fulizaCharge => true,
+      _ => false,
+    };
+    if (isSelfDescriptive) {
+      return 1.0;
+    }
+
     final hasCounterparty =
         candidate.counterparty != null &&
         candidate.counterparty!.isNotEmpty &&

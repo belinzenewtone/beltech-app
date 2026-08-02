@@ -1,4 +1,5 @@
 import 'package:beltech/core/theme/app_colors.dart';
+import 'package:beltech/core/theme/app_radius.dart';
 import 'package:beltech/core/theme/app_typography.dart';
 import 'package:beltech/core/widgets/app_card.dart';
 import 'package:flutter/material.dart';
@@ -46,7 +47,7 @@ class AppEmptyState extends StatelessWidget {
             height: 64,
             decoration: BoxDecoration(
               color: color.withValues(alpha: 0.14),
-              shape: BoxShape.circle,
+              borderRadius: BorderRadius.circular(AppRadius.xxl),
             ),
             child: Icon(icon, color: color, size: 30),
           ),
@@ -68,6 +69,10 @@ class AppEmptyState extends StatelessWidget {
         if (action != null) ...[const SizedBox(height: 18), action!],
       ],
     );
+
+    // Always stretch to the full available width so the empty state reads as a
+    // finished, full-bleed panel rather than a narrow card floating to one side.
+    content = SizedBox(width: double.infinity, child: content);
 
     if (cardWrapped) {
       content = AppCard(

@@ -46,7 +46,7 @@ class AppIconPillButton extends StatelessWidget {
       color: Colors.transparent,
       child: InkWell(
         onTap: onPressed,
-        borderRadius: AppRadius.fullAll,
+        borderRadius: AppRadius.lgAll,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 180),
           curve: Curves.easeOutCubic,
@@ -60,7 +60,7 @@ class AppIconPillButton extends StatelessWidget {
           ),
           decoration: BoxDecoration(
             color: backgroundColor,
-            borderRadius: AppRadius.fullAll,
+            borderRadius: AppRadius.lgAll,
             border: Border.all(color: borderColor),
             boxShadow: [
               BoxShadow(

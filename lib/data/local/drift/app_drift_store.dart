@@ -7,6 +7,7 @@ import 'package:drift/drift.dart'
     show ArgumentsForBatchedStatement, BatchedStatements, OpeningDetails;
 
 part 'app_drift_store_queries.dart';
+part 'app_drift_store_rollups.dart';
 part 'app_drift_store_schema.dart';
 part 'app_drift_store_schema_migrations.dart';
 part 'app_drift_store_utils.dart';
@@ -31,6 +32,42 @@ class AppDriftStore {
 
   void emitChange() => _emitChange();
 
+  // ── Rollup aggregates (Phase P3) ───────────────────────────────────────────
+
+  /// Authoritative recompute of the rollup tables from `transactions`.
+  Future<void> rebuildRollups() async {
+    await _ensureInitialized();
+    await _rebuildRollupsImpl(this);
+  }
+
+  /// Apply one transaction to the rollups (+1 insert / -1 delete).
+  Future<void> applyRollupDelta({
+    required String category,
+    required double amount,
+    required int occurredAtMs,
+    required int sign,
+  }) => _applyRollupDeltaImpl(
+    this,
+    category: category,
+    amount: amount,
+    occurredAtMs: occurredAtMs,
+    sign: sign,
+  );
+
+  /// Apply a batch of transactions to the rollups in one coalesced pass.
+  Future<void> applyRollupDeltasBulk(
+    List<({String category, double amount, int occurredAtMs})> txns, {
+    required int sign,
+  }) => _applyRollupDeltasBulkImpl(this, txns, sign: sign);
+
+  /// Range sum read from `rollup_daily` (day-aligned bounds).
+  Future<double> sumDailyBetween(DateTime start, DateTime end) =>
+      _sumDailyBetweenImpl(this, start, end);
+
+  /// All-time per-category totals from `rollup_category`.
+  Future<List<CategoryTotalRecord>> loadCategoryRollups() =>
+      _loadCategoryRollupsImpl(this);
+
   Future<void> resetAllData() async {
     await _ensureInitialized();
     const tables = [
@@ -53,6 +90,8 @@ class AppDriftStore {
       'learning_sessions',
       'app_updates',
       'ml_training_samples',
+      'rollup_daily',
+      'rollup_category',
     ];
     for (final table in tables) {
       await _db.runDelete('DELETE FROM $table', const []);
@@ -61,6 +100,8 @@ class AppDriftStore {
   }
 
   Future<void> dispose() async {
+    _emitTimer?.cancel();
+    _emitTimer = null;
     await _changes.close();
     await _db.close();
   }
@@ -116,6 +157,15 @@ class AppDriftStore {
         mpesaCode,
       ],
     );
+    // Keep rollups fresh incrementally. On the rare INSERT-OR-IGNORE skip this
+    // over-counts by one; the startup rebuild self-heals any accumulated drift.
+    await _applyRollupDeltaImpl(
+      this,
+      category: category,
+      amount: amountKes,
+      occurredAtMs: timestamp,
+      sign: 1,
+    );
     _emitChange();
   }
 
@@ -134,6 +184,22 @@ class AppDriftStore {
         ],
         rows.map((r) => ArgumentsForBatchedStatement(0, r)).toList(),
       ),
+    );
+    // Coalesced rollup maintenance for the bulk-import hot path: one write per
+    // affected day/category regardless of batch size. Column order matches the
+    // INSERT above (1=category, 2=amount, 3=occurred_at).
+    await _applyRollupDeltasBulkImpl(
+      this,
+      rows
+          .map(
+            (r) => (
+              category: (r[1] ?? 'Other') as String,
+              amount: _asDouble(r[2]),
+              occurredAtMs: _asInt(r[3]),
+            ),
+          )
+          .toList(growable: false),
+      sign: 1,
     );
   }
 
@@ -386,7 +452,40 @@ class AppDriftStore {
 
   Future<int> countRows(String tableName) => _countRows(tableName);
 
-  void _emitChange() => _AppDriftUtils.emitChange(this);
+  // ── Change coalescing (Phase P4) ────────────────────────────────────────────
+  // A bulk import fires many mutations in quick succession; without this every
+  // one would re-run all `_watch` loaders (and the ~10 providers behind them).
+  // Leading+trailing throttle: an isolated change publishes immediately, but a
+  // burst collapses into at most one publish per [_coalesceWindow].
+  static const Duration _coalesceWindow = Duration(milliseconds: 120);
+  Timer? _emitTimer;
+  bool _emitPending = false;
+
+  void _emitChange() {
+    _changeSeq += 1;
+    if (_emitTimer == null) {
+      _rawEmit();
+      _emitTimer = Timer(_coalesceWindow, _onEmitWindowEnd);
+    } else {
+      _emitPending = true; // fold into the trailing edge
+    }
+  }
+
+  void _onEmitWindowEnd() {
+    if (_emitPending) {
+      _emitPending = false;
+      _rawEmit();
+      _emitTimer = Timer(_coalesceWindow, _onEmitWindowEnd);
+    } else {
+      _emitTimer = null;
+    }
+  }
+
+  void _rawEmit() {
+    if (!_changes.isClosed) {
+      _changes.add(_changeSeq);
+    }
+  }
 
   int _asInt(Object? value) => _AppDriftUtils.asInt(value);
 

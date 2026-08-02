@@ -1,5 +1,6 @@
 import 'package:beltech/core/theme/app_colors.dart';
 import 'package:beltech/core/theme/app_radius.dart';
+import 'package:beltech/core/widgets/app_button.dart';
 import 'package:flutter/material.dart';
 
 class PermissionRationaleSheet extends StatelessWidget {
@@ -129,36 +130,20 @@ class PermissionRationaleSheet extends StatelessWidget {
                   child: Row(
                     children: [
                       Expanded(
-                        child: OutlinedButton(
+                        child: AppButton(
+                          label: 'Not Now',
                           onPressed: onDismiss,
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: AppColors.textPrimaryFor(
-                              brightness,
-                            ),
-                            side: BorderSide(
-                              color: AppColors.borderFor(brightness),
-                            ),
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: AppRadius.lgAll,
-                            ),
-                          ),
-                          child: const Text('Not Now'),
+                          variant: AppButtonVariant.secondary,
+                          fullWidth: true,
                         ),
                       ),
                       const SizedBox(width: 14),
                       Expanded(
-                        child: FilledButton(
+                        child: AppButton(
+                          label: 'Allow',
                           onPressed: onAllow,
-                          style: FilledButton.styleFrom(
-                            backgroundColor: AppColors.accent,
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: AppRadius.lgAll,
-                            ),
-                          ),
-                          child: const Text('Allow'),
+                          variant: AppButtonVariant.primary,
+                          fullWidth: true,
                         ),
                       ),
                     ],

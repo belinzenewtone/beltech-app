@@ -126,9 +126,9 @@ class _RecurringSwipeBackground extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: color,
-        borderRadius: BorderRadius.circular(22),
+        borderRadius: BorderRadius.circular(8),
       ),
-      padding: const EdgeInsets.symmetric(horizontal: 22),
+      padding: const EdgeInsets.symmetric(horizontal: 20),
       alignment: alignment,
       child: Column(
         mainAxisSize: MainAxisSize.min,

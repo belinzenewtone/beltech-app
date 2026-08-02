@@ -6,9 +6,9 @@ import 'package:intl/intl.dart';
 import 'package:beltech/core/logger/app_logger.dart';
 import 'package:beltech/core/theme/app_colors.dart';
 import 'package:beltech/core/widgets/app_toast.dart';
-import 'package:beltech/core/theme/app_radius.dart';
 import 'package:beltech/core/theme/app_spacing.dart';
 import 'package:beltech/core/theme/app_typography.dart';
+import 'package:beltech/core/widgets/app_background.dart';
 import 'package:beltech/core/widgets/app_button.dart';
 import 'package:beltech/core/widgets/app_card.dart';
 import 'package:beltech/core/widgets/app_form_fields.dart';
@@ -114,12 +114,12 @@ class _CalendarAddScreenState extends ConsumerState<CalendarAddScreen>
 
   @override
   Widget build(BuildContext context) {
-    final brightness = Theme.of(context).brightness;
     final tab = _tabs[_tabController.index];
 
-    return Scaffold(
-      backgroundColor: AppColors.backgroundFor(brightness),
-      appBar: AppBar(
+    return AppBackground(
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
         scrolledUnderElevation: 0,
@@ -163,6 +163,7 @@ class _CalendarAddScreenState extends ConsumerState<CalendarAddScreen>
             ),
           ),
         ],
+      ),
       ),
     );
   }
@@ -459,7 +460,7 @@ class _TabPillSelector extends StatelessWidget {
               color: Colors.transparent,
               child: InkWell(
                 onTap: () => onTap(index),
-                borderRadius: BorderRadius.circular(999),
+                borderRadius: BorderRadius.circular(10),
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 180),
                   curve: Curves.easeInOut,
@@ -470,7 +471,7 @@ class _TabPillSelector extends StatelessWidget {
                         : brightness == Brightness.dark
                             ? AppColors.surfaceElevated
                             : AppColors.surfaceFor(brightness),
-                    borderRadius: BorderRadius.circular(999),
+                    borderRadius: BorderRadius.circular(10),
                     border: Border.all(
                       color: selected
                           ? AppColors.accent
@@ -722,22 +723,17 @@ class _CategorySelector extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final brightness = Theme.of(context).brightness;
-    return _FormCard(
-      child: DropdownButtonFormField<CalendarEventType>(
-        initialValue: selected,
-        isExpanded: true,
-        icon: const Icon(Icons.keyboard_arrow_down_rounded),
-        decoration: const InputDecoration(
-          border: InputBorder.none,
-          contentPadding: EdgeInsets.zero,
-          isDense: true,
-        ),
-        dropdownColor: AppColors.surfaceFor(brightness),
-        style: AppTypography.bodyMd(context).copyWith(
-          color: AppColors.textPrimaryFor(brightness),
-          fontWeight: FontWeight.w500,
-        ),
-        items: CalendarEventType.values.map((type) {
+    return DropdownButtonFormField<CalendarEventType>(
+      initialValue: selected,
+      isExpanded: true,
+      icon: const Icon(Icons.keyboard_arrow_down_rounded),
+      decoration: appFieldDecoration(context, hint: 'Category'),
+      dropdownColor: AppColors.surfaceFor(brightness),
+      style: AppTypography.bodyMd(context).copyWith(
+        color: AppColors.textPrimaryFor(brightness),
+        fontWeight: FontWeight.w500,
+      ),
+      items: CalendarEventType.values.map((type) {
           final option = eventTypeOption(type);
           return DropdownMenuItem<CalendarEventType>(
             value: type,
@@ -753,7 +749,6 @@ class _CategorySelector extends StatelessWidget {
         onChanged: (value) {
           if (value != null) onChanged(value);
         },
-      ),
     );
   }
 }
@@ -823,39 +818,24 @@ class _GuestInputState extends State<_GuestInput> {
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Expanded(
-              child: Container(
-                decoration: BoxDecoration(
-                  color: AppColors.surfaceMutedFor(brightness),
-                  borderRadius: BorderRadius.circular(AppRadius.lg),
+              child: TextField(
+                controller: _inputController,
+                focusNode: _focusNode,
+                textInputAction: TextInputAction.done,
+                style: AppTypography.bodyMd(context),
+                decoration: appFieldDecoration(
+                  context,
+                  hint: 'Add guest (press enter or comma)',
                 ),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AppSpacing.md,
-                  vertical: AppSpacing.md,
-                ),
-                child: TextField(
-                  controller: _inputController,
-                  focusNode: _focusNode,
-                  textInputAction: TextInputAction.done,
-                  style: AppTypography.bodyMd(context),
-                  decoration: InputDecoration(
-                    hintText: 'Add guest (press enter or comma)',
-                    hintStyle: AppTypography.bodyMd(context).copyWith(
-                      color: AppColors.textSecondaryFor(brightness).withValues(alpha: 0.55),
-                    ),
-                    border: InputBorder.none,
-                    contentPadding: EdgeInsets.zero,
-                    isDense: true,
-                  ),
-                  onSubmitted: (value) {
+                onSubmitted: (value) {
+                  _add(value);
+                  _focusNode.requestFocus();
+                },
+                onChanged: (value) {
+                  if (value.contains(',')) {
                     _add(value);
-                    _focusNode.requestFocus();
-                  },
-                  onChanged: (value) {
-                    if (value.contains(',')) {
-                      _add(value);
-                    }
-                  },
-                ),
+                  }
+                },
               ),
             ),
             const SizedBox(width: AppSpacing.sm),
@@ -1393,19 +1373,19 @@ class _RemindersPickerPageState extends State<_RemindersPickerPage> {
 
   @override
   Widget build(BuildContext context) {
-    final brightness = Theme.of(context).brightness;
-    return Scaffold(
-      backgroundColor: AppColors.backgroundFor(brightness),
-      appBar: AppBar(
+    return AppBackground(
+      child: Scaffold(
         backgroundColor: Colors.transparent,
-        elevation: 0,
-        scrolledUnderElevation: 0,
-        titleSpacing: 8,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 20),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-        title: Text('Reminders', style: AppTypography.sectionTitle(context)),
+        appBar: AppBar(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          scrolledUnderElevation: 0,
+          titleSpacing: 8,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 20),
+            onPressed: () => Navigator.of(context).pop(),
+          ),
+          title: Text('Reminders', style: AppTypography.sectionTitle(context)),
         actions: [
           TextButton(
             onPressed: () {
@@ -1492,6 +1472,7 @@ class _RemindersPickerPageState extends State<_RemindersPickerPage> {
             ),
           ],
         ],
+      ),
       ),
     );
   }
@@ -1677,19 +1658,19 @@ class _RepeatPickerPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final brightness = Theme.of(context).brightness;
-    return Scaffold(
-      backgroundColor: AppColors.backgroundFor(brightness),
-      appBar: AppBar(
+    return AppBackground(
+      child: Scaffold(
         backgroundColor: Colors.transparent,
-        elevation: 0,
-        scrolledUnderElevation: 0,
-        titleSpacing: 8,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 20),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-        title: Text('Repeat', style: AppTypography.sectionTitle(context)),
+        appBar: AppBar(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          scrolledUnderElevation: 0,
+          titleSpacing: 8,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 20),
+            onPressed: () => Navigator.of(context).pop(),
+          ),
+          title: Text('Repeat', style: AppTypography.sectionTitle(context)),
       ),
       body: ListView(
         padding: AppSpacing.screenPadding(context),
@@ -1707,6 +1688,7 @@ class _RepeatPickerPage extends StatelessWidget {
             ),
           ),
         ],
+      ),
       ),
     );
   }
@@ -1782,39 +1764,32 @@ class _TimeZonePickerPageState extends State<_TimeZonePickerPage> {
 
   @override
   Widget build(BuildContext context) {
-    final brightness = Theme.of(context).brightness;
-    return Scaffold(
-      backgroundColor: AppColors.backgroundFor(brightness),
-      appBar: AppBar(
+    return AppBackground(
+      child: Scaffold(
         backgroundColor: Colors.transparent,
-        elevation: 0,
-        scrolledUnderElevation: 0,
-        titleSpacing: 8,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 20),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-        title: Text('Time zone', style: AppTypography.sectionTitle(context)),
+        appBar: AppBar(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          scrolledUnderElevation: 0,
+          titleSpacing: 8,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 20),
+            onPressed: () => Navigator.of(context).pop(),
+          ),
+          title: Text('Time zone', style: AppTypography.sectionTitle(context)),
       ),
       body: Column(
         children: [
           Padding(
             padding: AppSpacing.screenPadding(context).copyWith(bottom: AppSpacing.sm),
-            child: _FormCard(
-              child: TextField(
-                controller: _searchController,
-                onChanged: _filter,
-                style: AppTypography.bodyMd(context),
-                decoration: InputDecoration(
-                  hintText: 'Search time zone',
-                  hintStyle: AppTypography.bodyMd(context).copyWith(
-                    color: AppColors.textSecondaryFor(brightness).withValues(alpha: 0.55),
-                  ),
-                  prefixIcon: const Icon(Icons.search, color: AppColors.accent),
-                  border: InputBorder.none,
-                  contentPadding: EdgeInsets.zero,
-                  isDense: true,
-                ),
+            child: TextField(
+              controller: _searchController,
+              onChanged: _filter,
+              style: AppTypography.bodyMd(context),
+              decoration: appFieldDecoration(
+                context,
+                hint: 'Search time zone',
+                prefixIcon: const Icon(Icons.search, color: AppColors.accent),
               ),
             ),
           ),
@@ -1839,6 +1814,7 @@ class _TimeZonePickerPageState extends State<_TimeZonePickerPage> {
             ),
           ),
         ],
+        ),
       ),
     );
   }

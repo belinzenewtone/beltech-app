@@ -35,7 +35,7 @@ class ExportFormatSelector extends StatelessWidget {
                   color: isSelected
                       ? AppColors.accent.withValues(alpha: 0.16)
                       : AppColors.surfaceMutedFor(brightness),
-                  borderRadius: BorderRadius.circular(AppRadius.full),
+                  borderRadius: BorderRadius.circular(AppRadius.lg),
                   border: Border.all(
                     color: isSelected
                         ? AppColors.accent.withValues(alpha: 0.55)

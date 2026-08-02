@@ -1,11 +1,6 @@
 part of 'app_drift_store.dart';
 
 class _AppDriftUtils {
-  static void emitChange(AppDriftStore store) {
-    store._changeSeq += 1;
-    store._changes.add(store._changeSeq);
-  }
-
   static int asInt(Object? value) {
     if (value is int) {
       return value;

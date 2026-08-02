@@ -143,7 +143,7 @@ class _HubCard extends StatelessWidget {
               height: 40,
               decoration: BoxDecoration(
                 color: AppColors.accent.withValues(alpha: 0.14),
-                shape: BoxShape.circle,
+                borderRadius: BorderRadius.circular(12),
               ),
               alignment: Alignment.center,
               child: Icon(icon, color: AppColors.accent, size: 20),
