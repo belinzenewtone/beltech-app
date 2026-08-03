@@ -18,17 +18,20 @@ class ImportMetricTile extends StatelessWidget {
     required this.label,
     required this.value,
     required this.color,
+    this.onTap,
   });
 
   final String label;
   final String value;
   final Color color;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
     return AppCard(
       tone: AppCardTone.muted,
       padding: const EdgeInsets.all(AppSpacing.md),
+      onTap: onTap,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
