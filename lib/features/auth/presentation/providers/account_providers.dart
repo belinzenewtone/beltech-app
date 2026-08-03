@@ -52,6 +52,13 @@ class AccountAuthController extends AsyncNotifier<void> {
       }
     });
   }
+
+  Future<void> signOut() async {
+    state = const AsyncLoading();
+    state = await AsyncValue.guard(
+      () => ref.read(accountRepositoryProvider).signOut(),
+    );
+  }
 }
 
 final accountAuthControllerProvider =

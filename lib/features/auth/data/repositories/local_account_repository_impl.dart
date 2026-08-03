@@ -97,4 +97,11 @@ class LocalAccountRepositoryImpl implements AccountRepository {
     });
     _sessionController.add(_session);
   }
+
+  @override
+  Future<void> signOut() async {
+    await _storage.delete(key: _sessionKey);
+    _session = AccountSession.unauthenticated;
+    _sessionController.add(_session);
+  }
 }

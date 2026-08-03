@@ -1,6 +1,4 @@
 import 'package:beltech/features/recurring/data/services/recurring_materializer_service.dart';
-import 'package:beltech/features/recurring/domain/entities/recurring_rule.dart'
-    show RecurringRule, RecurringFrequency;
 import 'package:beltech/features/recurring/domain/repositories/recurring_repository.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -17,34 +15,20 @@ void main() {
   });
 
   group('RecurringMaterializerService', () {
-    test('materializes due rules', () async {
-      final now = DateTime.now();
-      final dueRule = RecurringRule(
-        id: 'test_1',
-        name: 'Rent',
-        merchant: 'Landlord',
-        nextRunAt: now.subtract(const Duration(days: 1)),
-        isActive: true,
-        frequency: RecurringFrequency.monthly,
-        category: 'Housing',
-        estimatedAmount: 15000,
-      );
+    test('syncNow delegates to repository materializeDue', () async {
+      when(() => mockRepository.materializeDue()).thenAnswer((_) async => 1);
 
-      when(
-        () => mockRepository.getActiveRecurringRules(),
-      ).thenAnswer((_) async => [dueRule]);
+      await service.syncNow();
 
-      final created = await service.materializeDueRecurring();
-      expect(created, hasLength(1));
-      expect(created.first.amount, equals(15000));
+      verify(() => mockRepository.materializeDue()).called(1);
     });
 
     test('syncNow handles errors gracefully', () async {
       when(
-        () => mockRepository.getActiveRecurringRules(),
+        () => mockRepository.materializeDue(),
       ).thenThrow(Exception('Database error'));
 
-      await service.syncNow();
+      await expectLater(service.syncNow(), completes);
     });
   });
 }
