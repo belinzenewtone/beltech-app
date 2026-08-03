@@ -34,8 +34,14 @@ void backgroundSyncDispatcher() {
   Workmanager().executeTask((task, inputData) async {
     WidgetsFlutterBinding.ensureInitialized();
     ui.DartPluginRegistrant.ensureInitialized();
-    await BackgroundWorkerRuntime.run();
-    return true;
+    try {
+      await BackgroundWorkerRuntime.run();
+      return true;
+    } catch (_) {
+      // Returning false signals WorkManager to retry with the backoff
+      // criteria configured on the work request (exponential, starting 10 s).
+      return false;
+    }
   });
 }
 
@@ -103,11 +109,16 @@ class BackgroundWorkerRuntime {
         await insights.runSweep();
       }
     } catch (error) {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString(
-        'background_worker_last_error',
-        '${DateTime.now().toIso8601String()} | $error',
-      );
+      // Log for debugging, then rethrow so the dispatcher can return false
+      // and WorkManager retries the task with exponential backoff.
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString(
+          'background_worker_last_error',
+          '${DateTime.now().toIso8601String()} | $error',
+        );
+      } catch (_) {}
+      rethrow;
     } finally {
       await localStore?.dispose();
     }
