@@ -13,4 +13,6 @@ abstract class AccountRepository {
     required String phone,
     required String password,
   });
+
+  Future<void> signOut();
 }

@@ -18,6 +18,7 @@ import 'package:beltech/features/expenses/presentation/screens/csv_import_screen
 import 'package:beltech/features/expenses/presentation/screens/import_health_screen.dart';
 import 'package:beltech/features/expenses/presentation/screens/merchant_detail_screen.dart';
 import 'package:beltech/features/expenses/presentation/screens/quarantine_queue_screen.dart';
+import 'package:beltech/features/expenses/presentation/screens/review_queue_screen.dart';
 import 'package:beltech/features/learning/presentation/screens/learning_screen.dart';
 import 'package:beltech/features/planner/presentation/screens/planner_screen.dart';
 import 'package:beltech/features/recurring/presentation/recurring_screen.dart';
@@ -179,6 +180,11 @@ final appRouterProvider = Provider<GoRouter>(
         path: '/quarantine-queue',
         name: 'quarantine-queue',
         builder: (context, state) => const QuarantineQueueScreen(),
+      ),
+      GoRoute(
+        path: '/review-queue',
+        name: 'review-queue',
+        builder: (context, state) => const ReviewQueueScreen(),
       ),
     ],
   ),

@@ -159,6 +159,58 @@ class QuarantineQueueNotifier
   }
 }
 
+/// Action notifier for review queue operations.
+class ReviewQueueNotifier
+    extends StateNotifier<AsyncValue<List<ExpenseReviewItem>>> {
+  ReviewQueueNotifier(this._repository) : super(const AsyncValue.loading());
+
+  final ExpensesRepository _repository;
+
+  Future<void> load() async {
+    state = const AsyncValue.loading();
+    try {
+      final items = await _repository.fetchReviewQueue(limit: 50);
+      state = AsyncValue.data(items);
+    } catch (e, st) {
+      state = AsyncValue.error(e, st);
+    }
+  }
+
+  Future<void> approve(int reviewId) async {
+    try {
+      await _repository.resolveReviewItem(reviewId: reviewId, approve: true);
+      _removeItem(reviewId);
+    } catch (e, st) {
+      state = AsyncValue.error(e, st);
+    }
+  }
+
+  Future<void> reject(int reviewId) async {
+    try {
+      await _repository.resolveReviewItem(reviewId: reviewId, approve: false);
+      _removeItem(reviewId);
+    } catch (e, st) {
+      state = AsyncValue.error(e, st);
+    }
+  }
+
+  void _removeItem(int id) {
+    final currentItems = state.maybeWhen(
+      data: (items) => items,
+      orElse: () => <ExpenseReviewItem>[],
+    );
+    state = AsyncValue.data(currentItems.where((i) => i.id != id).toList());
+  }
+}
+
+/// Provider for the review queue notifier.
+final reviewQueueNotifierProvider = StateNotifierProvider<
+    ReviewQueueNotifier,
+    AsyncValue<List<ExpenseReviewItem>>>((ref) {
+  final repository = ref.watch(expensesRepositoryProvider);
+  return ReviewQueueNotifier(repository);
+});
+
 /// Provider for the quarantine queue notifier.
 final quarantineQueueNotifierProvider =
     StateNotifierProvider<

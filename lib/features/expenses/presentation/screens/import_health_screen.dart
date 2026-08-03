@@ -31,8 +31,7 @@ final class _ImportOverview {
 
 final _importOverviewProvider = FutureProvider<_ImportOverview>((ref) async {
   final metrics = await ref.watch(expenseImportMetricsProvider.future);
-  final snapshot = await ref.watch(expensesSnapshotProvider.future);
-  final totalProcessed = snapshot.transactions.length;
+  final totalProcessed = metrics.totalImportedFromSms;
   final totalItems =
       totalProcessed +
       metrics.reviewQueueCount +
@@ -76,8 +75,6 @@ class _ImportHealthScreenState extends ConsumerState<ImportHealthScreen> {
           _trendsSection(),
           const SizedBox(height: AppSpacing.sectionGap),
           _actionCardsSection(),
-          const SizedBox(height: AppSpacing.sectionGap),
-          _reviewItemsSection(),
           const SizedBox(height: AppSpacing.sectionGap),
           _paybillSection(),
           const SizedBox(height: AppSpacing.sectionGap),
@@ -200,6 +197,9 @@ class _ImportHealthScreenState extends ConsumerState<ImportHealthScreen> {
                       label: 'Pending Review',
                       value: '${overview.metrics.reviewQueueCount}',
                       color: AppColors.warning,
+                      onTap: overview.metrics.reviewQueueCount > 0
+                          ? () => context.pushNamed('review-queue')
+                          : null,
                     ),
                   ),
                   const SizedBox(width: AppSpacing.md),
@@ -485,15 +485,7 @@ class _ImportHealthScreenState extends ConsumerState<ImportHealthScreen> {
                 iconColor: AppColors.warning,
                 title: 'Approve pending review items',
                 subtitle: '${metrics.reviewQueueCount} waiting',
-                onTap: () {
-                  final position = Scrollable.maybeOf(context)?.position;
-                  if (position == null) return;
-                  position.animateTo(
-                    position.maxScrollExtent * 0.6,
-                    duration: const Duration(milliseconds: 300),
-                    curve: Curves.easeInOut,
-                  );
-                },
+                onTap: () => context.pushNamed('review-queue'),
               ),
             ],
             if (hasFailed) ...[
@@ -516,32 +508,6 @@ class _ImportHealthScreenState extends ConsumerState<ImportHealthScreen> {
               ),
             ],
           ],
-        );
-      },
-      loading: () => const SizedBox.shrink(),
-      error: (_, _) => const SizedBox.shrink(),
-    );
-  }
-
-  Widget _reviewItemsSection() {
-    final reviewAsync = ref.watch(expenseReviewQueueProvider);
-    return reviewAsync.when(
-      data: (items) {
-        if (items.isEmpty) return const SizedBox.shrink();
-        return AppCard(
-          tone: AppCardTone.muted,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('Review Items', style: AppTypography.cardTitle(context)),
-              const SizedBox(height: AppSpacing.sm),
-              for (final (index, item) in items.indexed) ...[
-                if (index > 0)
-                  const Divider(color: AppColors.borderSubtle, height: 1),
-                ImportReviewItemTile(item: item),
-              ],
-            ],
-          ),
         );
       },
       loading: () => const SizedBox.shrink(),

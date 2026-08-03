@@ -107,6 +107,7 @@ class ExpenseImportMetrics {
     required this.quarantineCount,
     required this.retryQueueCount,
     required this.failedQueueCount,
+    this.totalImportedFromSms = 0,
     this.lastImportAt,
     this.lastMpesaCode,
     this.lastError,
@@ -120,6 +121,9 @@ class ExpenseImportMetrics {
   final int quarantineCount;
   final int retryQueueCount;
   final int failedQueueCount;
+
+  /// Total SMS messages successfully imported (decision = 'imported' in audit log).
+  final int totalImportedFromSms;
 
   /// When the most recently touched import-queue row was last updated.
   final DateTime? lastImportAt;
@@ -152,6 +156,7 @@ class ExpenseImportMetrics {
           quarantineCount == other.quarantineCount &&
           retryQueueCount == other.retryQueueCount &&
           failedQueueCount == other.failedQueueCount &&
+          totalImportedFromSms == other.totalImportedFromSms &&
           lastImportAt == other.lastImportAt &&
           lastMpesaCode == other.lastMpesaCode &&
           lastError == other.lastError &&
@@ -166,6 +171,7 @@ class ExpenseImportMetrics {
     quarantineCount,
     retryQueueCount,
     failedQueueCount,
+    totalImportedFromSms,
     lastImportAt,
     lastMpesaCode,
     lastError,
