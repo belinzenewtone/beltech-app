@@ -307,6 +307,41 @@ class AppDriftStore {
     );
   }
 
+  /// Runs [action] inside a SQLite SAVEPOINT so all writes are committed
+  /// atomically or rolled back entirely on error. Safe to nest — SQLite
+  /// SAVEPOINTs work regardless of whether a transaction is already active.
+  Future<T> inTransaction<T>(Future<T> Function() action) async {
+    await _ensureInitialized();
+    await _db.runCustom('SAVEPOINT _import_chunk');
+    try {
+      final result = await action();
+      await _db.runCustom('RELEASE SAVEPOINT _import_chunk');
+      return result;
+    } catch (e) {
+      try {
+        await _db.runCustom('ROLLBACK TO SAVEPOINT _import_chunk');
+        await _db.runCustom('RELEASE SAVEPOINT _import_chunk');
+      } catch (_) {}
+      rethrow;
+    }
+  }
+
+  /// Efficiently insert income rows in one batched statement.
+  /// Deduplicates via the UNIQUE index on source_hash — no per-row SELECT
+  /// needed. Callers must emit their own change event(s).
+  Future<void> insertIncomeBatch(List<List<Object?>> rows) async {
+    await _ensureInitialized();
+    if (rows.isEmpty) return;
+    await _db.runBatched(
+      BatchedStatements(
+        const [
+          'INSERT OR IGNORE INTO incomes(title, amount, received_at, source, source_hash) VALUES (?, ?, ?, ?, ?)',
+        ],
+        rows.map((r) => ArgumentsForBatchedStatement(0, r)).toList(),
+      ),
+    );
+  }
+
   Future<int> addTask({
     required String title,
     String? description,
