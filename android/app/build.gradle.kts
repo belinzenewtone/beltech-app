@@ -123,4 +123,8 @@ flutter {
 
 dependencies {
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
+    // WorkManager KTX — needed because the workmanager Flutter plugin declares
+    // androidx.work as 'implementation' (not 'api'), so it is not visible to our
+    // app-level Kotlin sources without this explicit dependency.
+    implementation("androidx.work:work-runtime-ktx:2.9.1")
 }
