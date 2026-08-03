@@ -47,6 +47,7 @@ Future<ExpenseImportMetrics> _fetchImportMetricsImpl(
 
   final quarantineReasonBreakdown = await _fetchQuarantineBreakdown(repo);
   final duplicateSkipCount = await _fetchDuplicateSkipCount(repo);
+  final totalImportedFromSms = await _fetchTotalImportedFromSms(repo);
   final dailyTrends = await _fetchDailyImportTrends(repo);
   final alerts = _generateImportAlerts(
     review: review,
@@ -63,6 +64,7 @@ Future<ExpenseImportMetrics> _fetchImportMetricsImpl(
     quarantineCount: quarantine,
     retryQueueCount: retry,
     failedQueueCount: failed,
+    totalImportedFromSms: totalImportedFromSms,
     lastImportAt: lastImportAt,
     lastMpesaCode: lastMpesaCode,
     lastError: lastError,
@@ -95,6 +97,15 @@ Future<int> _fetchDuplicateSkipCount(ExpensesRepositoryImpl repo) async {
   final rows = await repo._store.executor.runSelect(
     "SELECT COUNT(*) AS c FROM sms_import_audit WHERE scope = ? AND decision = ?",
     ['local', 'duplicate'],
+  );
+  if (rows.isEmpty) return 0;
+  return repo._asInt(rows.first['c']);
+}
+
+Future<int> _fetchTotalImportedFromSms(ExpensesRepositoryImpl repo) async {
+  final rows = await repo._store.executor.runSelect(
+    "SELECT COUNT(*) AS c FROM sms_import_audit WHERE scope = ? AND decision = ?",
+    ['local', 'imported'],
   );
   if (rows.isEmpty) return 0;
   return repo._asInt(rows.first['c']);

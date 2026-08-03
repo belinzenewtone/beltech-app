@@ -31,8 +31,7 @@ final class _ImportOverview {
 
 final _importOverviewProvider = FutureProvider<_ImportOverview>((ref) async {
   final metrics = await ref.watch(expenseImportMetricsProvider.future);
-  final snapshot = await ref.watch(expensesSnapshotProvider.future);
-  final totalProcessed = snapshot.transactions.length;
+  final totalProcessed = metrics.totalImportedFromSms;
   final totalItems =
       totalProcessed +
       metrics.reviewQueueCount +
