@@ -62,8 +62,10 @@ class SmsFeatureVector {
 class SmsFeatureExtractor {
   const SmsFeatureExtractor();
 
+  // Safaricom 2026+ codes may be all-letter (e.g. UCNDLAHMKE) — only require
+  // at least one letter so we don't miss them in the decision-tree feature.
   static final _codeRe = RegExp(
-    r'\b(?=[A-Za-z0-9]*[A-Za-z][A-Za-z0-9]*\d)([A-Za-z0-9]{9,10})\b',
+    r'\b(?=[A-Za-z0-9]*[A-Za-z])([A-Za-z0-9]{9,10})\b',
   );
   static final _amountRe = RegExp(
     r'(?:ksh|kes|ksh)\s?[\d,]+(?:\.\d{1,2})?',

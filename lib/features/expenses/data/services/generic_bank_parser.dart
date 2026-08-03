@@ -38,15 +38,31 @@ class GenericBankParser {
 
   // OTP / verification codes — no money moved, never import.
   static final _otpPattern = RegExp(
-    r'never\s+share\s+this\s+code|use\s+code\s+\d+\s+to\s+(?:send|verify)',
+    r'never\s+share\s+this\s+code|use\s+code\s+\d+\s+to\s+(?:send|verify)|your\s+otp\s+is\s+\d+',
     caseSensitive: false,
   );
 
-  // Card auth holds (amount 0.00) — not real transactions. Covers approved
-  // and declined card authorisations: "Online transaction of KES.0.00 has been
-  // approved/Declined on your card ...".
+  // Card auth holds (zero-amount) and declined card transactions — not real
+  // completed transactions. Covers:
+  //   "Online transaction of KES.0.00 has been approved on your card"
+  //   "Online transaction of KES 250.00 has been Declined on your card"
   static final _cardHoldPattern = RegExp(
-    r'online\s+transaction\s+of\s+(?:kes|ksh)\.?\s*0\.?0*\s+has\s+been\s+(?:approved|declined).*?on\s+your\s+card',
+    r'online\s+transaction\s+of\s+(?:kes|ksh)\.?\s*(?:0\.?0*\s+has\s+been\s+(?:approved|declined)|[\d,]+(?:\.\d{1,2})?\s+has\s+been\s+declined).*?on\s+your\s+card',
+    caseSensitive: false,
+  );
+
+  // Failed / unsuccessful bank transfers — no money moved.
+  static final _failedTransferPattern = RegExp(
+    r'(?:transfer|transaction|payment)\s+(?:of\s+[\w.,]+\s+)?was\s+unsuccessful|has\s+been\s+declined\s+on\s+your\s+card',
+    caseSensitive: false,
+  );
+
+  // Internal same-person transfers that create no external cash flow:
+  //   • NCBA LOOP: "successfully transfered KES.207.00 from 44**4117 to wallet/account"
+  //   • I&M / any bank: "Transfer to Own Account of KES X to A/c …"
+  static final _internalTransferPattern = RegExp(
+    r'successfully\s+transfer(?:red|ed)\s+kes\.?\s*[\d,]+(?:\.\d{1,2})?\s+from\s+[\d*]+\s+to\s+(?:wallet|account)'
+    r'|transfer\s+to\s+own\s+account',
     caseSensitive: false,
   );
 
@@ -86,11 +102,13 @@ class GenericBankParser {
   }
 
   /// True when a bank-sender message is a known non-transaction (OTP /
-  /// verification code, zero-amount card hold) that should never be imported.
+  /// verification code, declined/zero card hold, failed transfer).
   static bool isIgnorableBankSms(String message) {
     final normalized = normalizeParserText(message);
     return _otpPattern.hasMatch(normalized) ||
-        _cardHoldPattern.hasMatch(normalized);
+        _cardHoldPattern.hasMatch(normalized) ||
+        _failedTransferPattern.hasMatch(normalized) ||
+        _internalTransferPattern.hasMatch(normalized);
   }
 
   /// Attempts to parse a bank SMS. Returns null if parsing fails.

@@ -89,6 +89,11 @@ final List<RegExp> _ignoreSmsPatterns = [
     r'an\s+m-?pesa\s+transaction\s+is\s+currently\s+underway',
     caseSensitive: false,
   ),
+  // Airtime receipts — not a cash transfer, no financial ledger entry needed.
+  RegExp(
+    r'(?:confirmed\.?\s+)?you\s+have\s+received\s+airtime\s+of',
+    caseSensitive: false,
+  ),
 ];
 
 final List<RegExp> _ambiguousSuccessPatterns = [

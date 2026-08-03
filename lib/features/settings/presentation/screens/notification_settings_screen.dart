@@ -209,6 +209,9 @@ class _BudgetThresholdSlidersState extends State<_BudgetThresholdSliders> {
   late double _medium;
   late double _low;
   bool _dragging = false;
+  // Once the user moves a slider the local state is authoritative; external
+  // provider updates (e.g. from an unrelated rebuild) must not overwrite it.
+  bool _userHasEdited = false;
 
   @override
   void initState() {
@@ -221,7 +224,7 @@ class _BudgetThresholdSlidersState extends State<_BudgetThresholdSliders> {
   @override
   void didUpdateWidget(_BudgetThresholdSliders old) {
     super.didUpdateWidget(old);
-    if (!_dragging) {
+    if (!_dragging && !_userHasEdited) {
       _high = widget.high;
       _medium = widget.medium;
       _low = widget.low;
@@ -256,6 +259,7 @@ class _BudgetThresholdSlidersState extends State<_BudgetThresholdSliders> {
             enabled: widget.enabled,
             onChanged: (value) {
               _dragging = true;
+              _userHasEdited = true;
               _update(value, _medium, _low);
             },
             onChangeEnd: (value) {
@@ -270,6 +274,7 @@ class _BudgetThresholdSlidersState extends State<_BudgetThresholdSliders> {
             enabled: widget.enabled,
             onChanged: (value) {
               _dragging = true;
+              _userHasEdited = true;
               _update(_high, value, _low);
             },
             onChangeEnd: (value) {
@@ -284,6 +289,7 @@ class _BudgetThresholdSlidersState extends State<_BudgetThresholdSliders> {
             enabled: widget.enabled,
             onChanged: (value) {
               _dragging = true;
+              _userHasEdited = true;
               _update(_high, _medium, value);
             },
             onChangeEnd: (value) {

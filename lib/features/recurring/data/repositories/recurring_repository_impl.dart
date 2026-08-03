@@ -9,8 +9,11 @@ class RecurringRepositoryImpl implements RecurringRepository {
   final AppDriftStore _store;
 
   @override
-  Stream<List<RecurringTemplate>> watchTemplates() {
-    return _store.watchExpensesSnapshot().asyncMap((_) => _loadTemplates());
+  Stream<List<RecurringTemplate>> watchTemplates() async* {
+    yield await _loadTemplates();
+    await for (final _ in _store.watchChangeStream()) {
+      yield await _loadTemplates();
+    }
   }
 
   @override
@@ -251,14 +254,17 @@ class RecurringRepositoryImpl implements RecurringRepository {
     return switch (cadence) {
       RecurringCadence.daily => from.add(const Duration(days: 1)),
       RecurringCadence.weekly => from.add(const Duration(days: 7)),
-      RecurringCadence.monthly => DateTime(
-        from.year,
-        from.month + 1,
-        from.day,
-        from.hour,
-        from.minute,
-      ),
+      RecurringCadence.monthly => _addOneMonth(from),
     };
+  }
+
+  DateTime _addOneMonth(DateTime from) {
+    final nextMonth = from.month < 12 ? from.month + 1 : 1;
+    final nextYear = from.month < 12 ? from.year : from.year + 1;
+    // Day 0 of the month after nextMonth = last day of nextMonth (works for
+    // nextMonth=12 because DateTime(year,13,0) = Dec 31).
+    final lastDay = DateTime(nextYear, nextMonth + 1, 0).day;
+    return DateTime(nextYear, nextMonth, from.day.clamp(1, lastDay), from.hour, from.minute);
   }
 
   RecurringKind _kindFrom(String raw) {

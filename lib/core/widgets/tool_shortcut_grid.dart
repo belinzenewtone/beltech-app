@@ -193,9 +193,8 @@ class _ToolShortcutTile extends StatelessWidget {
             ).withValues(alpha: 0.58),
           ),
           child: Column(
-            mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.center,
-            mainAxisAlignment: MainAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Container(
                 width: 36,
