@@ -1,5 +1,9 @@
 part of 'expenses_repository_impl.dart';
 
+/// Rows fetched from the queue per loop iteration. Small enough to keep peak
+/// memory bounded; large enough for the isolate pool to saturate all workers.
+const int _queueDrainBatchSize = 500;
+
 /// Maximum number of queued rows to parse in one isolate job.
 const int _queueProcessChunkSize = 100;
 
@@ -15,66 +19,89 @@ Future<int> _processDueQueueImpl(
   DateTime? from,
   void Function(int done, int total)? onProgress,
 }) async {
-  final now = DateTime.now();
-  final rows = await repo._store.executor.runSelect(
-    'SELECT id, raw_message, attempt, source_timestamp '
-    'FROM sms_import_queue '
-    'WHERE scope = ? AND status IN (?, ?) AND (next_retry_at IS NULL OR next_retry_at <= ?) '
-    'ORDER BY created_at ASC LIMIT 2000',
-    ['local', 'pending', 'retry', now.millisecondsSinceEpoch],
+  // Snapshot `now` once so every iteration uses the same retry-eligibility
+  // cutoff — rows that fail and get a future next_retry_at won't re-appear
+  // in this drain cycle.
+  final nowMs = DateTime.now().millisecondsSinceEpoch;
+
+  // Count pending rows upfront so the progress bar can show a meaningful
+  // fraction across the full queue, not just the current batch.
+  final countRows = await repo._store.executor.runSelect(
+    'SELECT COUNT(*) AS c FROM sms_import_queue '
+    'WHERE scope = ? AND status IN (?, ?) AND (next_retry_at IS NULL OR next_retry_at <= ?)',
+    ['local', 'pending', 'retry', nowMs],
   );
-  if (rows.isEmpty) {
-    return 0;
-  }
+  final totalCount = repo._asInt(countRows.firstOrNull?['c'] ?? 0);
+  if (totalCount == 0) return 0;
 
-  // P6: a large drain parses the WHOLE batch in parallel across a reused
-  // isolate pool up front (behind the bulkImportV2 flag), then persists
-  // chunk-by-chunk. Parsing chunk-at-a-time through the pool would keep every
-  // worker but one idle; parseAll spreads the batch across all of them.
-  final pool = (repo.useIsolatePool && rows.length >= _queueProcessChunkSize)
-      ? ParseIsolatePool()
-      : null;
+  var totalImported = 0;
+  var totalDone = 0;
 
-  var imported = 0;
+  // Create the isolate pool once for the entire drain — reusing the same
+  // workers across all loop iterations avoids the heavy spawn/teardown cost
+  // on every batch (critical for imports of 10 000+ messages).
+  final pool = repo.useIsolatePool ? ParseIsolatePool() : null;
   try {
-    List<ParsedMpesaCandidate?>? allCandidates;
-    if (pool != null) {
-      final allJobs = rows
-          .map((row) => _jobForRow(repo, row))
-          .toList(growable: false);
-      // Aligned 1:1 with rows, in order — safe to slice per chunk below.
-      allCandidates = await pool.parseAll(
-        allJobs,
-        chunkSize: _queueProcessChunkSize,
+    // Loop until the queue is empty — handles arbitrarily large inboxes without
+    // requiring manual "Retry now" taps. Each iteration fetches _queueDrainBatchSize
+    // rows so peak memory stays bounded regardless of inbox size.
+    while (true) {
+      final rows = await repo._store.executor.runSelect(
+        'SELECT id, raw_message, attempt, source_timestamp '
+        'FROM sms_import_queue '
+        'WHERE scope = ? AND status IN (?, ?) AND (next_retry_at IS NULL OR next_retry_at <= ?) '
+        'ORDER BY created_at ASC LIMIT ?',
+        ['local', 'pending', 'retry', nowMs, _queueDrainBatchSize],
       );
-    }
+      if (rows.isEmpty) break;
 
-    for (var i = 0; i < rows.length; i += _queueProcessChunkSize) {
-      final end = (i + _queueProcessChunkSize).clamp(0, rows.length);
-      final chunk = rows.sublist(i, end);
-      final preParsed = allCandidates?.sublist(i, end);
-      try {
-        imported += await _processQueueChunk(
-          repo,
-          chunk,
-          from: from,
-          preParsed: preParsed,
+      // P6: parse the whole batch in parallel across the reused isolate pool,
+      // then persist chunk-by-chunk. parseAll spreads the batch across all workers.
+      List<ParsedMpesaCandidate?>? allCandidates;
+      if (pool != null && rows.length >= _queueProcessChunkSize) {
+        final allJobs = rows
+            .map((row) => _jobForRow(repo, row))
+            .toList(growable: false);
+        // Aligned 1:1 with rows, in order — safe to slice per chunk below.
+        allCandidates = await pool.parseAll(
+          allJobs,
+          chunkSize: _queueProcessChunkSize,
         );
-      } catch (error) {
-        // If a batch fails (e.g. constraint violation in one row), fall back to
-        // the original one-by-one path so retries and per-row failures work.
-        imported += await _processQueueChunkRowByRow(repo, chunk, from: from);
       }
-      onProgress?.call(end, rows.length);
-      // Yield to the UI thread between chunks so the app stays responsive
-      // during large (e.g. 90-day) imports instead of becoming unusable.
-      await Future<void>.delayed(Duration.zero);
+
+      for (var i = 0; i < rows.length; i += _queueProcessChunkSize) {
+        final end = (i + _queueProcessChunkSize).clamp(0, rows.length);
+        final chunk = rows.sublist(i, end);
+        final preParsed = allCandidates?.sublist(i, end);
+        try {
+          totalImported += await _processQueueChunk(
+            repo,
+            chunk,
+            from: from,
+            preParsed: preParsed,
+          );
+        } catch (error) {
+          // If a batch fails (e.g. constraint violation in one row), fall back
+          // to the one-by-one path so retries and per-row failures work.
+          totalImported +=
+              await _processQueueChunkRowByRow(repo, chunk, from: from);
+        }
+        totalDone = (totalDone + chunk.length).clamp(0, totalCount);
+        onProgress?.call(totalDone, totalCount);
+        // Yield to the UI thread between chunks so the app stays responsive
+        // during large (e.g. multi-year) imports.
+        await Future<void>.delayed(Duration.zero);
+      }
+
+      // Emit after each batch so the UI reflects newly imported transactions
+      // incrementally rather than only at the very end of a large queue.
+      repo._store.emitChange();
     }
   } finally {
     await pool?.dispose();
   }
-  repo._store.emitChange();
-  return imported;
+
+  return totalImported;
 }
 
 /// Builds the parse job for a queue row (raw body + source-timestamp fallback).
@@ -112,6 +139,10 @@ Future<int> _processQueueChunk(
     candidateByQueueId[repo._asInt(rows[i]['id'])] = candidate;
   }
 
+  // Batch-pre-fetch dedup state for the whole chunk — 2 DB round-trips
+  // instead of 3 per row. Must happen after candidates are known.
+  final duplicateSet = await _DuplicateSet.forCandidates(repo, candidates);
+
   final directRows = <_DirectInsert>[];
   final reviewBatch = <List<Object?>>[];
   final quarantineBatch = <List<Object?>>[];
@@ -147,7 +178,7 @@ Future<int> _processQueueChunk(
         continue;
       }
 
-      if (await _isDuplicateImpl(repo, candidate) ||
+      if (duplicateSet.contains(candidate) ||
           _isDuplicateInChunk(candidate, acceptedCandidates)) {
         auditBatch.add(_auditRow(candidate, 'duplicate'));
         queueUpdateBatch.add(['duplicate', nowMs, null, queueId]);
@@ -177,6 +208,8 @@ Future<int> _processQueueChunk(
 
   final transactionBatch = <List<Object?>>[];
   final incomeBatch = <List<Object?>>[];
+  var hasFulizaEvents = false;
+
   for (final direct in directRows) {
     final queueId = direct.queueId;
     final candidate = direct.candidate;
@@ -195,8 +228,15 @@ Future<int> _processQueueChunk(
       if (parsedOutstanding != null && parsedOutstanding >= 0) {
         await _persistFulizaOutstanding(parsedOutstanding);
       }
+      final isFulizaType =
+          candidate.transactionType == MpesaTransactionType.fulizaDraw ||
+          candidate.transactionType == MpesaTransactionType.fulizaRepayment ||
+          candidate.transactionType == MpesaTransactionType.fulizaCharge;
+      if (isFulizaType) hasFulizaEvents = true;
+
       if (candidate.transactionType == MpesaTransactionType.fulizaCharge) {
-        await _upsertPaybillAndFulizaImpl(repo, candidate);
+        // reconcile: false — reconcile once per chunk below after all writes.
+        await _upsertPaybillAndFulizaImpl(repo, candidate, reconcile: false);
         auditBatch.add(_auditRow(candidate, 'fuliza_balance_update'));
         queueUpdateBatch.add(['done', nowMs, null, queueId]);
         imported += 1;
@@ -214,7 +254,8 @@ Future<int> _processQueueChunk(
         merchantTitle: candidate.title,
         category: learnedCategory,
       );
-      await _upsertPaybillAndFulizaImpl(repo, candidate);
+      // reconcile: false — reconcile once per chunk below after all writes.
+      await _upsertPaybillAndFulizaImpl(repo, candidate, reconcile: false);
       transactionBatch.add([
         candidate.title,
         learnedCategory,
@@ -253,29 +294,41 @@ Future<int> _processQueueChunk(
     }
   }
 
+  // Wrap all six batch writes in a SAVEPOINT so they're atomic: either every
+  // table is updated or none are (preventing partially-imported chunks that
+  // would re-process on the next drain and produce double entries).
   try {
-    if (transactionBatch.isNotEmpty) {
-      await repo._store.addTransactionsBatch(transactionBatch);
-    }
-    if (incomeBatch.isNotEmpty) {
-      await _insertIncomeBatchImpl(repo, incomeBatch);
-    }
-    if (reviewBatch.isNotEmpty) {
-      await repo._store.insertSmsReviewBatch(reviewBatch);
-    }
-    if (quarantineBatch.isNotEmpty) {
-      await repo._store.insertSmsQuarantineBatch(quarantineBatch);
-    }
-    if (auditBatch.isNotEmpty) {
-      await repo._store.insertSmsImportAuditBatch(auditBatch);
-    }
-    if (queueUpdateBatch.isNotEmpty) {
-      await repo._store.updateSmsImportQueueStatusBatch(queueUpdateBatch);
-    }
+    await repo._store.inTransaction(() async {
+      if (transactionBatch.isNotEmpty) {
+        await repo._store.addTransactionsBatch(transactionBatch);
+      }
+      if (incomeBatch.isNotEmpty) {
+        await repo._store.insertIncomeBatch(incomeBatch);
+      }
+      if (reviewBatch.isNotEmpty) {
+        await repo._store.insertSmsReviewBatch(reviewBatch);
+      }
+      if (quarantineBatch.isNotEmpty) {
+        await repo._store.insertSmsQuarantineBatch(quarantineBatch);
+      }
+      if (auditBatch.isNotEmpty) {
+        await repo._store.insertSmsImportAuditBatch(auditBatch);
+      }
+      if (queueUpdateBatch.isNotEmpty) {
+        await repo._store.updateSmsImportQueueStatusBatch(queueUpdateBatch);
+      }
+    });
   } catch (error) {
     // DB-level batch failure: fall back to row-by-row so each row can retry
     // or fail individually without losing the whole chunk.
     return _processQueueChunkRowByRow(repo, rows, from: from);
+  }
+
+  // Reconcile Fuliza draw↔repayment links once per chunk (not per candidate)
+  // so the O(N) reconcile query runs at most once regardless of how many
+  // Fuliza events were in this batch.
+  if (hasFulizaEvents) {
+    await _reconcileFulizaLinksImpl(repo);
   }
 
   return imported;
@@ -301,6 +354,72 @@ bool _isDuplicateInChunk(
     }
   }
   return false;
+}
+
+/// Batch-pre-fetched dedup guard for a chunk of parsed candidates. Replaces
+/// per-row `_isDuplicateImpl` (3 DB round-trips per candidate) with 2 batch
+/// queries for the whole chunk — O(1) round-trips regardless of chunk size.
+class _DuplicateSet {
+  _DuplicateSet._(this._sourceHashes, this._semanticHashes);
+
+  final Set<String> _sourceHashes;
+  final Set<String> _semanticHashes;
+
+  bool contains(ParsedMpesaCandidate c) =>
+      _sourceHashes.contains(c.sourceHash) ||
+      _semanticHashes.contains(c.semanticHash);
+
+  static Future<_DuplicateSet> forCandidates(
+    ExpensesRepositoryImpl repo,
+    List<ParsedMpesaCandidate?> candidates,
+  ) async {
+    final sourceHashes = candidates
+        .whereType<ParsedMpesaCandidate>()
+        .map((c) => c.sourceHash)
+        .toSet()
+        .toList();
+    final semanticHashes = candidates
+        .whereType<ParsedMpesaCandidate>()
+        .map((c) => c.semanticHash)
+        .toSet()
+        .toList();
+
+    final importedSrc = <String>{};
+    const batchSize = 500;
+    for (var i = 0; i < sourceHashes.length; i += batchSize) {
+      final chunk = sourceHashes.sublist(
+        i,
+        (i + batchSize).clamp(0, sourceHashes.length),
+      );
+      final placeholders = List.filled(chunk.length, '?').join(',');
+      final rows = await repo._store.executor.runSelect(
+        'SELECT source_hash FROM transactions WHERE source_hash IN ($placeholders)',
+        chunk,
+      );
+      for (final row in rows) {
+        importedSrc.add('${row['source_hash']}');
+      }
+    }
+
+    final auditedSem = <String>{};
+    for (var i = 0; i < semanticHashes.length; i += batchSize) {
+      final chunk = semanticHashes.sublist(
+        i,
+        (i + batchSize).clamp(0, semanticHashes.length),
+      );
+      final placeholders = List.filled(chunk.length, '?').join(',');
+      final rows = await repo._store.executor.runSelect(
+        'SELECT DISTINCT semantic_hash FROM sms_import_audit '
+        'WHERE scope = ? AND semantic_hash IN ($placeholders) AND decision IN (?, ?, ?)',
+        ['local', ...chunk, 'imported', 'duplicate', 'review_pending'],
+      );
+      for (final row in rows) {
+        auditedSem.add('${row['semantic_hash']}');
+      }
+    }
+
+    return _DuplicateSet._(importedSrc, auditedSem);
+  }
 }
 
 Future<void> _handleQueueRowError(
@@ -650,8 +769,9 @@ Future<void> _insertQuarantineImpl(
 
 Future<void> _upsertPaybillAndFulizaImpl(
   ExpensesRepositoryImpl repo,
-  ParsedMpesaCandidate candidate,
-) async {
+  ParsedMpesaCandidate candidate, {
+  bool reconcile = true,
+}) async {
   if (candidate.paybillAccount != null &&
       candidate.paybillAccount!.isNotEmpty) {
     await repo._store.executor.runInsert(
@@ -691,8 +811,9 @@ Future<void> _upsertPaybillAndFulizaImpl(
   );
   // Reconcile draw↔repayment pairs after any Fuliza event is recorded. Runs
   // regardless of which row was inserted first, so ordering within a batch
-  // does not matter.
-  await _reconcileFulizaLinksImpl(repo);
+  // does not matter. Callers may pass reconcile: false and call
+  // _reconcileFulizaLinksImpl once per chunk for better throughput.
+  if (reconcile) await _reconcileFulizaLinksImpl(repo);
 }
 
 /// Pairs each still-unlinked Fuliza repayment with the most recent unlinked
