@@ -58,6 +58,7 @@ void main() {
   test('AnalyticsSnapshot compares trend/category lists by value', () {
     const a = AnalyticsSnapshot(
       totalSpentThisMonthKes: 1000,
+      totalIncomeThisPeriodKes: 1200,
       averageDailySpendingKes: 50,
       totalTasksCompleted: 8,
       totalTasksPending: 2,
@@ -74,6 +75,7 @@ void main() {
     );
     const b = AnalyticsSnapshot(
       totalSpentThisMonthKes: 1000,
+      totalIncomeThisPeriodKes: 1200,
       averageDailySpendingKes: 50,
       totalTasksCompleted: 8,
       totalTasksPending: 2,
