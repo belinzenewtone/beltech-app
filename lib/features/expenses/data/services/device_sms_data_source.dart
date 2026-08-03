@@ -196,12 +196,15 @@ class DeviceSmsDataSource {
         }
 
         final sender = (message.address ?? '').toLowerCase();
+        final normalized = normalizeParserText(body);
+        final lowerNormalized = normalized.toLowerCase();
+        if (shouldIgnoreMpesaSms(lowerNormalized)) {
+          continue;
+        }
         final isMpesa =
-            sender.contains('mpesa') ||
-            body.toLowerCase().contains('m-pesa') ||
-            body.toLowerCase().contains('mpesa');
+            sender.contains('mpesa') || looksLikeMpesaMessage(lowerNormalized);
         final isBank = GenericBankParser.looksLikeBankSms(
-          body,
+          normalized,
           sender: message.address,
         );
         final matchesFilter = switch (filter) {

@@ -20,7 +20,7 @@ Future<int> _processDueQueueImpl(
     'SELECT id, raw_message, attempt, source_timestamp '
     'FROM sms_import_queue '
     'WHERE scope = ? AND status IN (?, ?) AND (next_retry_at IS NULL OR next_retry_at <= ?) '
-    'ORDER BY created_at ASC LIMIT 400',
+    'ORDER BY created_at ASC LIMIT 2000',
     ['local', 'pending', 'retry', now.millisecondsSinceEpoch],
   );
   if (rows.isEmpty) {
