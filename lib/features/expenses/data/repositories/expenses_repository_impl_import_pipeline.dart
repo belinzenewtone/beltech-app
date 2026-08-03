@@ -1,5 +1,9 @@
 part of 'expenses_repository_impl.dart';
 
+/// Rows fetched from the queue per loop iteration. Small enough to keep peak
+/// memory bounded; large enough for the isolate pool to saturate all workers.
+const int _queueDrainBatchSize = 500;
+
 /// Maximum number of queued rows to parse in one isolate job.
 const int _queueProcessChunkSize = 100;
 
@@ -15,66 +19,90 @@ Future<int> _processDueQueueImpl(
   DateTime? from,
   void Function(int done, int total)? onProgress,
 }) async {
-  final now = DateTime.now();
-  final rows = await repo._store.executor.runSelect(
-    'SELECT id, raw_message, attempt, source_timestamp '
-    'FROM sms_import_queue '
-    'WHERE scope = ? AND status IN (?, ?) AND (next_retry_at IS NULL OR next_retry_at <= ?) '
-    'ORDER BY created_at ASC LIMIT 2000',
-    ['local', 'pending', 'retry', now.millisecondsSinceEpoch],
+  // Snapshot `now` once so every iteration uses the same retry-eligibility
+  // cutoff — rows that fail and get a future next_retry_at won't re-appear
+  // in this drain cycle.
+  final nowMs = DateTime.now().millisecondsSinceEpoch;
+
+  // Count pending rows upfront so the progress bar can show a meaningful
+  // fraction across the full queue, not just the current batch.
+  final countRows = await repo._store.executor.runSelect(
+    'SELECT COUNT(*) AS c FROM sms_import_queue '
+    'WHERE scope = ? AND status IN (?, ?) AND (next_retry_at IS NULL OR next_retry_at <= ?)',
+    ['local', 'pending', 'retry', nowMs],
   );
-  if (rows.isEmpty) {
-    return 0;
-  }
+  final totalCount = repo._asInt(countRows.firstOrNull?['c'] ?? 0);
+  if (totalCount == 0) return 0;
 
-  // P6: a large drain parses the WHOLE batch in parallel across a reused
-  // isolate pool up front (behind the bulkImportV2 flag), then persists
-  // chunk-by-chunk. Parsing chunk-at-a-time through the pool would keep every
-  // worker but one idle; parseAll spreads the batch across all of them.
-  final pool = (repo.useIsolatePool && rows.length >= _queueProcessChunkSize)
-      ? ParseIsolatePool()
-      : null;
+  var totalImported = 0;
+  var totalDone = 0;
 
-  var imported = 0;
-  try {
-    List<ParsedMpesaCandidate?>? allCandidates;
-    if (pool != null) {
-      final allJobs = rows
-          .map((row) => _jobForRow(repo, row))
-          .toList(growable: false);
-      // Aligned 1:1 with rows, in order — safe to slice per chunk below.
-      allCandidates = await pool.parseAll(
-        allJobs,
-        chunkSize: _queueProcessChunkSize,
-      );
-    }
+  // Loop until the queue is empty — handles arbitrarily large inboxes without
+  // requiring manual "Retry now" taps. Each iteration fetches _queueDrainBatchSize
+  // rows so peak memory stays bounded regardless of inbox size.
+  while (true) {
+    final rows = await repo._store.executor.runSelect(
+      'SELECT id, raw_message, attempt, source_timestamp '
+      'FROM sms_import_queue '
+      'WHERE scope = ? AND status IN (?, ?) AND (next_retry_at IS NULL OR next_retry_at <= ?) '
+      'ORDER BY created_at ASC LIMIT ?',
+      ['local', 'pending', 'retry', nowMs, _queueDrainBatchSize],
+    );
+    if (rows.isEmpty) break;
 
-    for (var i = 0; i < rows.length; i += _queueProcessChunkSize) {
-      final end = (i + _queueProcessChunkSize).clamp(0, rows.length);
-      final chunk = rows.sublist(i, end);
-      final preParsed = allCandidates?.sublist(i, end);
-      try {
-        imported += await _processQueueChunk(
-          repo,
-          chunk,
-          from: from,
-          preParsed: preParsed,
+    // P6: parse the whole batch in parallel across a reused isolate pool, then
+    // persist chunk-by-chunk. Parsing chunk-at-a-time keeps every worker but
+    // one idle; parseAll spreads the batch across all of them.
+    final pool = (repo.useIsolatePool && rows.length >= _queueProcessChunkSize)
+        ? ParseIsolatePool()
+        : null;
+
+    try {
+      List<ParsedMpesaCandidate?>? allCandidates;
+      if (pool != null) {
+        final allJobs = rows
+            .map((row) => _jobForRow(repo, row))
+            .toList(growable: false);
+        // Aligned 1:1 with rows, in order — safe to slice per chunk below.
+        allCandidates = await pool.parseAll(
+          allJobs,
+          chunkSize: _queueProcessChunkSize,
         );
-      } catch (error) {
-        // If a batch fails (e.g. constraint violation in one row), fall back to
-        // the original one-by-one path so retries and per-row failures work.
-        imported += await _processQueueChunkRowByRow(repo, chunk, from: from);
       }
-      onProgress?.call(end, rows.length);
-      // Yield to the UI thread between chunks so the app stays responsive
-      // during large (e.g. 90-day) imports instead of becoming unusable.
-      await Future<void>.delayed(Duration.zero);
+
+      for (var i = 0; i < rows.length; i += _queueProcessChunkSize) {
+        final end = (i + _queueProcessChunkSize).clamp(0, rows.length);
+        final chunk = rows.sublist(i, end);
+        final preParsed = allCandidates?.sublist(i, end);
+        try {
+          totalImported += await _processQueueChunk(
+            repo,
+            chunk,
+            from: from,
+            preParsed: preParsed,
+          );
+        } catch (error) {
+          // If a batch fails (e.g. constraint violation in one row), fall back
+          // to the one-by-one path so retries and per-row failures work.
+          totalImported +=
+              await _processQueueChunkRowByRow(repo, chunk, from: from);
+        }
+        totalDone = (totalDone + chunk.length).clamp(0, totalCount);
+        onProgress?.call(totalDone, totalCount);
+        // Yield to the UI thread between chunks so the app stays responsive
+        // during large (e.g. multi-year) imports.
+        await Future<void>.delayed(Duration.zero);
+      }
+    } finally {
+      await pool?.dispose();
     }
-  } finally {
-    await pool?.dispose();
+
+    // Emit after each batch so the UI reflects newly imported transactions
+    // incrementally rather than only at the very end of a large queue.
+    repo._store.emitChange();
   }
-  repo._store.emitChange();
-  return imported;
+
+  return totalImported;
 }
 
 /// Builds the parse job for a queue row (raw body + source-timestamp fallback).
