@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:beltech/core/di/database_providers.dart';
+import 'package:beltech/core/di/expenses_providers.dart';
 import 'package:beltech/core/di/notification_providers.dart';
 import 'package:beltech/core/di/repository_providers.dart';
 import 'package:beltech/features/expenses/domain/services/balance_reconciliation_service.dart';
@@ -239,6 +240,9 @@ class ExpenseWriteController extends AsyncNotifier<void> {
     ImportSourceFilter filter = ImportSourceFilter.both,
   }) async {
     state = const AsyncLoading();
+    // Show the progress banner immediately — the device scan phase can take
+    // 10–30 s on a large inbox before the first onProgress callback fires.
+    _reportProgress(0, 0);
     final result = await AsyncValue.guard(
       () => ref.read(importExpensesUseCaseProvider).importFromDevice(
             from: fromWindow(window),
@@ -252,6 +256,9 @@ class ExpenseWriteController extends AsyncNotifier<void> {
         result.error!,
         result.stackTrace ?? StackTrace.current,
       );
+      // Partial data may have been written before the error; refresh caches
+      // so any successfully imported transactions are visible immediately.
+      _invalidateImportReviewCaches();
       throw result.error!;
     }
     state = const AsyncData(null);
@@ -326,6 +333,10 @@ class ExpenseWriteController extends AsyncNotifier<void> {
     ref.invalidate(expenseFulizaLifecycleProvider);
     // Imported SMS may carry an updated Fuliza available-limit value.
     ref.invalidate(fulizaLimitProvider);
+    // StateNotifierProviders don't re-fetch on invalidate() — call load()
+    // explicitly so the review and quarantine screens reflect new data.
+    ref.read(reviewQueueNotifierProvider.notifier).load();
+    ref.read(quarantineQueueNotifierProvider.notifier).load();
   }
 }
 

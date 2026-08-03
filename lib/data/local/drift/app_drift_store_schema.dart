@@ -330,6 +330,10 @@ class _AppDriftSchema {
       'CREATE INDEX IF NOT EXISTS idx_import_queue_status_due ON sms_import_queue(status, next_retry_at)',
     );
     await store._db.runCustom(
+      'CREATE INDEX IF NOT EXISTS idx_import_queue_scope_status_created '
+      'ON sms_import_queue(scope, status, created_at)',
+    );
+    await store._db.runCustom(
       'CREATE INDEX IF NOT EXISTS idx_import_queue_source_timestamp ON sms_import_queue(source_timestamp DESC)',
     );
     await store._db.runCustom(

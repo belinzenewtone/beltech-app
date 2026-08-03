@@ -71,85 +71,84 @@ class DeviceSmsDataSource {
     return entries.map((entry) => entry.body).toList(growable: false);
   }
 
-  Future<List<SmsInboxEntry>> loadLikelyMpesaEntries({
+  /// Streams matching entries to [onBatch] one device-query chunk at a time
+  /// instead of accumulating everything in memory. Use this for callers that
+  /// process very large inboxes (100 000+ SMS) to keep peak heap bounded.
+  Future<void> streamLikelyMpesaEntries({
     DateTime? from,
     ImportSourceFilter filter = ImportSourceFilter.both,
+    required Future<void> Function(List<SmsInboxEntry> batch) onBatch,
   }) async {
-    if (!_isAndroid()) {
-      return const [];
-    }
-    if (!await _requestPermission()) {
-      return const [];
-    }
+    if (!_isAndroid()) return;
+    if (!await _requestPermission()) return;
 
-    final result = <SmsInboxEntry>[];
     for (var start = 0;; start += _chunkSize) {
       final messages = await _queryRunner(
         _query,
         start: start,
         count: _chunkSize,
       );
-      if (messages.isEmpty) {
-        break;
-      }
+      if (messages.isEmpty) break;
 
-      DateTime? oldestInChunk;
+      final chunkEntries = <SmsInboxEntry>[];
+      // Track the earliest raw date across ALL messages in this device chunk
+      // (before any filter). Messages are sorted newest-first, so once the
+      // oldest raw date in a chunk is before the requested window, every
+      // subsequent page is guaranteed to be entirely before the window too.
+      DateTime? oldestRawDate;
       for (final message in messages) {
         final body = message.body?.trim() ?? '';
-        if (body.isEmpty) {
-          continue;
-        }
+        if (body.isEmpty) continue;
         final at = message.date;
-        if (from != null) {
-          if (at == null || at.isBefore(from)) {
-            continue;
-          }
+        if (at != null &&
+            (oldestRawDate == null || at.isBefore(oldestRawDate))) {
+          oldestRawDate = at;
         }
+        if (from != null && (at == null || at.isBefore(from))) continue;
         final sender = (message.address ?? '').toLowerCase();
         final normalized = normalizeParserText(body);
         final lowerNormalized = normalized.toLowerCase();
-        if (shouldIgnoreMpesaSms(lowerNormalized)) {
-          continue;
-        }
-        final mpesaSender = sender.contains('mpesa');
-        final mpesaBody = looksLikeMpesaMessage(lowerNormalized);
-        final bankBody = GenericBankParser.looksLikeBankSms(
+        if (shouldIgnoreMpesaSms(lowerNormalized)) continue;
+        final isMpesa =
+            sender.contains('mpesa') || looksLikeMpesaMessage(lowerNormalized);
+        final isBank = GenericBankParser.looksLikeBankSms(
           normalized,
           sender: message.address,
         );
-        final isMpesa = mpesaSender || mpesaBody;
-        final isBank = bankBody;
         final matchesFilter = switch (filter) {
           ImportSourceFilter.mpesa => isMpesa,
           ImportSourceFilter.banks => isBank && !isMpesa,
           ImportSourceFilter.both => isMpesa || isBank,
         };
-        if (!matchesFilter) {
-          continue;
-        }
-        result.add(
-          SmsInboxEntry(
-            body: message.body!.trim(),
-            receivedAt: at,
-            sender: message.address?.trim(),
-          ),
-        );
-        if (at != null && (oldestInChunk == null || at.isBefore(oldestInChunk))) {
-          oldestInChunk = at;
-        }
+        if (!matchesFilter) continue;
+        chunkEntries.add(SmsInboxEntry(
+          body: message.body!.trim(),
+          receivedAt: at,
+          sender: message.address?.trim(),
+        ));
       }
 
-      // Messages are sorted newest-first. Once the oldest raw message in a
-      // chunk is before the requested window, older chunks won't help either.
+      if (chunkEntries.isNotEmpty) await onBatch(chunkEntries);
+
       if (from != null &&
-          oldestInChunk != null &&
-          oldestInChunk.isBefore(from)) {
+          oldestRawDate != null &&
+          oldestRawDate.isBefore(from)) {
         break;
       }
-      if (messages.length < _chunkSize) {
-        break;
-      }
+      if (messages.length < _chunkSize) break;
     }
+  }
+
+  Future<List<SmsInboxEntry>> loadLikelyMpesaEntries({
+    DateTime? from,
+    ImportSourceFilter filter = ImportSourceFilter.both,
+  }) async {
+    final result = <SmsInboxEntry>[];
+    await streamLikelyMpesaEntries(
+      from: from,
+      filter: filter,
+      onBatch: (batch) async => result.addAll(batch),
+    );
     return result;
   }
 
