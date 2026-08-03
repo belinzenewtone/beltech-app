@@ -17,13 +17,15 @@ final _learningProvider = StreamProvider<List<LearningSession>>(
   (ref) => ref.watch(learningRepositoryProvider).watchSessions(),
 );
 
-final _learningStreakProvider = FutureProvider<int>(
-  (ref) => ref.watch(learningRepositoryProvider).currentStreak(),
-);
+final _learningStreakProvider = FutureProvider<int>((ref) {
+  ref.watch(_learningProvider); // recompute whenever sessions change
+  return ref.watch(learningRepositoryProvider).currentStreak();
+});
 
-final _learningMonthlyProvider = FutureProvider<int>(
-  (ref) => ref.watch(learningRepositoryProvider).monthlyMinutes(DateTime.now()),
-);
+final _learningMonthlyProvider = FutureProvider<int>((ref) {
+  ref.watch(_learningProvider); // recompute whenever sessions change
+  return ref.watch(learningRepositoryProvider).monthlyMinutes(DateTime.now());
+});
 
 class LearningScreen extends ConsumerWidget {
   const LearningScreen({super.key});

@@ -666,11 +666,9 @@ class _ToggleRow extends StatelessWidget {
         Expanded(
           child: Text(label, style: AppTypography.bodyMd(context)),
         ),
-        Switch(
+        Switch.adaptive(
           value: value,
           onChanged: onChanged,
-          activeTrackColor: AppColors.accent,
-          inactiveTrackColor: AppColors.border,
         ),
       ],
     );

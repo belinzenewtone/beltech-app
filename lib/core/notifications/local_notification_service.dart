@@ -118,22 +118,44 @@ class LocalNotificationService {
   }) async {
     await cancelEventReminder(eventId);
     final now = DateTime.now();
-    // Yearly-recurring occasions (anniversaries, birthdays, or any event the
-    // user marked "Yearly") must fire every year, not once. We anchor each
-    // reminder at its next future occurrence and let the OS repeat it annually
-    // via matchDateTimeComponents.dateAndTime.
+
     final yearly = repeatRule == RepeatRule.yearly ||
         kind == CalendarEventKind.anniversary ||
         kind == CalendarEventKind.birthday;
-    final effectiveStart = yearly ? _nextYearlyOccurrence(startAt, now) : startAt;
+
+    // Map every RepeatRule to the OS DateTimeComponents that matches its
+    // cadence so the alarm continues firing on the right schedule after the
+    // anchor date passes — not just once on the first future occurrence.
+    //
+    // monFri uses DateTimeComponents.time (daily) as an approximation: the OS
+    // has no 5-day weekday component, and daily is safer than no repeat.
+    final DateTimeComponents? matchComponents = switch (repeatRule) {
+      RepeatRule.yearly => DateTimeComponents.dateAndTime,
+      RepeatRule.monthly => DateTimeComponents.dayOfMonthAndTime,
+      RepeatRule.weekly => DateTimeComponents.dayOfWeekAndTime,
+      RepeatRule.monFri => DateTimeComponents.time,
+      RepeatRule.daily => DateTimeComponents.time,
+      RepeatRule.never => yearly ? DateTimeComponents.dateAndTime : null,
+    };
+
+    final isRepeating = matchComponents != null;
+
+    // Yearly occasions: advance anchor to the next future occurrence so the
+    // repeating OS alarm has a valid seed date.
+    final effectiveStart =
+        yearly ? _nextYearlyOccurrence(startAt, now) : startAt;
+
     final triggers = _computeEventReminderTriggers(
       startAt: effectiveStart,
       offsets: reminderOffsets,
       now: now,
       allDay: allDay,
       reminderTimeOfDayMinutes: reminderTimeOfDayMinutes,
-      allowPast: yearly,
+      // Repeating alarms may legitimately have past anchors — the OS
+      // advances them to the next matching date/time automatically.
+      allowPast: isRepeating,
     );
+
     for (var i = 0; i < triggers.length; i++) {
       await _scheduleAt(
         id: _notifId(_nsEvent, eventId * 100 + i),
@@ -142,8 +164,7 @@ class LocalNotificationService {
         when: triggers[i],
         payload: '/calendar',
         alarmEnabled: alarmEnabled,
-        matchDateTimeComponents:
-            yearly ? DateTimeComponents.dateAndTime : null,
+        matchDateTimeComponents: matchComponents,
       );
     }
   }

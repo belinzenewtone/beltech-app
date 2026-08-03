@@ -234,8 +234,11 @@ class MpesaParserService {
     // sender-aware downgrade). A bare 10-digit phone number does NOT count as
     // an M-Pesa code, so Equity "Payment of KES to ... Till No. 0723853033"
     // still goes to the bank parser.
+    // Safaricom codes are 10-char alphanumeric tokens — older format included
+    // digits (e.g. QW12AB34CD) but 2026+ templates use all-letter codes like
+    // UCNDLAHMKE. Only require at least one letter to exclude bare phone numbers.
     final hasMpesaCode = RegExp(
-      r'(?<![a-z0-9])(?=[a-z0-9]*[A-Za-z])(?=[a-z0-9]*\d)[a-z0-9]{10}(?![a-z0-9])',
+      r'(?<![a-z0-9])(?=[a-z0-9]*[A-Za-z])[a-z0-9]{10}(?![a-z0-9])',
       caseSensitive: false,
     ).hasMatch(message);
     final lowerBody = message.toLowerCase();
@@ -255,6 +258,12 @@ class MpesaParserService {
       // are non-transactions — reject hard so the M-Pesa path doesn't
       // resurrect them as quarantined rows.
       if (GenericBankParser.isIgnorableBankSms(message)) {
+        return null;
+      }
+      // Failed / cancelled MPESA messages that mention bank names (e.g.
+      // "Failed. Insufficient funds... to pay Ksh199 to Equity Paybill")
+      // would otherwise skip shouldIgnoreMpesaSms and land in review queue.
+      if (shouldIgnoreMpesaSms(normalizeParserText(message))) {
         return null;
       }
       final bankResult = _bankParser.tryParse(
@@ -646,10 +655,10 @@ class MpesaParserService {
     final match = _codePattern.firstMatch(message);
     if (match == null) return null;
     final code = match.group(1)!.toUpperCase();
-    // Must contain at least one letter AND one digit.
-    if (!code.contains(RegExp(r'[A-Z]')) || !code.contains(RegExp(r'[0-9]'))) {
-      return null;
-    }
+    // Must contain at least one letter to exclude bare 10-digit phone numbers.
+    // Safaricom 2026+ templates use all-letter codes (e.g. UCNDLAHMKE) — the
+    // earlier digit requirement incorrectly quarantined every such transaction.
+    if (!code.contains(RegExp(r'[A-Z]'))) return null;
     return code;
   }
 
@@ -660,9 +669,7 @@ class MpesaParserService {
     final match = _codePattern.firstMatch(normalized);
     if (match == null) return null;
     final code = match.group(1)!.toUpperCase();
-    if (!code.contains(RegExp(r'[A-Z]')) || !code.contains(RegExp(r'[0-9]'))) {
-      return null;
-    }
+    if (!code.contains(RegExp(r'[A-Z]'))) return null;
     return code;
   }
 

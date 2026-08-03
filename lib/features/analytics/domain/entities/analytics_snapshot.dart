@@ -1,6 +1,7 @@
 class AnalyticsSnapshot {
   const AnalyticsSnapshot({
     required this.totalSpentThisMonthKes,
+    required this.totalIncomeThisPeriodKes,
     required this.averageDailySpendingKes,
     required this.totalTasksCompleted,
     required this.totalTasksPending,
@@ -13,6 +14,7 @@ class AnalyticsSnapshot {
   });
 
   final double totalSpentThisMonthKes;
+  final double totalIncomeThisPeriodKes;
   final double averageDailySpendingKes;
   final int totalTasksCompleted;
   final int totalTasksPending;
@@ -29,6 +31,7 @@ class AnalyticsSnapshot {
       other is AnalyticsSnapshot &&
           runtimeType == other.runtimeType &&
           totalSpentThisMonthKes == other.totalSpentThisMonthKes &&
+          totalIncomeThisPeriodKes == other.totalIncomeThisPeriodKes &&
           averageDailySpendingKes == other.averageDailySpendingKes &&
           totalTasksCompleted == other.totalTasksCompleted &&
           totalTasksPending == other.totalTasksPending &&
@@ -42,6 +45,7 @@ class AnalyticsSnapshot {
   @override
   int get hashCode => Object.hash(
     totalSpentThisMonthKes,
+    totalIncomeThisPeriodKes,
     averageDailySpendingKes,
     totalTasksCompleted,
     totalTasksPending,

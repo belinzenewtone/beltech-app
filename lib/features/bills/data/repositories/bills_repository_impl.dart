@@ -125,7 +125,7 @@ class BillsRepositoryImpl implements BillsRepository {
     await _store.ensureInitialized();
     final now = DateTime.now();
     final rows = await _store.executor.runSelect(
-      'SELECT COUNT(*) FROM bills WHERE paid = 0 AND due_date < ?',
+      'SELECT COUNT(*) AS count FROM bills WHERE paid = 0 AND due_date < ?',
       [now.millisecondsSinceEpoch],
     );
     return _asInt(rows.firstOrNull?['count']);

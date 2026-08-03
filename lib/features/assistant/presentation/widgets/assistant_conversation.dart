@@ -3,7 +3,7 @@ import 'package:beltech/core/theme/app_typography.dart';
 import 'package:beltech/core/widgets/app_card.dart';
 import 'package:beltech/features/assistant/domain/entities/assistant_message.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_markdown/flutter_markdown.dart';
+import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
 
 class AssistantConversationList extends StatelessWidget {
   const AssistantConversationList({required this.messages, super.key});

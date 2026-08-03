@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:beltech/data/local/drift/app_drift_store.dart';
 import 'package:beltech/features/analytics/domain/entities/analytics_snapshot.dart';
 import 'package:beltech/features/analytics/domain/repositories/analytics_repository.dart';
@@ -10,31 +8,11 @@ class AnalyticsRepositoryImpl implements AnalyticsRepository {
   final AppDriftStore _store;
 
   @override
-  Stream<AnalyticsSnapshot> watchSnapshot(AnalyticsPeriod period) {
-    return Stream<AnalyticsSnapshot>.multi((controller) async {
-      var emitting = false;
-
-      Future<void> emitSnapshot() async {
-        if (controller.isClosed || emitting) {
-          return;
-        }
-        emitting = true;
-        try {
-          controller.add(await _loadSnapshot(period));
-        } catch (error, stackTrace) {
-          controller.addError(error, stackTrace);
-        } finally {
-          emitting = false;
-        }
-      }
-
-      await emitSnapshot();
-      final timer = Timer.periodic(
-        const Duration(seconds: 2),
-        (_) => unawaited(emitSnapshot()),
-      );
-      controller.onCancel = timer.cancel;
-    });
+  Stream<AnalyticsSnapshot> watchSnapshot(AnalyticsPeriod period) async* {
+    yield await _loadSnapshot(period);
+    await for (final _ in _store.watchChangeStream()) {
+      yield await _loadSnapshot(period);
+    }
   }
 
   Future<AnalyticsSnapshot> _loadSnapshot(AnalyticsPeriod period) async {
@@ -161,8 +139,16 @@ class AnalyticsRepositoryImpl implements AnalyticsRepository {
         )
         .toList();
 
+    final incomeRows = await _store.executor.runSelect(
+      'SELECT COALESCE(SUM(amount), 0) AS total FROM incomes '
+      'WHERE received_at >= ? AND received_at < ?',
+      [rangeStart.millisecondsSinceEpoch, rangeEnd.millisecondsSinceEpoch],
+    );
+    final totalIncome = _asDouble(incomeRows.firstOrNull?['total']);
+
     return AnalyticsSnapshot(
       totalSpentThisMonthKes: periodTotal,
+      totalIncomeThisPeriodKes: totalIncome,
       averageDailySpendingKes: averageDaily,
       totalTasksCompleted: completed,
       totalTasksPending: pending,

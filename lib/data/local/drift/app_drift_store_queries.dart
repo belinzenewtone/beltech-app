@@ -49,7 +49,7 @@ class _AppDriftQueries {
       weekKes: await sumTransactionsBetween(store, weekStart, weekEnd),
       monthKes: await sumTransactionsBetween(store, monthStart, monthEnd),
       categories: categories,
-      transactions: await loadRecentTransactions(store, limit: 20),
+      transactions: await loadRecentTransactions(store),
     );
   }
 
@@ -162,12 +162,12 @@ class _AppDriftQueries {
 
   static Future<List<DriftTransactionRecord>> loadRecentTransactions(
     AppDriftStore store, {
-    required int limit,
+    int? limit,
   }) async {
-    final rows = await store._db.runSelect(
-      'SELECT id, title, category, amount, occurred_at, balance_after FROM transactions ORDER BY occurred_at DESC LIMIT ?',
-      [limit],
-    );
+    final sql = limit != null
+        ? 'SELECT id, title, category, amount, occurred_at, balance_after FROM transactions ORDER BY occurred_at DESC LIMIT ?'
+        : 'SELECT id, title, category, amount, occurred_at, balance_after FROM transactions ORDER BY occurred_at DESC';
+    final rows = await store._db.runSelect(sql, limit != null ? [limit] : const []);
     return rows
         .map(
           (row) => DriftTransactionRecord(

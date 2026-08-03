@@ -97,11 +97,30 @@ class NotificationInsightsService {
     if (!await _notifications.isNotificationsEnabled()) {
       return;
     }
+    // Respect the user's Do-Not-Disturb window: WorkManager may invoke this at
+    // any hour, but immediate insight notifications (budget alerts, weekly
+    // review) must not wake the user during quiet hours.
+    if (await _isInDoNotDisturbWindow()) {
+      return;
+    }
     // The daily spending summary is now delivered by an OS-scheduled repeating
     // reminder (LocalNotificationService.scheduleDailyDigest) so it fires on
     // time even when the app is killed — running it here too would double-fire.
     await _runBudgetThresholdAlerts();
     await _runWeeklyReviewRitual();
+  }
+
+  /// Returns true when the current time falls inside the user's configured
+  /// quiet-hours window — immediate notifications must be suppressed.
+  Future<bool> _isInDoNotDisturbWindow() async {
+    final (startHour, endHour) = await _notifications.getDoNotDisturbHours();
+    final h = DateTime.now().hour;
+    if (startHour > endHour) {
+      // Overnight window — e.g. 22:00 through 07:00.
+      return h >= startHour || h < endHour;
+    }
+    // Same-day window — e.g. 09:00 through 18:00.
+    return h >= startHour && h < endHour;
   }
 
   Future<void> _runBudgetThresholdAlerts() async {
@@ -117,12 +136,18 @@ class NotificationInsightsService {
     final scope = _scope();
     final prefs = await SharedPreferences.getInstance();
 
+    // Read the user-configured "near limit" threshold (default 90 %).
+    // Stages 2 (100 %) and 3 (120 %) remain fixed — they represent absolute
+    // budget-exceeded milestones rather than a user preference.
+    final (high, _, _) = await _notifications.getBudgetAlertThresholds();
+    final nearLimitRatio = high / 100;
+
     for (final item in snapshot.items) {
       if (item.monthlyLimitKes <= 0) {
         continue;
       }
       final ratio = item.spentKes / item.monthlyLimitKes;
-      final currentStage = _budgetStage(ratio);
+      final currentStage = _budgetStage(ratio, nearLimitRatio: nearLimitRatio);
       final key =
           '$_budgetStagePrefix.$scope.$monthKey.${item.category.toLowerCase()}';
       final previousStage = prefs.getInt(key) ?? 0;
@@ -221,16 +246,10 @@ class NotificationInsightsService {
   }
 
 
-  int _budgetStage(double ratio) {
-    if (ratio >= 1.2) {
-      return 3;
-    }
-    if (ratio >= 1.0) {
-      return 2;
-    }
-    if (ratio >= 0.8) {
-      return 1;
-    }
+  int _budgetStage(double ratio, {double nearLimitRatio = 0.9}) {
+    if (ratio >= 1.2) return 3; // exceeded
+    if (ratio >= 1.0) return 2; // at limit
+    if (ratio >= nearLimitRatio) return 1; // approaching (user-configurable)
     return 0;
   }
 

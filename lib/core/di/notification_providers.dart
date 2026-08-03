@@ -192,19 +192,19 @@ class NotificationPreferenceController extends AsyncNotifier<void> {
     double medium,
     double low,
   ) async {
-    state = const AsyncLoading();
-    state = await AsyncValue.guard(() async {
-      await ref
-          .read(localNotificationServiceProvider)
-          .setBudgetAlertThresholds(high, medium, low);
-      await ref
-          .read(revampTelemetryServiceProvider)
-          .track(
-            'budget_alert_thresholds_changed',
-            attributes: {'high': high, 'medium': medium, 'low': low},
-          );
-      ref.invalidate(budgetAlertThresholdsProvider);
-    });
+    // Write silently — no AsyncLoading and no provider invalidation.
+    // The slider widget keeps its own local state so the screen never needs
+    // to rebuild during a drag-end; the FutureProvider reloads fresh values
+    // naturally the next time the screen opens.
+    await ref
+        .read(localNotificationServiceProvider)
+        .setBudgetAlertThresholds(high, medium, low);
+    await ref
+        .read(revampTelemetryServiceProvider)
+        .track(
+          'budget_alert_thresholds_changed',
+          attributes: {'high': high, 'medium': medium, 'low': low},
+        );
   }
 
   Future<void> setFulizaLimit(double limit) async {

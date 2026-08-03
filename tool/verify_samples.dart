@@ -2,12 +2,10 @@
 // Run: dart run tool/verify_samples.dart
 
 import 'package:beltech/features/expenses/data/services/generic_bank_parser.dart';
-import 'package:beltech/features/expenses/data/services/mpesa_parser_models.dart';
 import 'package:beltech/features/expenses/data/services/mpesa_parser_service.dart';
 
 void main() {
   const parser = MpesaParserService();
-  const bankParser = GenericBankParser();
 
   final samples = <({String sender, String body})>[
     (

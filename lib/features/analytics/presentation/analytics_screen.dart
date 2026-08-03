@@ -171,7 +171,7 @@ class _AnalyticsContentState extends ConsumerState<_AnalyticsContent> {
         ),
         const SizedBox(height: AppSpacing.sectionGap),
         NetCashflowCard(
-          income: widget.snapshot.totalSpentThisMonthKes * 1.2,
+          income: widget.snapshot.totalIncomeThisPeriodKes,
           expenses: widget.snapshot.totalSpentThisMonthKes,
           period: widget.period == AnalyticsPeriod.week ? 'Weekly' : 'Monthly',
         ),
