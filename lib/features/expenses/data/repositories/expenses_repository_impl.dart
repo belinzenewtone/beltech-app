@@ -145,23 +145,33 @@ class ExpensesRepositoryImpl implements ExpensesRepository {
     ImportSourceFilter filter = ImportSourceFilter.both,
     void Function(int done, int total)? onProgress,
   }) async {
-    final entries = await _deviceSmsDataSource.loadLikelyMpesaEntries(
+    // Enqueue in batches to keep peak memory bounded for users with very large
+    // inboxes (100 000+ SMS). Each batch of 2 000 entries spawns one parse
+    // isolate and one DB insert, rather than loading the entire inbox at once.
+    const enqueueBufferSize = 2000;
+    final buffer = <_QueuedSmsImport>[];
+
+    Future<void> flushBuffer() async {
+      if (buffer.isEmpty) return;
+      await _enqueueSmsImports(List.of(buffer));
+      buffer.clear();
+    }
+
+    await _deviceSmsDataSource.streamLikelyMpesaEntries(
       from: from,
       filter: filter,
+      onBatch: (entries) async {
+        for (final entry in entries) {
+          buffer.add(_QueuedSmsImport(
+            message: entry.body,
+            sourceTimestamp: entry.receivedAt,
+            sender: entry.sender,
+          ));
+        }
+        if (buffer.length >= enqueueBufferSize) await flushBuffer();
+      },
     );
-    if (entries.isNotEmpty) {
-      await _enqueueSmsImports(
-        entries
-            .map(
-              (entry) => _QueuedSmsImport(
-                message: entry.body,
-                sourceTimestamp: entry.receivedAt,
-                sender: entry.sender,
-              ),
-            )
-            .toList(growable: false),
-      );
-    }
+    await flushBuffer();
     return _processDueQueueImpl(this, from: from, onProgress: onProgress);
   }
 
