@@ -196,11 +196,22 @@ class _AppDriftQueries {
       now.month,
       now.day,
     ).subtract(Duration(days: now.weekday % 7));
+    final weekEnd = startSunday.add(const Duration(days: 7));
+    // Single range query instead of 7 sequential queries — O(1) round-trips.
+    final rows = await store._db.runSelect(
+      'SELECT day_start_ms, total_amount FROM rollup_daily '
+      'WHERE day_start_ms >= ? AND day_start_ms < ?',
+      [startSunday.millisecondsSinceEpoch, weekEnd.millisecondsSinceEpoch],
+    );
+    final byDay = <int, double>{};
+    for (final row in rows) {
+      byDay[store._asInt(row['day_start_ms'])] =
+          store._asDouble(row['total_amount']);
+    }
     final result = <String, double>{};
-    for (var index = 0; index < labels.length; index++) {
-      final start = startSunday.add(Duration(days: index));
-      final end = start.add(const Duration(days: 1));
-      result[labels[index]] = await sumTransactionsBetween(store, start, end);
+    for (var i = 0; i < labels.length; i++) {
+      final day = startSunday.add(Duration(days: i));
+      result[labels[i]] = byDay[day.millisecondsSinceEpoch] ?? 0.0;
     }
     return result;
   }

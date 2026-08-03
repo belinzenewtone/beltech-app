@@ -45,6 +45,8 @@ class ExpensesRepositoryImpl implements ExpensesRepository {
   /// isolates end to end for a 50k-row import.
   bool useIsolatePool = true;
 
+  bool _importInProgress = false;
+
   @override
   Stream<ExpensesSnapshot> watchSnapshot() {
     return _store.watchExpensesSnapshot().map(
@@ -145,34 +147,40 @@ class ExpensesRepositoryImpl implements ExpensesRepository {
     ImportSourceFilter filter = ImportSourceFilter.both,
     void Function(int done, int total)? onProgress,
   }) async {
-    // Enqueue in batches to keep peak memory bounded for users with very large
-    // inboxes (100 000+ SMS). Each batch of 2 000 entries spawns one parse
-    // isolate and one DB insert, rather than loading the entire inbox at once.
-    const enqueueBufferSize = 2000;
-    final buffer = <_QueuedSmsImport>[];
+    if (_importInProgress) return 0;
+    _importInProgress = true;
+    try {
+      // Enqueue in batches to keep peak memory bounded for users with very large
+      // inboxes (100 000+ SMS). Each batch of 2 000 entries spawns one parse
+      // isolate and one DB insert, rather than loading the entire inbox at once.
+      const enqueueBufferSize = 2000;
+      final buffer = <_QueuedSmsImport>[];
 
-    Future<void> flushBuffer() async {
-      if (buffer.isEmpty) return;
-      await _enqueueSmsImports(List.of(buffer));
-      buffer.clear();
+      Future<void> flushBuffer() async {
+        if (buffer.isEmpty) return;
+        await _enqueueSmsImports(List.of(buffer));
+        buffer.clear();
+      }
+
+      await _deviceSmsDataSource.streamLikelyMpesaEntries(
+        from: from,
+        filter: filter,
+        onBatch: (entries) async {
+          for (final entry in entries) {
+            buffer.add(_QueuedSmsImport(
+              message: entry.body,
+              sourceTimestamp: entry.receivedAt,
+              sender: entry.sender,
+            ));
+          }
+          if (buffer.length >= enqueueBufferSize) await flushBuffer();
+        },
+      );
+      await flushBuffer();
+      return _processDueQueueImpl(this, from: from, onProgress: onProgress);
+    } finally {
+      _importInProgress = false;
     }
-
-    await _deviceSmsDataSource.streamLikelyMpesaEntries(
-      from: from,
-      filter: filter,
-      onBatch: (entries) async {
-        for (final entry in entries) {
-          buffer.add(_QueuedSmsImport(
-            message: entry.body,
-            sourceTimestamp: entry.receivedAt,
-            sender: entry.sender,
-          ));
-        }
-        if (buffer.length >= enqueueBufferSize) await flushBuffer();
-      },
-    );
-    await flushBuffer();
-    return _processDueQueueImpl(this, from: from, onProgress: onProgress);
   }
 
   @override
@@ -331,10 +339,20 @@ class ExpensesRepositoryImpl implements ExpensesRepository {
         (i + chunkSize).clamp(0, hashes.length),
       );
       final placeholders = List.filled(chunk.length, '?').join(',');
-      final rows = await _store.executor.runSelect(
-        'SELECT source_hash FROM $table WHERE source_hash IN ($placeholders)',
-        chunk,
-      );
+      // For sms_import_queue include scope so the query can use the composite
+      // (scope, source_hash) unique index instead of a full table scan.
+      final List<Map<String, Object?>> rows;
+      if (table == 'sms_import_queue') {
+        rows = await _store.executor.runSelect(
+          'SELECT source_hash FROM sms_import_queue WHERE scope = ? AND source_hash IN ($placeholders)',
+          ['local', ...chunk],
+        );
+      } else {
+        rows = await _store.executor.runSelect(
+          'SELECT source_hash FROM $table WHERE source_hash IN ($placeholders)',
+          chunk,
+        );
+      }
       for (final row in rows) {
         final hash = '${row['source_hash']}';
         if (hash.isNotEmpty) {
