@@ -1,4 +1,6 @@
 import 'package:beltech/core/theme/app_colors.dart';
+import 'package:beltech/core/theme/category_colors.dart';
+import 'package:beltech/core/theme/dark_chart_palette.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -230,5 +232,6 @@ ThemeData buildLightTheme() {
       backgroundColor: surface,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
     ),
+    extensions: const [CategoryColors.light, DarkChartPalette.light],
   );
 }
