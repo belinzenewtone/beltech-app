@@ -13,7 +13,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'dart:io';
-import 'dart:typed_data';
 import 'dart:ui' as ui;
 
 /// Monthly Wrapped screen — full month summary.
@@ -79,7 +78,7 @@ class _MonthlyWrappedScreenState extends ConsumerState<MonthlyWrappedScreen> {
       final dir = await getTemporaryDirectory();
       final file = await File('${dir.path}/monthly_wrapped_$_year-$_month.png').create();
       await file.writeAsBytes(byteData.buffer.asUint8List());
-      await Share.shareXFiles([XFile(file.path)], text: 'My $_month/$_year Wrapped — Beltech');
+      await SharePlus.instance.share(ShareParams(files: [XFile(file.path)], text: 'My $_month/$_year Wrapped — Beltech'));
     } catch (_) {
       // Share silently fails if user cancels
     }
@@ -94,8 +93,6 @@ class _MonthlyWrappedScreenState extends ConsumerState<MonthlyWrappedScreen> {
     ];
 
     final hasData = dataAsync.maybeWhen(data: (d) => d.hasData, orElse: () => false);
-
-    final _shareKey = GlobalKey();
 
     return SecondaryPageShell(
       title: 'Monthly Wrapped',
