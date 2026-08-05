@@ -422,6 +422,39 @@ class AnalyticsRepositoryImpl implements AnalyticsRepository {
   }
 
   // ─────────────────────────────────────────────────────────────────────────
+  // Phase-4 additional queries
+  // ─────────────────────────────────────────────────────────────────────────
+
+  @override
+  Future<double> getMonthTotalSpend(int year, int month) async {
+    await _store.ensureInitialized();
+    final start = DateTime(year, month, 1).millisecondsSinceEpoch;
+    final end = _nextMonth(year, month).millisecondsSinceEpoch;
+    final rows = await _store.executor.runSelect(
+      'SELECT COALESCE(SUM(amount), 0) AS total '
+      'FROM transactions '
+      'WHERE occurred_at >= ? AND occurred_at < ?',
+      [start, end],
+    );
+    return _asDouble(rows.firstOrNull?['total']);
+  }
+
+  @override
+  Future<String?> getTopCategoryAllTime() async {
+    await _store.ensureInitialized();
+    final rows = await _store.executor.runSelect(
+      'SELECT category, SUM(amount) AS total '
+      'FROM transactions '
+      'GROUP BY category '
+      'ORDER BY total DESC '
+      'LIMIT 1',
+      const [],
+    );
+    if (rows.isEmpty) return null;
+    return '${rows.first['category']}';
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
   // Helpers
   // ─────────────────────────────────────────────────────────────────────────
 

@@ -56,6 +56,7 @@ class PaydayPulseCard extends StatelessWidget {
               fraction: postFrac,
               amount: post,
               color: postHigher ? AppColors.danger : AppColors.success,
+              index: 0,
             ),
             const SizedBox(height: 10),
             _PulseBar(
@@ -63,6 +64,7 @@ class PaydayPulseCard extends StatelessWidget {
               fraction: otherFrac,
               amount: other,
               color: !postHigher ? AppColors.danger : AppColors.success,
+              index: 1,
             ),
             if (pctDiff != null) ...[
               const SizedBox(height: 12),
@@ -82,18 +84,55 @@ class PaydayPulseCard extends StatelessWidget {
   }
 }
 
-class _PulseBar extends StatelessWidget {
+/// Animated pulse bar — fills from 0 → fraction over 500 ms with a per-bar
+/// stagger delay of 120 ms × index so bars enter sequentially.
+class _PulseBar extends StatefulWidget {
   const _PulseBar({
     required this.label,
     required this.fraction,
     required this.amount,
     required this.color,
+    required this.index,
   });
 
   final String label;
   final double fraction;
   final double amount;
   final Color color;
+
+  /// Bar position (0-based); drives the stagger delay.
+  final int index;
+
+  @override
+  State<_PulseBar> createState() => _PulseBarState();
+}
+
+class _PulseBarState extends State<_PulseBar>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  late final Animation<double> _anim;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 500),
+      vsync: this,
+    );
+    _anim = Tween<double>(begin: 0, end: widget.fraction).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic),
+    );
+    // Stagger: each bar waits 120 ms × its index before starting.
+    Future.delayed(Duration(milliseconds: 120 * widget.index), () {
+      if (mounted) _controller.forward();
+    });
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -104,7 +143,7 @@ class _PulseBar extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(
-              label,
+              widget.label,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: Theme.of(context)
                         .colorScheme
@@ -113,22 +152,25 @@ class _PulseBar extends StatelessWidget {
                   ),
             ),
             Text(
-              '${CurrencyFormatter.money(amount)}/day',
+              '${CurrencyFormatter.money(widget.amount)}/day',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     fontWeight: FontWeight.w700,
-                    color: color,
+                    color: widget.color,
                   ),
             ),
           ],
         ),
         const SizedBox(height: 4),
-        ClipRRect(
-          borderRadius: BorderRadius.circular(4),
-          child: LinearProgressIndicator(
-            value: fraction,
-            minHeight: 8,
-            backgroundColor: color.withValues(alpha: 0.12),
-            valueColor: AlwaysStoppedAnimation<Color>(color),
+        AnimatedBuilder(
+          animation: _anim,
+          builder: (_, __) => ClipRRect(
+            borderRadius: BorderRadius.circular(4),
+            child: LinearProgressIndicator(
+              value: _anim.value,
+              minHeight: 8,
+              backgroundColor: widget.color.withValues(alpha: 0.12),
+              valueColor: AlwaysStoppedAnimation<Color>(widget.color),
+            ),
           ),
         ),
       ],

@@ -2,6 +2,7 @@ import 'package:beltech/core/theme/app_colors.dart';
 import 'package:beltech/core/utils/currency_formatter.dart';
 import 'package:beltech/core/widgets/animated_number.dart';
 import 'package:beltech/core/widgets/app_card.dart';
+import 'package:beltech/core/widgets/chart_semantics.dart';
 import 'package:beltech/features/analytics/domain/entities/analytics_snapshot.dart';
 import 'package:flutter/material.dart';
 
@@ -111,7 +112,10 @@ class _SummaryCard extends StatelessWidget {
           ),
           if (sparklineData != null && sparklineData!.any((v) => v > 0)) ...[
             const SizedBox(height: 8),
-            _VelocitySparkline(data: sparklineData!, color: color),
+            ChartSemantics(
+              label: 'Weekly spend velocity sparkline',
+              child: _VelocitySparkline(data: sparklineData!, color: color),
+            ),
           ],
         ],
       ),

@@ -2,21 +2,28 @@ import 'package:beltech/core/utils/category_visual.dart';
 import 'package:beltech/core/utils/currency_formatter.dart';
 import 'package:beltech/core/widgets/app_card.dart';
 import 'package:beltech/core/widgets/secondary_page_shell.dart';
+import 'package:beltech/features/analytics/domain/entities/analytics_snapshot.dart';
 import 'package:flutter/material.dart';
 
 /// Filtered transaction list scoped to a single category + period.
-/// Accessed via long-press / chevron on a CategorySpendCard.
+/// Accessed by tapping a CategoryCard in CategorySpendCards.
+/// Receives the full [AnalyticsCategoryShare] via GoRouter `extra`.
 class CategoryDrillDownScreen extends StatelessWidget {
   const CategoryDrillDownScreen({
     super.key,
     required this.category,
     required this.totalKes,
     this.txCount = 0,
+    this.share,
   });
 
   final String category;
   final double totalKes;
   final int txCount;
+
+  /// Full share object injected from route extra — provides sparkline +
+  /// top merchant + percentage. Optional for backwards compatibility.
+  final AnalyticsCategoryShare? share;
 
   @override
   Widget build(BuildContext context) {
@@ -61,46 +68,103 @@ class CategoryDrillDownScreen extends StatelessWidget {
               ],
             ),
           ),
-          const SizedBox(height: 16),
-          // ── Transaction list (placeholder) ─────────────────────────────
-          // Wired to real repo query in provider step.
-          AppCard(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Recent $category',
-                  style: Theme.of(context)
-                      .textTheme
-                      .titleSmall
-                      ?.copyWith(fontWeight: FontWeight.w700),
-                ),
-                const SizedBox(height: 12),
-                ...List.generate(
-                  txCount.clamp(0, 5),
-                  (i) => Padding(
-                    padding: const EdgeInsets.only(bottom: 10),
-                    child: _DrillDownRow(
-                      title: '$category transaction #${i + 1}',
-                      amount: totalKes / (txCount.clamp(1, 999)),
-                      date: 'Aug ${i + 1}',
-                      visual: visual,
+          // ── Percentage + top merchant (from real share data) ─────────────
+          if (share != null) ...[
+            const SizedBox(height: 12),
+            AppCard(
+              padding: const EdgeInsets.all(14),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '${share!.percentage.toStringAsFixed(1)}% of period spend',
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .onSurface
+                                    .withValues(alpha: 0.55),
+                              ),
+                        ),
+                        if (share!.topMerchant != null) ...[
+                          const SizedBox(height: 4),
+                          Text(
+                            'Top merchant: ${share!.topMerchant}',
+                            style: Theme.of(context).textTheme.bodyMedium
+                                ?.copyWith(fontWeight: FontWeight.w600),
+                          ),
+                        ],
+                      ],
                     ),
                   ),
-                ),
-                if (txCount == 0)
-                  Text(
-                    'No transactions yet.',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Theme.of(context)
-                              .colorScheme
-                              .onSurface
-                              .withValues(alpha: 0.4),
-                        ),
-                  ),
-              ],
+                ],
+              ),
             ),
-          ),
+          ],
+          const SizedBox(height: 12),
+          // ── 8-week sparkline trend ─────────────────────────────────────────
+          if (share != null && share!.weeklySparkline.any((v) => v > 0)) ...[
+            AppCard(
+              padding: const EdgeInsets.all(14),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '8-Week Trend',
+                    style: Theme.of(context).textTheme.titleSmall
+                        ?.copyWith(fontWeight: FontWeight.w700),
+                  ),
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    height: 48,
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: share!.weeklySparkline.map((v) {
+                        final maxV = share!.weeklySparkline.fold<double>(
+                            0, (a, b) => b > a ? b : a);
+                        final frac = maxV > 0 ? (v / maxV).clamp(0.0, 1.0) : 0.0;
+                        return Expanded(
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 2),
+                            child: Container(
+                              height: 8 + frac * 36,
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  begin: Alignment.topCenter,
+                                  end: Alignment.bottomCenter,
+                                  colors: [
+                                    visual.foreground,
+                                    visual.foreground.withOpacity(0.5),
+                                  ],
+                                ),
+                                borderRadius: const BorderRadius.vertical(
+                                    top: Radius.circular(3)),
+                              ),
+                            ),
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text('7 wks ago', style: Theme.of(context).textTheme.bodySmall
+                          ?.copyWith(fontSize: 9, color: Theme.of(context)
+                              .colorScheme.onSurface.withValues(alpha: 0.4))),
+                      Text('This week', style: Theme.of(context).textTheme.bodySmall
+                          ?.copyWith(fontSize: 9, color: Theme.of(context)
+                              .colorScheme.onSurface.withValues(alpha: 0.4))),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+          ],
         ],
       ),
     );

@@ -1,5 +1,6 @@
 import 'package:beltech/features/auth/presentation/auth_gate.dart';
 import 'package:beltech/features/analytics/presentation/analytics_screen.dart';
+import 'package:beltech/features/analytics/domain/entities/analytics_snapshot.dart';
 import 'package:beltech/features/analytics/presentation/category_drill_down_screen.dart';
 import 'package:beltech/features/bills/presentation/screens/bills_screen.dart';
 import 'package:beltech/features/budget/presentation/budget_screen.dart';
@@ -43,8 +44,20 @@ final appRouterProvider = Provider<GoRouter>(
         path: '/analytics/category/:category',
         name: 'category-drill-down',
         builder: (context, state) {
-          final category = state.pathParameters['category'] ?? 'Other';
-          final args = state.extra as Map<String, dynamic>?;
+          final category = Uri.decodeComponent(
+              state.pathParameters['category'] ?? 'Other');
+          // Accept either an AnalyticsCategoryShare object (new tap path)
+          // or a legacy Map<String, dynamic> (older call sites).
+          final extra = state.extra;
+          if (extra is AnalyticsCategoryShare) {
+            return CategoryDrillDownScreen(
+              category: category,
+              totalKes: extra.totalKes,
+              txCount: extra.weeklySparkline.fold<int>(0, (s, _) => s + 1),
+              share: extra,
+            );
+          }
+          final args = extra as Map<String, dynamic>?;
           return CategoryDrillDownScreen(
             category: category,
             totalKes: (args?['totalKes'] as double?) ?? 0,

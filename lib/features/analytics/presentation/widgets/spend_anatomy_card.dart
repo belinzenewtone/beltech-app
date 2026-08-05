@@ -1,5 +1,6 @@
 import 'package:beltech/core/theme/app_colors.dart';
 import 'package:beltech/core/widgets/app_card.dart';
+import 'package:beltech/core/widgets/chart_semantics.dart';
 import 'package:beltech/features/analytics/domain/entities/analytics_snapshot.dart';
 import 'package:flutter/material.dart';
 
@@ -39,7 +40,13 @@ class _SpendAnatomyCardState extends State<SpendAnatomyCard>
     final total = widget.snapshot.totalTxCount;
     if (total == 0) return const SizedBox.shrink();
 
-    return AppCard(
+    final microPct = (widget.snapshot.microTxCount / total * 100).toStringAsFixed(0);
+    final medPct = (widget.snapshot.mediumTxCount / total * 100).toStringAsFixed(0);
+    final largePct = (widget.snapshot.largeTxCount / total * 100).toStringAsFixed(0);
+
+    return ChartSemantics(
+      label: 'Spend anatomy: $microPct% micro under KES 500, $medPct% medium KES 500–2000, $largePct% large over KES 2000',
+      child: AppCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -92,7 +99,8 @@ class _SpendAnatomyCardState extends State<SpendAnatomyCard>
           ),
         ],
       ),
-    );
+    ), // AppCard
+    ); // ChartSemantics
   }
 }
 

@@ -32,6 +32,9 @@ class _MonthlyWrappedScreenState extends ConsumerState<MonthlyWrappedScreen> {
   late int _year;
   late int _month;
 
+  /// Key pointing directly at the RepaintBoundary so toImage() can find it.
+  final GlobalKey _cardKey = GlobalKey();
+
   @override
   void initState() {
     super.initState();
@@ -70,7 +73,11 @@ class _MonthlyWrappedScreenState extends ConsumerState<MonthlyWrappedScreen> {
 
   Future<void> _shareCard(BuildContext context, WidgetRef ref) async {
     try {
-      final boundary = context.findRenderObject() as RenderRepaintBoundary?;
+      // Use the GlobalKey to locate the RenderRepaintBoundary directly —
+      // context.findRenderObject() finds the outermost render object of the
+      // screen, not the inner boundary, so share would always silently fail.
+      final boundary =
+          _cardKey.currentContext?.findRenderObject() as RenderRepaintBoundary?;
       if (boundary == null) return;
       final image = await boundary.toImage(pixelRatio: 3.0);
       final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
@@ -166,6 +173,7 @@ class _MonthlyWrappedScreenState extends ConsumerState<MonthlyWrappedScreen> {
                 }
               },
               child: RepaintBoundary(
+                key: _cardKey,
                 child: dataAsync.when(
                   loading: () => const Center(child: CircularProgressIndicator()),
                   error: (e, _) => Center(child: Text('Error: $e')),

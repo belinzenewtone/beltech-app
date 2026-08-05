@@ -2,11 +2,13 @@ import 'dart:math' as math;
 import 'package:beltech/core/utils/category_visual.dart';
 import 'package:beltech/core/utils/currency_formatter.dart';
 import 'package:beltech/core/widgets/app_card.dart';
+import 'package:beltech/core/widgets/chart_semantics.dart';
 import 'package:beltech/core/widgets/section_header.dart';
 import 'package:beltech/features/analytics/presentation/widgets/category_manager_sheet.dart';
 import 'package:beltech/features/analytics/domain/entities/analytics_snapshot.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 /// Expandable category spend cards — top 3 shown initially, expand up to 8.
 /// Each card includes a mini 8-week sparkline and the top merchant.
@@ -59,13 +61,18 @@ class _CategorySpendCardsState extends ConsumerState<CategorySpendCards> {
             alignment: Alignment.center,
             child: TextButton.icon(
               onPressed: () => setState(() => _expanded = !_expanded),
-              icon: Icon(
-                _expanded
-                    ? Icons.keyboard_arrow_up_rounded
-                    : Icons.keyboard_arrow_down_rounded,
-                size: 18,
+              icon: AnimatedRotation(
+                turns: _expanded ? 0.5 : 0.0,
+                duration: const Duration(milliseconds: 220),
+                child: const Icon(Icons.keyboard_arrow_down_rounded, size: 18),
               ),
-              label: Text(_expanded ? 'Show less' : 'Show more'),
+              label: AnimatedSwitcher(
+                duration: const Duration(milliseconds: 180),
+                child: Text(
+                  _expanded ? 'Show less' : 'Show more',
+                  key: ValueKey(_expanded),
+                ),
+              ),
             ),
           ),
       ],
@@ -84,7 +91,12 @@ class _CategoryCard extends StatelessWidget {
     final visual = categoryVisual(share.category);
     final pct = share.percentage.toStringAsFixed(1);
 
-    return AppCard(
+    return GestureDetector(
+      onTap: () => context.push(
+        '/analytics/category/${Uri.encodeComponent(share.category)}',
+        extra: share,
+      ),
+      child: AppCard(
       padding: const EdgeInsets.all(14),
       child: Row(
         children: [
@@ -154,12 +166,15 @@ class _CategoryCard extends StatelessWidget {
                 if (share.weeklySparkline.isNotEmpty &&
                     share.weeklySparkline.any((v) => v > 0)) ...[
                   const SizedBox(height: 8),
-                  SizedBox(
-                    height: 28,
-                    child: _Sparkline(
-                      data: share.weeklySparkline,
-                      color: visual.foreground,
-                      globalMax: globalSparklineMax,
+                  ChartSemantics(
+                    label: 'Spending trend for ${share.category}',
+                    child: SizedBox(
+                      height: 28,
+                      child: _Sparkline(
+                        data: share.weeklySparkline,
+                        color: visual.foreground,
+                        globalMax: globalSparklineMax,
+                      ),
                     ),
                   ),
                 ],
@@ -168,7 +183,8 @@ class _CategoryCard extends StatelessWidget {
           ),
         ],
       ),
-    );
+    ), // AppCard
+    ); // GestureDetector
   }
 
   String _titleCase(String s) {

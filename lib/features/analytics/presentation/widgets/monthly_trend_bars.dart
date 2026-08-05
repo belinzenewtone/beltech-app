@@ -163,9 +163,21 @@ class _MonthlyTrendBarsState extends State<MonthlyTrendBars>
                                       top: Radius.circular(4)),
                                   child: Container(
                                     height: barAnim.value,
-                                    color: isSelected
-                                        ? barColor.withValues(alpha: 0.55)
-                                        : barColor,
+                                    decoration: BoxDecoration(
+                                      gradient: LinearGradient(
+                                        begin: Alignment.topCenter,
+                                        end: Alignment.bottomCenter,
+                                        colors: isSelected
+                                            ? [
+                                                barColor.withValues(alpha: 0.55),
+                                                barColor.withValues(alpha: 0.28),
+                                              ]
+                                            : [
+                                                barColor,
+                                                barColor.withValues(alpha: 0.55),
+                                              ],
+                                      ),
+                                    ),
                                   ),
                                 ),
                               ),

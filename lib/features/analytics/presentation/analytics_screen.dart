@@ -4,6 +4,7 @@ import 'package:beltech/core/utils/currency_formatter.dart';
 import 'package:beltech/core/widgets/app_card.dart';
 import 'package:beltech/core/widgets/app_skeleton.dart';
 import 'package:beltech/core/widgets/chart_semantics.dart';
+import 'package:beltech/core/widgets/health_gauge.dart';
 import 'package:beltech/core/widgets/secondary_page_shell.dart';
 import 'package:beltech/core/widgets/section_header.dart';
 import 'package:beltech/features/analytics/domain/entities/analytics_snapshot.dart';
@@ -70,8 +71,10 @@ class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen> {
               ),
               data: (snapshot) => RefreshIndicator(
                 onRefresh: () async {
-                  // StreamProvider auto-refreshes; invalidate to force re-fetch.
+                  // Invalidate both providers so Analytics + Insights tabs
+                  // both refresh when the user pulls down.
                   ref.invalidate(analyticsSnapshotProvider);
+                  ref.invalidate(insightsProvider);
                 },
                 child: AnimatedSwitcher(
                   duration: const Duration(milliseconds: 220),
@@ -150,59 +153,34 @@ String _buildChartLabel(List<MonthlyTotalPoint> history) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Financial Health Gauge in Insights tab header
+// Financial Health Gauge in Insights tab header — animated semi-circular arc
 // ─────────────────────────────────────────────────────────────────────────────
 
-class _HealthGauge extends StatelessWidget {
-  const _HealthGauge({required this.score});
+class _HealthGaugeCard extends StatelessWidget {
+  const _HealthGaugeCard({required this.score});
   final int score;
+
+  static String _tier(int s) {
+    if (s >= 80) return 'Excellent';
+    if (s >= 60) return 'Good';
+    if (s >= 40) return 'Fair';
+    return 'Needs Work';
+  }
 
   @override
   Widget build(BuildContext context) {
-    final color = score >= 80
-        ? AppColors.success
-        : score >= 60
-            ? AppColors.warning
-            : score >= 40
-                ? AppColors.orange
-                : AppColors.danger;
-
     return AppCard(
-      padding: const EdgeInsets.all(14),
-      child: Row(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      child: Column(
         children: [
-          Container(
-            padding: const EdgeInsets.all(9),
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Icon(Icons.favorite_rounded, size: 20, color: color),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Financial Health',
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
-                      ),
+          Text(
+            'Financial Health',
+            style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.w700,
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  'Productivity Score · $score%',
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Theme.of(context)
-                            .colorScheme
-                            .onSurface
-                            .withValues(alpha: 0.55),
-                      ),
-                ),
-              ],
-            ),
           ),
+          const SizedBox(height: 10),
+          Center(child: HealthGauge(score: score, tierLabel: _tier(score))),
         ],
       ),
     );
@@ -210,52 +188,59 @@ class _HealthGauge extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Top Category All Time insight row
+// Top Category All Time insight row — backed by real SQL all-time query
 // ─────────────────────────────────────────────────────────────────────────────
 
-class _TopCategoryAllTime extends StatelessWidget {
-  const _TopCategoryAllTime({required this.categories});
-  final List<AnalyticsCategoryShare> categories;
+class _TopCategoryAllTimeCard extends ConsumerWidget {
+  const _TopCategoryAllTimeCard();
 
   @override
-  Widget build(BuildContext context) {
-    final topCat = categories.isNotEmpty ? categories.first : null;
-    if (topCat == null) return const SizedBox.shrink();
-    final visual = categoryVisual(topCat.category);
-
-    return AppCard(
-      padding: const EdgeInsets.all(14),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(7),
-            decoration: BoxDecoration(
-              color: visual.foreground.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Icon(visual.icon, size: 16, color: visual.foreground),
-          ),
-          const SizedBox(width: 12),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+  Widget build(BuildContext context, WidgetRef ref) {
+    final async = ref.watch(topCategoryAllTimeProvider);
+    return async.when(
+      loading: () => const SizedBox.shrink(),
+      error: (_, __) => const SizedBox.shrink(),
+      data: (category) {
+        if (category == null || category.isEmpty) return const SizedBox.shrink();
+        final visual = categoryVisual(category);
+        return AppCard(
+          padding: const EdgeInsets.all(14),
+          child: Row(
             children: [
-              Text(
-                'Top Category All Time',
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.55),
-                    ),
+              Container(
+                padding: const EdgeInsets.all(7),
+                decoration: BoxDecoration(
+                  color: visual.foreground.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(visual.icon, size: 16, color: visual.foreground),
               ),
-              const SizedBox(height: 2),
-              Text(
-                '${topCat.category} — ${CurrencyFormatter.money(topCat.totalKes)}',
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
+              const SizedBox(width: 12),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Top Category All Time',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Theme.of(context)
+                              .colorScheme
+                              .onSurface
+                              .withValues(alpha: 0.55),
+                        ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    category,
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                  ),
+                ],
               ),
             ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 }
@@ -346,6 +331,20 @@ class _AnalyticsTab extends ConsumerStatefulWidget {
 }
 
 class _AnalyticsTabState extends ConsumerState<_AnalyticsTab> {
+  DateTimeRange? _customRange;
+
+  String? get _customRangeLabel {
+    if (_customRange == null) return null;
+    final s = _customRange!.start;
+    final e = _customRange!.end;
+    const months = ['Jan','Feb','Mar','Apr','May','Jun',
+                    'Jul','Aug','Sep','Oct','Nov','Dec'];
+    if (s.year == e.year) {
+      return '${s.day} ${months[s.month - 1]}–${e.day} ${months[e.month - 1]}';
+    }
+    return '${s.day} ${months[s.month - 1]} ${s.year}–${e.day} ${months[e.month - 1]} ${e.year}';
+  }
+
   @override
   Widget build(BuildContext context) {
     final period = ref.watch(analyticsPeriodProvider);
@@ -365,20 +364,28 @@ class _AnalyticsTabState extends ConsumerState<_AnalyticsTab> {
           // Period filter chips
           _PeriodChips(
             selected: period,
-            onChanged: (p) =>
-                ref.read(analyticsPeriodProvider.notifier).state = p,
+            customRangeLabel: _customRangeLabel,
+            onChanged: (p) {
+              ref.read(analyticsPeriodProvider.notifier).state = p;
+              if (p != period) setState(() => _customRange = null);
+            },
             onCustomTap: () async {
               final now = DateTime.now();
               final range = await showDateRangePicker(
                 context: context,
                 firstDate: DateTime(now.year - 2, 1, 1),
                 lastDate: now,
-                initialDateRange: DateTimeRange(
-                  start: now.subtract(const Duration(days: 30)),
-                  end: now,
-                ),
+                initialDateRange: _customRange ??
+                    DateTimeRange(
+                      start: now.subtract(const Duration(days: 30)),
+                      end: now,
+                    ),
               );
               if (range != null) {
+                setState(() => _customRange = range);
+                // TODO(phase-4): pass range to a customRangeSnapshotProvider
+                // once the repository supports watchSnapshotRange(start, end).
+                // For now the chip shows the selection visually.
                 ref.invalidate(analyticsSnapshotProvider);
               }
             },
@@ -491,10 +498,10 @@ class _InsightsTab extends ConsumerWidget {
               ),
             ),
           ],
-          // Financial Health Gauge in header
+          // Financial Health Gauge in header — animated arc
           if (snapshot.productivityScore > 0) ...[
             h,
-            _HealthGauge(score: snapshot.productivityScore.toInt()),
+            _HealthGaugeCard(score: snapshot.productivityScore.toInt()),
           ],
           // Highest / lowest month quick links
           if (highest != null || lowest != null) ...[
@@ -506,11 +513,9 @@ class _InsightsTab extends ConsumerWidget {
                   context.pushNamed('monthly-wrapped', extra: (y, m)),
             ),
           ],
-          // Top Category All Time insight
-          if (snapshot.categoryBreakdown.isNotEmpty) ...[
-            h,
-            _TopCategoryAllTime(categories: snapshot.categoryBreakdown),
-          ],
+          // Top Category All Time insight — backed by real all-time SQL query
+          h,
+          _TopCategoryAllTimeCard(),
           h,
           // Monthly history breakdown
           MonthlyBreakdownSection(
@@ -543,33 +548,42 @@ class _InsightsTab extends ConsumerWidget {
 // ─────────────────────────────────────────────────────────────────────────────
 
 class _PeriodChips extends StatelessWidget {
-  const _PeriodChips({required this.selected, required this.onChanged, required this.onCustomTap});
+  const _PeriodChips({
+    required this.selected,
+    required this.onChanged,
+    required this.onCustomTap,
+    this.customRangeLabel,
+  });
 
   final AnalyticsPeriod selected;
   final ValueChanged<AnalyticsPeriod> onChanged;
   final VoidCallback onCustomTap;
 
+  /// When non-null a custom range is active; shows the date span in the chip.
+  final String? customRangeLabel;
+
   @override
   Widget build(BuildContext context) {
+    final hasCustom = customRangeLabel != null;
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       child: Row(
         children: [
           _Chip(
             label: 'This week',
-            active: selected == AnalyticsPeriod.week,
+            active: selected == AnalyticsPeriod.week && !hasCustom,
             onTap: () => onChanged(AnalyticsPeriod.week),
           ),
           const SizedBox(width: 8),
           _Chip(
             label: 'This month',
-            active: selected == AnalyticsPeriod.month,
+            active: selected == AnalyticsPeriod.month && !hasCustom,
             onTap: () => onChanged(AnalyticsPeriod.month),
           ),
           const SizedBox(width: 8),
           _Chip(
-            label: 'Custom…',
-            active: false,
+            label: hasCustom ? customRangeLabel! : 'Custom…',
+            active: hasCustom,
             onTap: onCustomTap,
           ),
         ],
