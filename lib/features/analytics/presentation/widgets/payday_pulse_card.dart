@@ -1,11 +1,12 @@
 import 'package:beltech/core/theme/app_colors.dart';
 import 'package:beltech/core/utils/currency_formatter.dart';
 import 'package:beltech/core/widgets/app_card.dart';
+import 'package:beltech/core/widgets/chart_semantics.dart';
 import 'package:beltech/features/analytics/domain/entities/analytics_snapshot.dart';
 import 'package:flutter/material.dart';
 
 /// Payday Pulse card — compares avg daily spend in 7 days post-income
-/// vs other days. Mirrors Kotlin "Payday Pulse" in InsightsScreen.
+/// vs other days. Includes screen-reader semantics.
 class PaydayPulseCard extends StatelessWidget {
   const PaydayPulseCard({super.key, required this.snapshot});
 
@@ -26,53 +27,56 @@ class PaydayPulseCard extends StatelessWidget {
         ? (((post - other) / other) * 100).abs().toStringAsFixed(0)
         : null;
 
-    return AppCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Payday Pulse',
-            style: Theme.of(context)
-                .textTheme
-                .titleSmall
-                ?.copyWith(fontWeight: FontWeight.w700),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            '$incomeCount income events · avg daily spend',
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Theme.of(context)
-                      .colorScheme
-                      .onSurface
-                      .withOpacity(0.55),
-                ),
-          ),
-          const SizedBox(height: 16),
-          _PulseBar(
-            label: 'Post-income (7 days)',
-            fraction: postFrac,
-            amount: post,
-            color: postHigher ? AppColors.danger : AppColors.success,
-          ),
-          const SizedBox(height: 10),
-          _PulseBar(
-            label: 'Other days',
-            fraction: otherFrac,
-            amount: other,
-            color: !postHigher ? AppColors.danger : AppColors.success,
-          ),
-          if (pctDiff != null) ...[
-            const SizedBox(height: 12),
+    return ChartSemantics(
+      label: 'Payday Pulse: post-income ${CurrencyFormatter.compact(post)} per day, other days ${CurrencyFormatter.compact(other)}',
+      child: AppCard(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
             Text(
-              postHigher
-                  ? 'You spend $pctDiff% more in the 7 days after income arrives.'
-                  : 'You spend $pctDiff% less in the 7 days after income — disciplined!',
+              'Payday Pulse',
+              style: Theme.of(context)
+                  .textTheme
+                  .titleSmall
+                  ?.copyWith(fontWeight: FontWeight.w700),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              '$incomeCount income events · avg daily spend',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: postHigher ? AppColors.warning : AppColors.success,
+                    color: Theme.of(context)
+                        .colorScheme
+                        .onSurface
+                        .withValues(alpha: 0.55),
                   ),
             ),
+            const SizedBox(height: 16),
+            _PulseBar(
+              label: 'Post-income (7 days)',
+              fraction: postFrac,
+              amount: post,
+              color: postHigher ? AppColors.danger : AppColors.success,
+            ),
+            const SizedBox(height: 10),
+            _PulseBar(
+              label: 'Other days',
+              fraction: otherFrac,
+              amount: other,
+              color: !postHigher ? AppColors.danger : AppColors.success,
+            ),
+            if (pctDiff != null) ...[
+              const SizedBox(height: 12),
+              Text(
+                postHigher
+                    ? 'You spend $pctDiff% more in the 7 days after income arrives.'
+                    : 'You spend $pctDiff% less in the 7 days after income — disciplined!',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: postHigher ? AppColors.warning : AppColors.success,
+                    ),
+              ),
+            ],
           ],
-        ],
+        ),
       ),
     );
   }
@@ -105,7 +109,7 @@ class _PulseBar extends StatelessWidget {
                     color: Theme.of(context)
                         .colorScheme
                         .onSurface
-                        .withOpacity(0.7),
+                        .withValues(alpha: 0.7),
                   ),
             ),
             Text(
@@ -123,7 +127,7 @@ class _PulseBar extends StatelessWidget {
           child: LinearProgressIndicator(
             value: fraction,
             minHeight: 8,
-            backgroundColor: color.withOpacity(0.12),
+            backgroundColor: color.withValues(alpha: 0.12),
             valueColor: AlwaysStoppedAnimation<Color>(color),
           ),
         ),

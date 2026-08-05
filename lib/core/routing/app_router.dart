@@ -31,6 +31,7 @@ import 'package:beltech/features/settings/presentation/screens/notification_sett
 import 'package:beltech/features/settings/presentation/screens/screen_lock_screen.dart';
 import 'package:beltech/features/settings/presentation/settings_screen.dart';
 import 'package:beltech/features/tasks/presentation/tasks_screen.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -122,21 +123,33 @@ final appRouterProvider = Provider<GoRouter>(
       GoRoute(
         path: '/week-review',
         name: 'week-review',
-        builder: (context, state) => const WeekReviewScreen(),
+        pageBuilder: (context, state) => CustomTransitionPage(
+          key: state.pageKey,
+          child: const WeekReviewScreen(),
+          transitionsBuilder: (ctx, anim, sec, child) => _slideUpTransition(ctx, anim, sec, child),
+        ),
       ),
       GoRoute(
         path: '/weekly-review',
         name: 'weekly-review',
-        builder: (context, state) => const ReviewScreen(),
+        pageBuilder: (context, state) => CustomTransitionPage(
+          key: state.pageKey,
+          child: const ReviewScreen(),
+          transitionsBuilder: (ctx, anim, sec, child) => _slideUpTransition(ctx, anim, sec, child),
+        ),
       ),
       GoRoute(
         path: '/monthly-wrapped',
         name: 'monthly-wrapped',
-        builder: (context, state) {
+        pageBuilder: (context, state) {
           final args = state.extra as (int, int)?;
           final year = args?.$1 ?? DateTime.now().year;
           final month = args?.$2 ?? DateTime.now().month;
-          return MonthlyWrappedScreen(year: year, month: month);
+          return CustomTransitionPage(
+            key: state.pageKey,
+            child: MonthlyWrappedScreen(year: year, month: month),
+            transitionsBuilder: (ctx, anim, sec, child) => _slideUpTransition(ctx, anim, sec, child),
+          );
         },
       ),
       GoRoute(
@@ -195,7 +208,11 @@ final appRouterProvider = Provider<GoRouter>(
       GoRoute(
         path: '/fee-analytics',
         name: 'fee-analytics',
-        builder: (context, state) => const FeeAnalyticsScreen(),
+        pageBuilder: (context, state) => CustomTransitionPage(
+          key: state.pageKey,
+          child: const FeeAnalyticsScreen(),
+          transitionsBuilder: (ctx, anim, sec, child) => _slideLeftTransition(ctx, anim, sec, child),
+        ),
       ),
       GoRoute(
         path: '/csv-import',
@@ -220,3 +237,21 @@ final appRouterProvider = Provider<GoRouter>(
     ],
   ),
 );
+
+Widget _slideUpTransition(BuildContext context, Animation<double> animation, Animation<double> secondaryAnimation, Widget child) {
+  return SlideTransition(
+    position: Tween<Offset>(begin: const Offset(0.0, 0.15), end: Offset.zero).animate(
+      CurvedAnimation(parent: animation, curve: Curves.easeOutCubic),
+    ),
+    child: FadeTransition(opacity: animation, child: child),
+  );
+}
+
+Widget _slideLeftTransition(BuildContext context, Animation<double> animation, Animation<double> secondaryAnimation, Widget child) {
+  return SlideTransition(
+    position: Tween<Offset>(begin: const Offset(0.15, 0.0), end: Offset.zero).animate(
+      CurvedAnimation(parent: animation, curve: Curves.easeOutCubic),
+    ),
+    child: FadeTransition(opacity: animation, child: child),
+  );
+}
