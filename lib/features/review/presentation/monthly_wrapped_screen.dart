@@ -69,6 +69,8 @@ class _MonthlyWrappedScreenState extends ConsumerState<MonthlyWrappedScreen> {
       'July', 'August', 'September', 'October', 'November', 'December',
     ];
 
+    final hasData = dataAsync.maybeWhen(data: (d) => d.hasData, orElse: () => false);
+
     return SecondaryPageShell(
       title: 'Monthly Wrapped',
       scrollable: false,
@@ -82,7 +84,7 @@ class _MonthlyWrappedScreenState extends ConsumerState<MonthlyWrappedScreen> {
               children: [
                 IconButton(
                   icon: const Icon(Icons.chevron_left_rounded),
-                  onPressed: _prev,
+                  onPressed: hasData ? _prev : null,
                 ),
                 Column(
                   children: [
@@ -250,6 +252,14 @@ class _WrappedContent extends StatelessWidget {
                         Text(
                           '${data.fulizaUsedCount}× · ${CurrencyFormatter.money(data.fulizaTotal)}',
                           style: Theme.of(context).textTheme.bodySmall,
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          'Try to keep this below 3 times per month.',
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                color: AppColors.danger.withOpacity(0.7),
+                                fontSize: 11,
+                              ),
                         ),
                       ],
                     ),
@@ -535,6 +545,7 @@ class _VerdictCard extends StatelessWidget {
     final subtitle = data.isOverBudget
         ? 'You spent ${CurrencyFormatter.money(saved.abs())} more than income.'
         : 'Great job! You kept ${CurrencyFormatter.money(saved)} from income.';
+    final breakdown = 'Income KSh ${CurrencyFormatter.money(data.incomeTotalKes)} · Spend KSh ${CurrencyFormatter.money(data.totalSpentKes)}';
 
     return AppCard(
       accentColor: color,
@@ -564,6 +575,15 @@ class _VerdictCard extends StatelessWidget {
                               .colorScheme
                               .onSurface
                               .withOpacity(0.6),
+                        )),
+                const SizedBox(height: 2),
+                Text(breakdown,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Theme.of(context)
+                              .colorScheme
+                              .onSurface
+                              .withOpacity(0.5),
+                          fontSize: 11,
                         )),
               ],
             ),

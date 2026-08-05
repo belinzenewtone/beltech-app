@@ -1,5 +1,7 @@
-﻿import 'package:beltech/core/widgets/secondary_page_shell.dart';
+﻿import 'package:beltech/core/widgets/app_card.dart';
+import 'package:beltech/core/widgets/secondary_page_shell.dart';
 import 'package:beltech/core/widgets/section_header.dart';
+import 'package:beltech/core/utils/currency_formatter.dart';
 import 'package:beltech/features/analytics/domain/entities/analytics_snapshot.dart';
 import 'package:beltech/features/analytics/presentation/providers/analytics_providers.dart';
 import 'package:beltech/features/analytics/presentation/widgets/analytics_fees_card.dart';
@@ -251,6 +253,10 @@ class _InsightsTab extends ConsumerWidget {
             onTapMonth: (y, m) =>
                 context.pushNamed('monthly-wrapped', extra: (y, m)),
           ),
+          if (history.isNotEmpty) ...[
+            const SizedBox(height: 10),
+            _HistoryStatCards(history: history),
+          ],
           if (trendLabel != null) ...[
             const SizedBox(height: 8),
             Padding(
@@ -513,6 +519,66 @@ class _ErrorView extends StatelessWidget {
           const Text('Unable to load analytics'),
           const SizedBox(height: 12),
           TextButton(onPressed: onRetry, child: const Text('Retry')),
+        ],
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// History stat cards (Avg Monthly / Total Tracked)
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _HistoryStatCards extends StatelessWidget {
+  const _HistoryStatCards({required this.history});
+  final List<MonthlyTotalPoint> history;
+
+  @override
+  Widget build(BuildContext context) {
+    final nonZero = history.where((p) => p.totalKes > 0).toList();
+    if (nonZero.isEmpty) return const SizedBox.shrink();
+
+    final avgMonthly = nonZero
+        .map((p) => p.totalKes)
+        .reduce((a, b) => a + b) /
+        nonZero.length;
+    final totalTracked = nonZero.fold(0.0, (sum, p) => sum + p.totalKes);
+
+    return Row(
+      children: [
+        Expanded(child: _StatCard(label: 'Avg Monthly', value: CurrencyFormatter.money(avgMonthly))),
+        const SizedBox(width: 10),
+        Expanded(child: _StatCard(label: 'Total Tracked', value: CurrencyFormatter.money(totalTracked))),
+      ],
+    );
+  }
+}
+
+class _StatCard extends StatelessWidget {
+  const _StatCard({required this.label, required this.value});
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return AppCard(
+      padding: const EdgeInsets.all(12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.55),
+                ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            value,
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w700,
+                ),
+          ),
         ],
       ),
     );

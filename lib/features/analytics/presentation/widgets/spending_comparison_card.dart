@@ -121,32 +121,22 @@ class _DeltaPill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final color = spentMore ? AppColors.danger : AppColors.success;
+    final text = spentMore
+        ? 'Spent KSh ${CurrencyFormatter.compact(delta)} more'
+        : 'Saved KSh ${CurrencyFormatter.compact(delta)}';
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
         color: color.withOpacity(0.12),
         borderRadius: BorderRadius.circular(20),
       ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            spentMore ? Icons.trending_up_rounded : Icons.trending_down_rounded,
-            size: 13,
-            color: color,
-          ),
-          const SizedBox(width: 3),
-          Text(
-            spentMore
-                ? '+${CurrencyFormatter.compact(delta)}'
-                : '-${CurrencyFormatter.compact(delta)}',
-            style: TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w700,
-              color: color,
-            ),
-          ),
-        ],
+      child: Text(
+        text,
+        style: TextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.w600,
+          color: color,
+        ),
       ),
     );
   }

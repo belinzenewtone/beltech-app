@@ -146,6 +146,8 @@ class AnalyticsSnapshot {
     required this.monthlyHistory,
     this.postIncomeAvgDailySpendKes,
     this.otherDaysAvgDailySpendKes,
+    this.topFeeCategory,
+    this.incomeEventsCount,
   });
 
   // ── Period totals ────────────────────────────────────────────────────────
@@ -192,6 +194,13 @@ class AnalyticsSnapshot {
   /// Average daily spend on days outside post-income windows.
   final double? otherDaysAvgDailySpendKes;
 
+  // ── Phase 0 additions ────────────────────────────────────────────────────
+  /// Top category by fee amount (grouped by category).
+  final String? topFeeCategory;
+
+  /// Count of income events in the period.
+  final int? incomeEventsCount;
+
   // ── Backward-compat alias ────────────────────────────────────────────────
   double get totalSpentThisMonthKes => totalSpentThisPeriodKes;
 
@@ -218,10 +227,19 @@ class AnalyticsSnapshot {
           totalIncomeThisPeriodKes == other.totalIncomeThisPeriodKes &&
           previousPeriodTotalKes == other.previousPeriodTotalKes &&
           averageDailySpendingKes == other.averageDailySpendingKes &&
+          feesPaidKes == other.feesPaidKes &&
+          totalTxCount == other.totalTxCount &&
+          microTxCount == other.microTxCount &&
+          mediumTxCount == other.mediumTxCount &&
+          largeTxCount == other.largeTxCount &&
           totalTasksCompleted == other.totalTasksCompleted &&
           totalTasksPending == other.totalTasksPending &&
           totalEventsThisMonth == other.totalEventsThisMonth &&
           productivityScore == other.productivityScore &&
+          postIncomeAvgDailySpendKes == other.postIncomeAvgDailySpendKes &&
+          otherDaysAvgDailySpendKes == other.otherDaysAvgDailySpendKes &&
+          topFeeCategory == other.topFeeCategory &&
+          incomeEventsCount == other.incomeEventsCount &&
           _listEquals(weeklySpending, other.weeklySpending) &&
           _listEquals(monthlySpending, other.monthlySpending) &&
           _listEquals(categoryBreakdown, other.categoryBreakdown) &&
@@ -230,14 +248,27 @@ class AnalyticsSnapshot {
 
   @override
   int get hashCode => Object.hash(
-        totalSpentThisPeriodKes,
-        totalIncomeThisPeriodKes,
-        previousPeriodTotalKes,
-        averageDailySpendingKes,
-        totalTasksCompleted,
-        totalTasksPending,
-        totalEventsThisMonth,
-        productivityScore,
+        Object.hash(
+          totalSpentThisPeriodKes,
+          totalIncomeThisPeriodKes,
+          previousPeriodTotalKes,
+          averageDailySpendingKes,
+          feesPaidKes,
+          totalTxCount,
+          microTxCount,
+          mediumTxCount,
+          largeTxCount,
+        ),
+        Object.hash(
+          totalTasksCompleted,
+          totalTasksPending,
+          totalEventsThisMonth,
+          productivityScore,
+          postIncomeAvgDailySpendKes,
+          otherDaysAvgDailySpendKes,
+          topFeeCategory,
+          incomeEventsCount,
+        ),
         Object.hashAll(weeklySpending),
         Object.hashAll(monthlySpending),
         Object.hashAll(categoryBreakdown),

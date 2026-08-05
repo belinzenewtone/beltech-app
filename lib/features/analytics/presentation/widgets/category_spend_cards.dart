@@ -35,6 +35,11 @@ class _CategorySpendCardsState extends ConsumerState<CategorySpendCards> {
 
     if (items.isEmpty) return const SizedBox.shrink();
 
+    // Compute global max across all category sparklines for normalization.
+    final globalMax = widget.categories
+        .expand((c) => c.weeklySparkline)
+        .fold<double>(0, (prev, v) => v > prev ? v : prev);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -47,7 +52,7 @@ class _CategorySpendCardsState extends ConsumerState<CategorySpendCards> {
         ),
         ...items.map((cat) => Padding(
               padding: const EdgeInsets.only(bottom: 8),
-              child: _CategoryCard(share: cat),
+              child: _CategoryCard(share: cat, globalSparklineMax: globalMax),
             )),
         if (widget.categories.where((c) => c.totalKes > 0).length > 3)
           Align(
@@ -69,9 +74,10 @@ class _CategorySpendCardsState extends ConsumerState<CategorySpendCards> {
 }
 
 class _CategoryCard extends StatelessWidget {
-  const _CategoryCard({required this.share});
+  const _CategoryCard({required this.share, required this.globalSparklineMax});
 
   final AnalyticsCategoryShare share;
+  final double globalSparklineMax;
 
   @override
   Widget build(BuildContext context) {
@@ -153,6 +159,7 @@ class _CategoryCard extends StatelessWidget {
                     child: _Sparkline(
                       data: share.weeklySparkline,
                       color: visual.foreground,
+                      globalMax: globalSparklineMax,
                     ),
                   ),
                 ],
@@ -172,14 +179,15 @@ class _CategoryCard extends StatelessWidget {
 
 /// Mini bar sparkline — 8 weeks, each bar proportional to global max.
 class _Sparkline extends StatelessWidget {
-  const _Sparkline({required this.data, required this.color});
+  const _Sparkline({required this.data, required this.color, required this.globalMax});
 
   final List<double> data;
   final Color color;
+  final double globalMax;
 
   @override
   Widget build(BuildContext context) {
-    final maxVal = data.fold<double>(0, (prev, v) => v > prev ? v : prev);
+    final maxVal = globalMax > 0 ? globalMax : data.fold<double>(0, (prev, v) => v > prev ? v : prev);
     return Row(
       crossAxisAlignment: CrossAxisAlignment.end,
       children: data.map((v) {

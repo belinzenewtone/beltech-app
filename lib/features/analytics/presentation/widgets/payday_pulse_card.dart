@@ -21,6 +21,10 @@ class PaydayPulseCard extends StatelessWidget {
     final postFrac = maxVal > 0 ? (post / maxVal).clamp(0.0, 1.0) : 0.0;
     final otherFrac = maxVal > 0 ? (other / maxVal).clamp(0.0, 1.0) : 0.0;
     final postHigher = post > other;
+    final incomeCount = snapshot.incomeEventsCount ?? 0;
+    final pctDiff = other > 0
+        ? (((post - other) / other) * 100).abs().toStringAsFixed(0)
+        : null;
 
     return AppCard(
       child: Column(
@@ -35,7 +39,7 @@ class PaydayPulseCard extends StatelessWidget {
           ),
           const SizedBox(height: 4),
           Text(
-            'Avg daily spend in 7 days after income vs other days',
+            '$incomeCount income events · avg daily spend',
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
                   color: Theme.of(context)
                       .colorScheme
@@ -57,22 +61,15 @@ class PaydayPulseCard extends StatelessWidget {
             amount: other,
             color: !postHigher ? AppColors.danger : AppColors.success,
           ),
-          if (postHigher) ...[
+          if (pctDiff != null) ...[
             const SizedBox(height: 12),
-            Row(
-              children: [
-                Icon(Icons.info_outline_rounded,
-                    size: 13, color: AppColors.warning),
-                const SizedBox(width: 5),
-                Expanded(
-                  child: Text(
-                    'You tend to spend more right after receiving money.',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: AppColors.warning,
-                        ),
+            Text(
+              postHigher
+                  ? 'You spend $pctDiff% more in the 7 days after income arrives.'
+                  : 'You spend $pctDiff% less in the 7 days after income — disciplined!',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: postHigher ? AppColors.warning : AppColors.success,
                   ),
-                ),
-              ],
             ),
           ],
         ],

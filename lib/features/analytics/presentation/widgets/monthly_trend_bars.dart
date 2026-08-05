@@ -32,6 +32,10 @@ class MonthlyTrendBars extends StatelessWidget {
         : nonZero.map((p) => p.totalKes).reduce((a, b) => a + b) /
             nonZero.length;
 
+    final now = DateTime.now();
+    final currentMonth = now.month;
+    final currentYear = now.year;
+
     return AppCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -56,7 +60,18 @@ class MonthlyTrendBars extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 8),
+          Padding(
+            padding: const EdgeInsets.only(left: 2),
+            child: Text(
+              'Tap a bar to view Wrapped →',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    fontSize: 10,
+                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
+                  ),
+            ),
+          ),
+          const SizedBox(height: 12),
           SizedBox(
             height: 100,
             child: Row(
@@ -74,6 +89,7 @@ class MonthlyTrendBars extends StatelessWidget {
                     : aboveAvg
                         ? AppColors.danger
                         : AppColors.success;
+                final isCurrent = point.year == currentYear && point.month == currentMonth;
 
                 return Expanded(
                   child: Padding(
@@ -98,10 +114,13 @@ class MonthlyTrendBars extends StatelessWidget {
                             style:
                                 Theme.of(context).textTheme.bodySmall?.copyWith(
                                       fontSize: 10,
-                                      color: Theme.of(context)
-                                          .colorScheme
-                                          .onSurface
-                                          .withOpacity(0.6),
+                                      fontWeight: isCurrent ? FontWeight.w700 : null,
+                                      color: isCurrent
+                                          ? Theme.of(context).colorScheme.primary
+                                          : Theme.of(context)
+                                              .colorScheme
+                                              .onSurface
+                                              .withOpacity(0.6),
                                     ),
                           ),
                         ],

@@ -114,6 +114,21 @@ class AnalyticsRepositoryImpl implements AnalyticsRepository {
     );
     final feesPaid = _asDouble(feeRows.firstOrNull?['total']);
 
+    // ── Q4b: Top fee category ───────────────────────────────────────────────
+    final topFeeRows = await ex.runSelect(
+      'SELECT category, SUM(fee) AS total '
+      'FROM transactions '
+      'WHERE occurred_at >= ? AND occurred_at < ? '
+      'AND fee IS NOT NULL AND fee > 0 '
+      'GROUP BY category '
+      'ORDER BY total DESC '
+      'LIMIT 1',
+      [pStartMs, pEndMs],
+    );
+    final topFeeCategory = topFeeRows.isNotEmpty
+        ? '${topFeeRows.first['category']}'
+        : null;
+
     // ── Q5: Tasks ──────────────────────────────────────────────────────────
     final taskRows = await ex.runSelect('SELECT status FROM tasks', const []);
 
@@ -137,12 +152,13 @@ class AnalyticsRepositoryImpl implements AnalyticsRepository {
 
     // ── Q8: Income in period ───────────────────────────────────────────────
     final incomeRows = await ex.runSelect(
-      'SELECT COALESCE(SUM(amount), 0) AS total '
+      'SELECT COALESCE(SUM(amount), 0) AS total, COUNT(*) AS cnt '
       'FROM incomes '
       'WHERE received_at >= ? AND received_at < ?',
       [pStartMs, pEndMs],
     );
     final totalIncome = _asDouble(incomeRows.firstOrNull?['total']);
+    final incomeEventsCount = _asInt(incomeRows.firstOrNull?['cnt']);
 
     // ── Q9: 6-month rolling history (GROUP BY period) ──────────────────────
     final historyRows = await ex.runSelect(
@@ -400,6 +416,8 @@ class AnalyticsRepositoryImpl implements AnalyticsRepository {
       monthlyHistory: monthlyHistory,
       postIncomeAvgDailySpendKes: postIncomeAvg,
       otherDaysAvgDailySpendKes: otherDaysAvg,
+      topFeeCategory: topFeeCategory,
+      incomeEventsCount: incomeEventsCount,
     );
   }
 

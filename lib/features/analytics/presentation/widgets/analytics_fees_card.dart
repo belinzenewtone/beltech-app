@@ -17,6 +17,7 @@ class AnalyticsFeesCard extends StatelessWidget {
     final avgFee = snapshot.totalTxCount > 0
         ? snapshot.feesPaidKes / snapshot.totalTxCount
         : 0.0;
+    final topCat = snapshot.topFeeCategory;
 
     return AppCard(
       child: Row(
@@ -27,7 +28,7 @@ class AnalyticsFeesCard extends StatelessWidget {
               color: AppColors.warning.withOpacity(0.12),
               borderRadius: BorderRadius.circular(10),
             ),
-            child: Icon(Icons.receipt_long_rounded,
+            child: const Icon(Icons.receipt_long_rounded,
                 size: 20, color: AppColors.warning),
           ),
           const SizedBox(width: 12),
@@ -44,7 +45,8 @@ class AnalyticsFeesCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  '${snapshot.totalTxCount} transactions · avg ${CurrencyFormatter.money(avgFee)}',
+                  '${snapshot.totalTxCount} transactions · avg ${CurrencyFormatter.money(avgFee)}'
+                  '${topCat != null ? ' · Most in $topCat' : ''}',
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         color: Theme.of(context)
                             .colorScheme
