@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'package:beltech/core/theme/app_colors.dart';
 import 'package:beltech/core/utils/currency_formatter.dart';
 import 'package:beltech/core/widgets/app_card.dart';
@@ -14,6 +15,9 @@ class AnalyticsSummaryCards extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final net = snapshot.netKes;
+    final showSparkline = snapshot.weeklySpending.isNotEmpty &&
+        snapshot.weeklySpending.any((p) => p.amountKes > 0);
+
     return Column(
       children: [
         Row(
@@ -23,6 +27,9 @@ class AnalyticsSummaryCards extends StatelessWidget {
                 label: 'Spend',
                 value: CurrencyFormatter.compact(snapshot.totalSpentThisPeriodKes),
                 color: AppColors.danger,
+                sparklineData: showSparkline
+                    ? snapshot.weeklySpending.map((p) => p.amountKes).toList()
+                    : null,
               ),
             ),
             const SizedBox(width: 10),
@@ -67,12 +74,14 @@ class _SummaryCard extends StatelessWidget {
     required this.value,
     required this.color,
     this.prefix = '',
+    this.sparklineData,
   });
 
   final String label;
   final String value;
   final Color color;
   final String prefix;
+  final List<double>? sparklineData;
 
   @override
   Widget build(BuildContext context) {
@@ -87,7 +96,7 @@ class _SummaryCard extends StatelessWidget {
                   color: Theme.of(context)
                       .colorScheme
                       .onSurface
-                      .withOpacity(0.55),
+                      .withValues(alpha: 0.55),
                 ),
           ),
           const SizedBox(height: 4),
@@ -98,8 +107,91 @@ class _SummaryCard extends StatelessWidget {
                   fontWeight: FontWeight.w700,
                 ),
           ),
+          if (sparklineData != null && sparklineData!.any((v) => v > 0)) ...[
+            const SizedBox(height: 8),
+            _VelocitySparkline(data: sparklineData!, color: color),
+          ],
         ],
       ),
     );
   }
 }
+
+/// 32px sparkline showing the shape of spending across the week.
+class _VelocitySparkline extends StatelessWidget {
+  const _VelocitySparkline({required this.data, required this.color});
+  final List<double> data;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    final maxVal = data.fold<double>(0, (a, b) => a > b ? a : b);
+    return SizedBox(
+      height: 32,
+      child: CustomPaint(
+        size: Size(double.infinity, 32),
+        painter: _SparklinePainter(
+          data: data,
+          maxVal: maxVal,
+          color: color,
+        ),
+      ),
+    );
+  }
+}
+
+class _SparklinePainter extends CustomPainter {
+  _SparklinePainter({required this.data, required this.maxVal, required this.color});
+  final List<double> data;
+  final double maxVal;
+  final Color color;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (data.isEmpty || maxVal <= 0) return;
+
+    final stepX = size.width / (data.length - 1).clamp(1, 999);
+    final path = Path();
+    final fillPath = Path();
+    final points = <Offset>[];
+
+    for (int i = 0; i < data.length; i++) {
+      final x = i * stepX;
+      final h = maxVal > 0 ? (data[i] / maxVal).clamp(0.0, 1.0) * size.height * 0.8 : 0.0;
+      final y = size.height - h;
+      points.add(Offset(x, y));
+    }
+
+    if (points.isNotEmpty) {
+      path.moveTo(points.first.dx, points.first.dy);
+      fillPath.moveTo(points.first.dx, size.height);
+      for (var i = 0; i < points.length - 1; i++) {
+        final mid = Offset(
+          (points[i].dx + points[i + 1].dx) / 2,
+          (points[i].dy + points[i + 1].dy) / 2,
+        );
+        path.quadraticBezierTo(points[i].dx, points[i].dy, mid.dx, mid.dy);
+        fillPath.quadraticBezierTo(points[i].dx, points[i].dy, mid.dx, mid.dy);
+      }
+      path.lineTo(points.last.dx, points.last.dy);
+      fillPath.lineTo(points.last.dx, size.height);
+      fillPath.close();
+
+      final paint = Paint()
+        ..color = color.withValues(alpha: 0.35)
+        ..style = PaintingStyle.fill;
+      canvas.drawPath(fillPath, paint);
+
+      final strokePaint = Paint()
+        ..color = color
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.5;
+      canvas.drawPath(path, strokePaint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _SparklinePainter oldDelegate) =>
+      data != oldDelegate.data || maxVal != oldDelegate.maxVal || color != oldDelegate.color;
+}
+

@@ -1,5 +1,6 @@
 import 'package:beltech/features/auth/presentation/auth_gate.dart';
 import 'package:beltech/features/analytics/presentation/analytics_screen.dart';
+import 'package:beltech/features/analytics/presentation/category_drill_down_screen.dart';
 import 'package:beltech/features/bills/presentation/screens/bills_screen.dart';
 import 'package:beltech/features/budget/presentation/budget_screen.dart';
 import 'package:beltech/features/calendar/presentation/calendar_add_screen.dart';
@@ -37,6 +38,19 @@ final appRouterProvider = Provider<GoRouter>(
   (ref) => GoRouter(
     initialLocation: '/',
     routes: [
+      GoRoute(
+        path: '/analytics/category/:category',
+        name: 'category-drill-down',
+        builder: (context, state) {
+          final category = state.pathParameters['category'] ?? 'Other';
+          final args = state.extra as Map<String, dynamic>?;
+          return CategoryDrillDownScreen(
+            category: category,
+            totalKes: (args?['totalKes'] as double?) ?? 0,
+            txCount: (args?['txCount'] as int?) ?? 0,
+          );
+        },
+      ),
       GoRoute(
         path: '/',
         name: 'root',

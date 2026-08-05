@@ -88,6 +88,59 @@ class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen> {
   }
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Inline insight banner on Analytics tab header
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _InlineInsightBanner extends StatelessWidget {
+  const _InlineInsightBanner({required this.snapshot});
+  final AnalyticsSnapshot snapshot;
+
+  @override
+  Widget build(BuildContext context) {
+    final change = snapshot.periodChangePercent;
+    final spentMore = (change ?? 0) > 0;
+    final color = spentMore ? AppColors.danger : AppColors.success;
+    final message = change == null
+        ? 'View your latest insights'
+        : spentMore
+            ? 'Spending up ${change.abs().toStringAsFixed(0)}% — tap for Insights'
+            : 'Spending down ${change.abs().toStringAsFixed(0)}% — keep it going';
+
+    return GestureDetector(
+      onTap: () => context.pushNamed('insights'),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.08),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: color.withValues(alpha: 0.3)),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              spentMore ? Icons.trending_up_rounded : Icons.trending_down_rounded,
+              size: 16,
+              color: color,
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                message,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: color,
+                      fontWeight: FontWeight.w600,
+                    ),
+              ),
+            ),
+            Icon(Icons.arrow_forward_ios_rounded, size: 12, color: color),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 String _buildChartLabel(List<MonthlyTotalPoint> history) {
   if (history.isEmpty) return 'No spending data available';
   final nonZero = history.where((p) => p.totalKes > 0).toList();
@@ -304,6 +357,11 @@ class _AnalyticsTabState extends ConsumerState<_AnalyticsTab> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Inline insight banner — highest-confidence insight
+          if (snapshot.periodChangePercent != null) ...[
+            _InlineInsightBanner(snapshot: snapshot),
+            const SizedBox(height: 12),
+          ],
           // Period filter chips
           _PeriodChips(
             selected: period,
