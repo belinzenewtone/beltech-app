@@ -1,59 +1,71 @@
-import 'package:beltech/core/theme/app_colors.dart';
-import 'package:beltech/core/theme/app_spacing.dart';
-import 'package:beltech/core/theme/app_typography.dart';
-import 'package:beltech/core/widgets/app_card.dart';
-import 'package:beltech/core/widgets/secondary_page_shell.dart';
+﻿import 'package:beltech/core/widgets/secondary_page_shell.dart';
 import 'package:beltech/core/widgets/section_header.dart';
 import 'package:beltech/features/analytics/domain/entities/analytics_snapshot.dart';
 import 'package:beltech/features/analytics/presentation/providers/analytics_providers.dart';
-import 'package:beltech/features/analytics/presentation/widgets/analytics_bar_chart.dart';
-import 'package:beltech/features/analytics/presentation/widgets/analytics_category_breakdown.dart';
-import 'package:beltech/features/analytics/presentation/widgets/analytics_overview_cards.dart';
+import 'package:beltech/features/analytics/presentation/widgets/analytics_fees_card.dart';
+import 'package:beltech/features/analytics/presentation/widgets/analytics_summary_cards.dart';
 import 'package:beltech/features/analytics/presentation/widgets/analytics_top_merchants.dart';
-import 'package:beltech/features/analytics/presentation/widgets/analytics_trend_chart.dart';
-import 'package:beltech/features/analytics/presentation/widgets/net_cashflow_card.dart';
-import 'package:beltech/features/expenses/presentation/providers/expense_categories_provider.dart';
-import 'package:beltech/core/widgets/app_button.dart';
-import 'package:beltech/core/widgets/loading_indicator.dart';
+import 'package:beltech/features/analytics/presentation/widgets/category_spend_cards.dart';
+import 'package:beltech/features/analytics/presentation/widgets/insights_section.dart';
+import 'package:beltech/features/analytics/presentation/widgets/monthly_trend_bars.dart';
+import 'package:beltech/features/analytics/presentation/widgets/payday_pulse_card.dart';
+import 'package:beltech/features/analytics/presentation/widgets/spend_anatomy_card.dart';
+import 'package:beltech/features/analytics/presentation/widgets/spending_comparison_card.dart';
+import 'package:beltech/features/insights/presentation/providers/insights_providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
-class AnalyticsScreen extends ConsumerWidget {
+/// Analytics screen — 2-tab layout matching Kotlin InsightsScreen:
+///   • Analytics tab  — period-filtered spend summary + categories + merchants
+///   • Insights tab   — 6-month trend chart + deterministic insight cards + anatomy + pulse
+class AnalyticsScreen extends ConsumerStatefulWidget {
   const AnalyticsScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final snapshotState = ref.watch(analyticsSnapshotProvider);
-    final period = ref.watch(analyticsPeriodProvider);
+  ConsumerState<AnalyticsScreen> createState() => _AnalyticsScreenState();
+}
+
+class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen> {
+  int _tabIndex = 0; // 0 = Analytics, 1 = Insights
+
+  @override
+  Widget build(BuildContext context) {
+    final snapshotAsync = ref.watch(analyticsSnapshotProvider);
 
     return SecondaryPageShell(
       title: 'Analytics',
+      scrollable: false, // we handle scrolling per-tab
+      actions: [
+        IconButton(
+          icon: const Icon(Icons.refresh_rounded, size: 20),
+          tooltip: 'Refresh',
+          onPressed: () => ref.invalidate(analyticsSnapshotProvider),
+        ),
+      ],
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _PeriodSelector(period: period),
-          const SizedBox(height: AppSpacing.sectionGap),
-          snapshotState.when(
-            data: (snapshot) =>
-                _AnalyticsContent(snapshot: snapshot, period: period),
-            loading: () => _LoadingAnalytics(),
-            error: (_, _) => AppCard(
-              tone: AppCardTone.muted,
-              child: Column(
-                children: [
-                  const Icon(Icons.error_outline, color: AppColors.danger),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Unable to load analytics',
-                    style: AppTypography.bodySm(context),
-                  ),
-                  const SizedBox(height: 12),
-                  AppButton(
-                    onPressed: () => ref.invalidate(analyticsSnapshotProvider),
-                    label: 'Retry',
-                    variant: AppButtonVariant.secondary,
-                  ),
-                ],
+          // ── Tab toggle ─────────────────────────────────────────────────
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
+            child: _TabToggle(
+              selected: _tabIndex,
+              onChanged: (i) => setState(() => _tabIndex = i),
+            ),
+          ),
+          const SizedBox(height: 4),
+          // ── Tab content ────────────────────────────────────────────────
+          Expanded(
+            child: snapshotAsync.when(
+              loading: () => const _SkeletonLoader(),
+              error: (e, _) => _ErrorView(
+                onRetry: () => ref.invalidate(analyticsSnapshotProvider),
+              ),
+              data: (snapshot) => AnimatedSwitcher(
+                duration: const Duration(milliseconds: 220),
+                child: _tabIndex == 0
+                    ? _AnalyticsTab(key: const ValueKey(0), snapshot: snapshot)
+                    : _InsightsTab(key: const ValueKey(1), snapshot: snapshot),
               ),
             ),
           ),
@@ -63,162 +75,446 @@ class AnalyticsScreen extends ConsumerWidget {
   }
 }
 
-class _PeriodSelector extends ConsumerWidget {
-  const _PeriodSelector({required this.period});
+// ─────────────────────────────────────────────────────────────────────────────
+// Tab toggle
+// ─────────────────────────────────────────────────────────────────────────────
 
-  final AnalyticsPeriod period;
+class _TabToggle extends StatelessWidget {
+  const _TabToggle({required this.selected, required this.onChanged});
+
+  final int selected;
+  final ValueChanged<int> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.5),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      padding: const EdgeInsets.all(3),
+      child: Row(
+        children: [
+          _Tab(label: 'Analytics', active: selected == 0, onTap: () => onChanged(0)),
+          _Tab(label: 'Insights', active: selected == 1, onTap: () => onChanged(1)),
+        ],
+      ),
+    );
+  }
+}
+
+class _Tab extends StatelessWidget {
+  const _Tab({required this.label, required this.active, required this.onTap});
+  final String label;
+  final bool active;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: GestureDetector(
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          padding: const EdgeInsets.symmetric(vertical: 7),
+          decoration: BoxDecoration(
+            color: active
+                ? Theme.of(context).colorScheme.surface
+                : Colors.transparent,
+            borderRadius: BorderRadius.circular(7),
+            boxShadow: active
+                ? [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.08),
+                      blurRadius: 6,
+                      offset: const Offset(0, 1),
+                    )
+                  ]
+                : null,
+          ),
+          alignment: Alignment.center,
+          child: Text(
+            label,
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  fontWeight: active ? FontWeight.w700 : FontWeight.w500,
+                  color: active
+                      ? Theme.of(context).colorScheme.onSurface
+                      : Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
+                ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Analytics tab
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _AnalyticsTab extends ConsumerStatefulWidget {
+  const _AnalyticsTab({super.key, required this.snapshot});
+  final AnalyticsSnapshot snapshot;
+
+  @override
+  ConsumerState<_AnalyticsTab> createState() => _AnalyticsTabState();
+}
+
+class _AnalyticsTabState extends ConsumerState<_AnalyticsTab> {
+  @override
+  Widget build(BuildContext context) {
+    final period = ref.watch(analyticsPeriodProvider);
+    final snapshot = widget.snapshot;
+    const h = SizedBox(height: 12);
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Period filter chips
+          _PeriodChips(
+            selected: period,
+            onChanged: (p) =>
+                ref.read(analyticsPeriodProvider.notifier).state = p,
+          ),
+          h,
+          // 4-card summary row
+          AnalyticsSummaryCards(snapshot: snapshot),
+          h,
+          // vs Last period comparison
+          SpendingComparisonCard(snapshot: snapshot),
+          h,
+          // Category spend cards (with sparklines)
+          CategorySpendCards(categories: snapshot.categoryBreakdown),
+          h,
+          // Fees
+          AnalyticsFeesCard(snapshot: snapshot),
+          h,
+          // Top merchants
+          if (snapshot.topMerchants.isNotEmpty) ...[
+            SectionHeader('Top Merchants'),
+            AnalyticsTopMerchants(merchants: snapshot.topMerchants),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Insights tab
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _InsightsTab extends ConsumerWidget {
+  const _InsightsTab({super.key, required this.snapshot});
+  final AnalyticsSnapshot snapshot;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return SegmentedButton<AnalyticsPeriod>(
-      showSelectedIcon: false,
-      style: SegmentedButton.styleFrom(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        textStyle: AppTypography.bodySm(
-          context,
-        ).copyWith(fontWeight: FontWeight.w600),
-      ),
-      segments: const [
-        ButtonSegment<AnalyticsPeriod>(
-          value: AnalyticsPeriod.week,
-          label: Text('Weekly'),
-        ),
-        ButtonSegment<AnalyticsPeriod>(
-          value: AnalyticsPeriod.month,
-          label: Text('Monthly'),
-        ),
-      ],
-      selected: {period},
-      onSelectionChanged: (selected) {
-        ref.read(analyticsPeriodProvider.notifier).state = selected.first;
-      },
-    );
-  }
-}
+    final insightsAsync = ref.watch(insightsProvider);
+    const h = SizedBox(height: 12);
 
-class _LoadingAnalytics extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        AppCard(
-          tone: AppCardTone.muted,
-          child: Container(
-            height: 180,
-            alignment: Alignment.center,
-            child: const LoadingIndicator(),
+    // Derived trend label
+    final history = snapshot.monthlyHistory;
+    String? trendLabel;
+    if (history.length >= 6) {
+      final firstHalf = history.take(3).map((p) => p.totalKes).toList();
+      final secondHalf = history.skip(3).map((p) => p.totalKes).toList();
+      final avg1 = firstHalf.reduce((a, b) => a + b) / 3;
+      final avg2 = secondHalf.reduce((a, b) => a + b) / 3;
+      if (avg1 > 0) {
+        final change = ((avg2 - avg1) / avg1) * 100;
+        if (change > 5) trendLabel = '↑ Spending is increasing';
+        else if (change < -5) trendLabel = '↓ Spending is decreasing';
+        else trendLabel = '→ Spending is stable';
+      }
+    }
+
+    // Highest / lowest month
+    final nonZero = history.where((p) => p.totalKes > 0).toList();
+    MonthlyTotalPoint? highest, lowest;
+    if (nonZero.isNotEmpty) {
+      highest = nonZero.reduce((a, b) => a.totalKes > b.totalKes ? a : b);
+      lowest = nonZero.reduce((a, b) => a.totalKes < b.totalKes ? a : b);
+      if (highest == lowest) lowest = null;
+    }
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // 6-month trend bars
+          MonthlyTrendBars(
+            monthlyHistory: history,
+            onTapMonth: (y, m) =>
+                context.pushNamed('monthly-wrapped', extra: (y, m)),
           ),
-        ),
-        const SizedBox(height: AppSpacing.cardGap),
-        AppCard(
-          tone: AppCardTone.muted,
-          child: Container(
-            height: 180,
-            alignment: Alignment.center,
-            child: const LoadingIndicator(),
-          ),
-        ),
-        const SizedBox(height: AppSpacing.cardGap),
-        AppCard(
-          tone: AppCardTone.muted,
-          child: Container(
-            height: 180,
-            alignment: Alignment.center,
-            child: const LoadingIndicator(),
-          ),
-        ),
-        const SizedBox(height: AppSpacing.cardGap),
-        AppCard(
-          tone: AppCardTone.muted,
-          child: Container(
-            height: 180,
-            alignment: Alignment.center,
-            child: const LoadingIndicator(),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _AnalyticsContent extends ConsumerStatefulWidget {
-  const _AnalyticsContent({required this.snapshot, required this.period});
-
-  final AnalyticsSnapshot snapshot;
-  final AnalyticsPeriod period;
-
-  @override
-  ConsumerState<_AnalyticsContent> createState() => _AnalyticsContentState();
-}
-
-class _AnalyticsContentState extends ConsumerState<_AnalyticsContent> {
-  /// Which chart mode is active: 0 = Trend (line), 1 = Distribution (bar)
-  int _chartMode = 0;
-
-  @override
-  Widget build(BuildContext context) {
-    final trendPoints = switch (widget.period) {
-      AnalyticsPeriod.week => widget.snapshot.weeklySpending,
-      AnalyticsPeriod.month => widget.snapshot.monthlySpending,
-    };
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const SectionHeader('Overview', topPadding: 0),
-        AnalyticsOverviewCards(
-          snapshot: widget.snapshot,
-          period: widget.period,
-        ),
-        const SizedBox(height: AppSpacing.sectionGap),
-        NetCashflowCard(
-          income: widget.snapshot.totalIncomeThisPeriodKes,
-          expenses: widget.snapshot.totalSpentThisMonthKes,
-          period: widget.period == AnalyticsPeriod.week ? 'Weekly' : 'Monthly',
-        ),
-        const SizedBox(height: AppSpacing.sectionGap),
-        SectionHeader(
-          'Spending',
-          action: SegmentedButton<int>(
-            showSelectedIcon: false,
-            style: SegmentedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(horizontal: 10),
-              textStyle: AppTypography.bodySm(
-                context,
-              ).copyWith(fontWeight: FontWeight.w600),
+          if (trendLabel != null) ...[
+            const SizedBox(height: 8),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 2),
+              child: Text(
+                trendLabel,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: Theme.of(context)
+                          .colorScheme
+                          .onSurface
+                          .withOpacity(0.7),
+                    ),
+              ),
             ),
-            segments: const [
-              ButtonSegment<int>(value: 0, label: Text('Trend')),
-              ButtonSegment<int>(value: 1, label: Text('Distribution')),
-            ],
-            selected: {_chartMode},
-            onSelectionChanged: (s) => setState(() => _chartMode = s.first),
+          ],
+          // Highest / lowest month quick links
+          if (highest != null || lowest != null) ...[
+            h,
+            _MonthHighlightRow(
+              highest: highest,
+              lowest: lowest,
+              onTap: (y, m) =>
+                  context.pushNamed('monthly-wrapped', extra: (y, m)),
+            ),
+          ],
+          h,
+          // Deterministic insight cards
+          insightsAsync.when(
+            loading: () => const SizedBox.shrink(),
+            error: (_, __) => const SizedBox.shrink(),
+            data: (cards) => InsightsSection(insights: cards),
+          ),
+          h,
+          // Spend anatomy
+          SpendAnatomyCard(snapshot: snapshot),
+          h,
+          // Payday pulse
+          PaydayPulseCard(snapshot: snapshot),
+        ],
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Period filter chips
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _PeriodChips extends StatelessWidget {
+  const _PeriodChips({required this.selected, required this.onChanged});
+
+  final AnalyticsPeriod selected;
+  final ValueChanged<AnalyticsPeriod> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: [
+          _Chip(
+            label: 'This week',
+            active: selected == AnalyticsPeriod.week,
+            onTap: () => onChanged(AnalyticsPeriod.week),
+          ),
+          const SizedBox(width: 8),
+          _Chip(
+            label: 'This month',
+            active: selected == AnalyticsPeriod.month,
+            onTap: () => onChanged(AnalyticsPeriod.month),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _Chip extends StatelessWidget {
+  const _Chip({required this.label, required this.active, required this.onTap});
+  final String label;
+  final bool active;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 160),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+        decoration: BoxDecoration(
+          color: active
+              ? scheme.primary
+              : scheme.surfaceContainerHighest.withOpacity(0.6),
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Text(
+          label,
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                fontWeight: FontWeight.w600,
+                color: active ? scheme.onPrimary : scheme.onSurface.withOpacity(0.7),
+              ),
+        ),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Highest / lowest month links
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _MonthHighlightRow extends StatelessWidget {
+  const _MonthHighlightRow({
+    required this.highest,
+    required this.lowest,
+    required this.onTap,
+  });
+
+  final MonthlyTotalPoint? highest;
+  final MonthlyTotalPoint? lowest;
+  final void Function(int year, int month) onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        if (highest != null)
+          Expanded(
+            child: _HighlightTile(
+              icon: Icons.arrow_upward_rounded,
+              label: 'Highest: ${highest!.monthLabel}',
+              amount: highest!.totalKes,
+              onTap: () => onTap(highest!.year, highest!.month),
+            ),
+          ),
+        if (highest != null && lowest != null) const SizedBox(width: 10),
+        if (lowest != null)
+          Expanded(
+            child: _HighlightTile(
+              icon: Icons.arrow_downward_rounded,
+              label: 'Lowest: ${lowest!.monthLabel}',
+              amount: lowest!.totalKes,
+              onTap: () => onTap(lowest!.year, lowest!.month),
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+class _HighlightTile extends StatelessWidget {
+  const _HighlightTile({
+    required this.icon,
+    required this.label,
+    required this.amount,
+    required this.onTap,
+  });
+  final IconData icon;
+  final String label;
+  final double amount;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(
+          color: Theme.of(context)
+              .colorScheme
+              .surfaceContainerHighest
+              .withOpacity(0.4),
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Row(
+          children: [
+            Icon(icon, size: 14,
+                color: Theme.of(context)
+                    .colorScheme
+                    .onSurface
+                    .withOpacity(0.5)),
+            const SizedBox(width: 6),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(label,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Theme.of(context)
+                              .colorScheme
+                              .onSurface
+                              .withOpacity(0.6))),
+                  Text(
+                    'KES ${amount.toStringAsFixed(0)}',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          fontWeight: FontWeight.w700,
+                        ),
+                  ),
+                ],
+              ),
+            ),
+            Icon(Icons.arrow_forward_ios_rounded,
+                size: 10,
+                color: Theme.of(context)
+                    .colorScheme
+                    .onSurface
+                    .withOpacity(0.3)),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Loading / error states
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _SkeletonLoader extends StatelessWidget {
+  const _SkeletonLoader();
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
+      children: List.generate(
+        4,
+        (_) => Container(
+          height: 80,
+          margin: const EdgeInsets.only(bottom: 12),
+          decoration: BoxDecoration(
+            color: Theme.of(context)
+                .colorScheme
+                .surfaceContainerHighest
+                .withOpacity(0.4),
+            borderRadius: BorderRadius.circular(12),
           ),
         ),
-        const SizedBox(height: 10),
-        AnimatedSwitcher(
-          duration: const Duration(milliseconds: 220),
-          child: _chartMode == 0
-              ? AnalyticsTrendChart(
-                  key: const ValueKey('trend'),
-                  title: 'Spending',
-                  points: trendPoints,
-                )
-              : AnalyticsBarChart(
-                  key: const ValueKey('dist'),
-                  title: 'Spending',
-                  points: trendPoints,
-                ),
-        ),
-        const SizedBox(height: AppSpacing.sectionGap),
-        AnalyticsCategoryBreakdown(
-          categories: widget.snapshot.categoryBreakdown,
-          totalKes: widget.snapshot.totalSpentThisMonthKes,
-          registry: ref.watch(expenseCategoriesProvider).value ??
-              expenseCategoryDefaults,
-        ),
-        const SizedBox(height: AppSpacing.sectionGap),
-        AnalyticsTopMerchants(merchants: widget.snapshot.topMerchants),
-      ],
+      ),
+    );
+  }
+}
+
+class _ErrorView extends StatelessWidget {
+  const _ErrorView({required this.onRetry});
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(Icons.bar_chart_rounded, size: 48, color: Colors.grey),
+          const SizedBox(height: 12),
+          const Text('Unable to load analytics'),
+          const SizedBox(height: 12),
+          TextButton(onPressed: onRetry, child: const Text('Retry')),
+        ],
+      ),
     );
   }
 }

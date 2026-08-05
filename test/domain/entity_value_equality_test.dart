@@ -57,9 +57,15 @@ void main() {
 
   test('AnalyticsSnapshot compares trend/category lists by value', () {
     const a = AnalyticsSnapshot(
-      totalSpentThisMonthKes: 1000,
+      totalSpentThisPeriodKes: 1000,
       totalIncomeThisPeriodKes: 1200,
+      previousPeriodTotalKes: 900,
       averageDailySpendingKes: 50,
+      feesPaidKes: 12,
+      totalTxCount: 20,
+      microTxCount: 10,
+      mediumTxCount: 7,
+      largeTxCount: 3,
       totalTasksCompleted: 8,
       totalTasksPending: 2,
       totalEventsThisMonth: 4,
@@ -72,11 +78,18 @@ void main() {
       topMerchants: [
         AnalyticsMerchantShare(merchant: 'Shop', totalKes: 700, transactionCount: 3),
       ],
+      monthlyHistory: [],
     );
     const b = AnalyticsSnapshot(
-      totalSpentThisMonthKes: 1000,
+      totalSpentThisPeriodKes: 1000,
       totalIncomeThisPeriodKes: 1200,
+      previousPeriodTotalKes: 900,
       averageDailySpendingKes: 50,
+      feesPaidKes: 12,
+      totalTxCount: 20,
+      microTxCount: 10,
+      mediumTxCount: 7,
+      largeTxCount: 3,
       totalTasksCompleted: 8,
       totalTasksPending: 2,
       totalEventsThisMonth: 4,
@@ -89,6 +102,7 @@ void main() {
       topMerchants: [
         AnalyticsMerchantShare(merchant: 'Shop', totalKes: 700, transactionCount: 3),
       ],
+      monthlyHistory: [],
     );
 
     expect(a, equals(b));

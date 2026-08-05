@@ -1,5 +1,6 @@
 import 'package:beltech/features/onboarding/data/repositories/onboarding_repository_impl.dart';
 import 'package:beltech/features/onboarding/domain/repositories/onboarding_repository.dart';
+import 'package:beltech/features/review/data/repositories/monthly_wrapped_repository_impl.dart';
 import 'package:beltech/core/di/database_providers.dart';
 import 'package:beltech/core/di/security_providers.dart';
 import 'package:beltech/features/auth/data/repositories/auth_repository_impl.dart';
@@ -137,4 +138,8 @@ final timeTrackingRepositoryProvider = Provider<TimeTrackingRepository>(
 
 final onboardingRepositoryProvider = Provider<OnboardingRepository>(
   (_) => OnboardingRepositoryImpl(),
+);
+
+final monthlyWrappedRepositoryProvider = Provider<MonthlyWrappedRepositoryImpl>(
+  (ref) => MonthlyWrappedRepositoryImpl(ref.watch(appDriftStoreProvider)),
 );

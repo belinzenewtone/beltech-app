@@ -23,6 +23,7 @@ import 'package:beltech/features/learning/presentation/screens/learning_screen.d
 import 'package:beltech/features/planner/presentation/screens/planner_screen.dart';
 import 'package:beltech/features/recurring/presentation/recurring_screen.dart';
 import 'package:beltech/features/review/presentation/week_review_screen.dart';
+import 'package:beltech/features/review/presentation/monthly_wrapped_screen.dart';
 import 'package:beltech/features/search/presentation/global_search_screen.dart';
 import 'package:beltech/features/settings/presentation/screens/notification_settings_screen.dart';
 import 'package:beltech/features/settings/presentation/screens/screen_lock_screen.dart';
@@ -107,6 +108,16 @@ final appRouterProvider = Provider<GoRouter>(
         path: '/week-review',
         name: 'week-review',
         builder: (context, state) => const WeekReviewScreen(),
+      ),
+      GoRoute(
+        path: '/monthly-wrapped',
+        name: 'monthly-wrapped',
+        builder: (context, state) {
+          final args = state.extra as (int, int)?;
+          final year = args?.$1 ?? DateTime.now().year;
+          final month = args?.$2 ?? DateTime.now().month;
+          return MonthlyWrappedScreen(year: year, month: month);
+        },
       ),
       GoRoute(
         path: '/tasks',
