@@ -30,5 +30,8 @@ android/key.properties
 # Claude Code session data
 .claude/
 
+# Worktree management
+.worktrees/
+
 # Competitor project (used for local audit only)
 KOTLIN-PROJECT-main/
