@@ -1,5 +1,4 @@
 import 'package:beltech/core/theme/app_colors.dart';
-import 'package:beltech/core/utils/currency_formatter.dart';
 import 'package:beltech/core/widgets/app_card.dart';
 import 'package:beltech/core/widgets/secondary_page_shell.dart';
 import 'package:beltech/features/review/domain/financial_health_score.dart';
