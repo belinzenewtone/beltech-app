@@ -1,7 +1,8 @@
-﻿import 'package:beltech/core/widgets/app_card.dart';
+﻿import 'package:beltech/core/utils/category_visual.dart';
+import 'package:beltech/core/utils/currency_formatter.dart';
+import 'package:beltech/core/widgets/app_card.dart';
 import 'package:beltech/core/widgets/secondary_page_shell.dart';
 import 'package:beltech/core/widgets/section_header.dart';
-import 'package:beltech/core/utils/currency_formatter.dart';
 import 'package:beltech/features/analytics/domain/entities/analytics_snapshot.dart';
 import 'package:beltech/features/analytics/presentation/providers/analytics_providers.dart';
 import 'package:beltech/features/analytics/presentation/widgets/analytics_fees_card.dart';
@@ -10,6 +11,7 @@ import 'package:beltech/features/analytics/presentation/widgets/analytics_top_me
 import 'package:beltech/features/analytics/presentation/widgets/category_spend_cards.dart';
 import 'package:beltech/features/analytics/presentation/widgets/insights_section.dart';
 import 'package:beltech/features/analytics/presentation/widgets/monthly_trend_bars.dart';
+import 'package:beltech/features/analytics/presentation/widgets/monthly_breakdown_section.dart';
 import 'package:beltech/features/analytics/presentation/widgets/payday_pulse_card.dart';
 import 'package:beltech/features/analytics/presentation/widgets/spend_anatomy_card.dart';
 import 'package:beltech/features/analytics/presentation/widgets/spending_comparison_card.dart';
@@ -70,6 +72,57 @@ class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen> {
                     : _InsightsTab(key: const ValueKey(1), snapshot: snapshot),
               ),
             ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Top Category All Time insight row
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _TopCategoryAllTime extends StatelessWidget {
+  const _TopCategoryAllTime({required this.categories});
+  final List<AnalyticsCategoryShare> categories;
+
+  @override
+  Widget build(BuildContext context) {
+    final topCat = categories.isNotEmpty ? categories.first : null;
+    if (topCat == null) return const SizedBox.shrink();
+    final visual = categoryVisual(topCat.category);
+
+    return AppCard(
+      padding: const EdgeInsets.all(14),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(7),
+            decoration: BoxDecoration(
+              color: visual.foreground.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(visual.icon, size: 16, color: visual.foreground),
+          ),
+          const SizedBox(width: 12),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Top Category All Time',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.55),
+                    ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                '${topCat.category} — ${CurrencyFormatter.money(topCat.totalKes)}',
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+              ),
+            ],
           ),
         ],
       ),
@@ -283,6 +336,19 @@ class _InsightsTab extends ConsumerWidget {
                   context.pushNamed('monthly-wrapped', extra: (y, m)),
             ),
           ],
+          // Top Category All Time insight
+          if (snapshot.categoryBreakdown.isNotEmpty) ...[
+            h,
+            _TopCategoryAllTime(categories: snapshot.categoryBreakdown),
+          ],
+          h,
+          // Monthly history breakdown
+          MonthlyBreakdownSection(
+            history: history,
+            categoryBreakdown: snapshot.categoryBreakdown,
+            onTapMonth: (y, m) =>
+                context.pushNamed('monthly-wrapped', extra: (y, m)),
+          ),
           h,
           // Deterministic insight cards
           insightsAsync.when(
