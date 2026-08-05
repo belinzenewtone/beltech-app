@@ -8,7 +8,22 @@ class MonthlyWrappedRepositoryImpl {
 
   final AppDriftStore _store;
 
+  Stream<MonthlyWrappedData> watchWrapped({
+    required int year,
+    required int month,
+  }) async* {
+    yield await _loadWrapped(year: year, month: month);
+    await for (final _ in _store.watchChangeStream()) {
+      yield await _loadWrapped(year: year, month: month);
+    }
+  }
+
   Future<MonthlyWrappedData> loadWrapped({
+    required int year,
+    required int month,
+  }) => _loadWrapped(year: year, month: month);
+
+  Future<MonthlyWrappedData> _loadWrapped({
     required int year,
     required int month,
   }) async {

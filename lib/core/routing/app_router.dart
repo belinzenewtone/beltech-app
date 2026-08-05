@@ -24,6 +24,7 @@ import 'package:beltech/features/planner/presentation/screens/planner_screen.dar
 import 'package:beltech/features/recurring/presentation/recurring_screen.dart';
 import 'package:beltech/features/review/presentation/week_review_screen.dart';
 import 'package:beltech/features/review/presentation/monthly_wrapped_screen.dart';
+import 'package:beltech/features/review/presentation/review_screen.dart';
 import 'package:beltech/features/search/presentation/global_search_screen.dart';
 import 'package:beltech/features/settings/presentation/screens/notification_settings_screen.dart';
 import 'package:beltech/features/settings/presentation/screens/screen_lock_screen.dart';
@@ -108,6 +109,11 @@ final appRouterProvider = Provider<GoRouter>(
         path: '/week-review',
         name: 'week-review',
         builder: (context, state) => const WeekReviewScreen(),
+      ),
+      GoRoute(
+        path: '/weekly-review',
+        name: 'weekly-review',
+        builder: (context, state) => const ReviewScreen(),
       ),
       GoRoute(
         path: '/monthly-wrapped',
