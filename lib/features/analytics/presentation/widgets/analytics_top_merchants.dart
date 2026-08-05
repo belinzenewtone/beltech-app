@@ -43,7 +43,7 @@ class _MerchantRow extends StatelessWidget {
       onTap: () => context.pushNamed('merchant-detail', extra: merchant.merchant),
       borderRadius: BorderRadius.circular(8),
       child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 8),
+        padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
         child: Row(
           children: [
             Expanded(

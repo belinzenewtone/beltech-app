@@ -1,4 +1,5 @@
 import 'package:beltech/core/theme/app_colors.dart';
+import 'package:beltech/core/theme/app_spacing.dart';
 import 'package:beltech/core/widgets/app_card.dart';
 import 'package:beltech/features/insights/domain/entities/insight_card.dart';
 import 'package:flutter/material.dart';
@@ -28,7 +29,7 @@ class InsightsSection extends StatelessWidget {
           ),
         ),
         ...insights.map((card) => Padding(
-              padding: const EdgeInsets.only(bottom: 8),
+              padding: const EdgeInsets.only(bottom: AppSpacing.sm),
               child: _InsightRow(card: card),
             )),
       ],

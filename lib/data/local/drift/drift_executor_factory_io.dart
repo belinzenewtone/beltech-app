@@ -30,6 +30,15 @@ QueryExecutor openDriftExecutor({required String name, bool inMemory = false}) {
       },
       setup: (db) {
         db.execute("PRAGMA key = '$key'");
+        // WAL allows concurrent readers with a single writer — essential
+        // because the UI stream, background worker isolate, and import
+        // pipeline all share this DB. Without it, concurrent access throws
+        // SqliteException(5) "database is locked" and screens hang on
+        // loading skeletons.
+        db.execute('PRAGMA journal_mode = WAL');
+        // Wait up to 10s for a busy database instead of failing immediately
+        // with "database is locked" when two connections write at once.
+        db.execute('PRAGMA busy_timeout = 10000');
       },
     );
   });

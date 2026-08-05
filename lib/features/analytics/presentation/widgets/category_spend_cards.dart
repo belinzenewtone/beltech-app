@@ -1,4 +1,5 @@
 import 'dart:math' as math;
+import 'package:beltech/core/theme/app_spacing.dart';
 import 'package:beltech/core/utils/category_visual.dart';
 import 'package:beltech/core/utils/currency_formatter.dart';
 import 'package:beltech/core/widgets/app_card.dart';
@@ -53,7 +54,7 @@ class _CategorySpendCardsState extends ConsumerState<CategorySpendCards> {
           ),
         ),
         ...items.map((cat) => Padding(
-              padding: const EdgeInsets.only(bottom: 8),
+              padding: const EdgeInsets.only(bottom: AppSpacing.sm),
               child: _CategoryCard(share: cat, globalSparklineMax: globalMax),
             )),
         if (widget.categories.where((c) => c.totalKes > 0).length > 3)

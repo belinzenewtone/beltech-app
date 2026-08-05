@@ -1,4 +1,5 @@
 import 'package:beltech/core/theme/app_colors.dart';
+import 'package:beltech/core/theme/app_spacing.dart';
 import 'package:beltech/core/utils/category_visual.dart';
 import 'package:beltech/core/utils/currency_formatter.dart';
 import 'package:beltech/core/widgets/app_card.dart';
@@ -125,9 +126,9 @@ class _MonthCardState extends State<_MonthCard> {
         : 0.0;
 
     return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.only(bottom: AppSpacing.sm),
       child: AppCard(
-        padding: const EdgeInsets.all(14),
+        padding: const EdgeInsets.all(AppSpacing.lg - 2),
         onTap: _toggle,
         child: Column(
           children: [
@@ -160,8 +161,10 @@ class _MonthCardState extends State<_MonthCard> {
                 ),
                 if (momPct != null)
                   Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.sm,
+                      vertical: 3,
+                    ),
                     decoration: BoxDecoration(
                       color: color.withValues(alpha: 0.12),
                       borderRadius: BorderRadius.circular(20),
@@ -197,7 +200,7 @@ class _MonthCardState extends State<_MonthCard> {
               alignment: Alignment.topCenter,
               child: _expanded && top5.isNotEmpty
                   ? Padding(
-                      padding: const EdgeInsets.only(top: 12),
+                      padding: const EdgeInsets.only(top: AppSpacing.md),
                       child: Column(
                         children: top5.map((cat) {
                           final catVisual = categoryVisual(cat.category);
@@ -205,18 +208,18 @@ class _MonthCardState extends State<_MonthCard> {
                               ? (cat.totalKes / maxCat).clamp(0.0, 1.0)
                               : 0.0;
                           return Padding(
-                            padding: const EdgeInsets.only(bottom: 8),
+                            padding: const EdgeInsets.only(bottom: AppSpacing.sm),
                             child: Row(
                               children: [
                                 Container(
-                                  width: 8,
-                                  height: 8,
+                                  width: AppSpacing.sm,
+                                  height: AppSpacing.sm,
                                   decoration: BoxDecoration(
                                     color: catVisual.foreground,
                                     shape: BoxShape.circle,
                                   ),
                                 ),
-                                const SizedBox(width: 8),
+                                const SizedBox(width: AppSpacing.sm),
                                 Expanded(
                                   child: Text(
                                     cat.category,
@@ -241,7 +244,7 @@ class _MonthCardState extends State<_MonthCard> {
                                     textAlign: TextAlign.end,
                                   ),
                                 ),
-                                const SizedBox(width: 8),
+                                const SizedBox(width: AppSpacing.sm),
                                 Expanded(
                                   child: ClipRRect(
                                     borderRadius: BorderRadius.circular(3),

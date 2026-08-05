@@ -1,3 +1,4 @@
+import 'package:beltech/core/theme/app_spacing.dart';
 import 'package:beltech/core/utils/category_visual.dart';
 import 'package:beltech/core/utils/currency_formatter.dart';
 import 'package:beltech/core/widgets/app_card.dart';
@@ -32,22 +33,22 @@ class CategoryDrillDownScreen extends StatelessWidget {
     return SecondaryPageShell(
       title: category,
       child: ListView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(AppSpacing.lg),
         children: [
           // ── Summary header ─────────────────────────────────────────────
           AppCard(
-            padding: const EdgeInsets.all(20),
+            padding: const EdgeInsets.all(AppSpacing.xl - 4),
             child: Column(
               children: [
                 Container(
-                  padding: const EdgeInsets.all(12),
+                  padding: const EdgeInsets.all(AppSpacing.md),
                   decoration: BoxDecoration(
                     color: visual.foreground.withValues(alpha: 0.12),
                     shape: BoxShape.circle,
                   ),
                   child: Icon(visual.icon, size: 28, color: visual.foreground),
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: AppSpacing.md),
                 Text(
                   CurrencyFormatter.money(totalKes),
                   style: Theme.of(context).textTheme.headlineMedium?.copyWith(
@@ -55,7 +56,7 @@ class CategoryDrillDownScreen extends StatelessWidget {
                         color: visual.foreground,
                       ),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: AppSpacing.xs),
                 Text(
                   '$txCount transactions',
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
@@ -70,9 +71,9 @@ class CategoryDrillDownScreen extends StatelessWidget {
           ),
           // ── Percentage + top merchant (from real share data) ─────────────
           if (share != null) ...[
-            const SizedBox(height: 12),
+            const SizedBox(height: AppSpacing.md),
             AppCard(
-              padding: const EdgeInsets.all(14),
+              padding: const EdgeInsets.all(AppSpacing.lg - 2),
               child: Row(
                 children: [
                   Expanded(
@@ -103,11 +104,11 @@ class CategoryDrillDownScreen extends StatelessWidget {
               ),
             ),
           ],
-          const SizedBox(height: 12),
+          const SizedBox(height: AppSpacing.md),
           // ── 8-week sparkline trend ─────────────────────────────────────────
           if (share != null && share!.weeklySparkline.any((v) => v > 0)) ...[
             AppCard(
-              padding: const EdgeInsets.all(14),
+              padding: const EdgeInsets.all(AppSpacing.lg - 2),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -116,7 +117,7 @@ class CategoryDrillDownScreen extends StatelessWidget {
                     style: Theme.of(context).textTheme.titleSmall
                         ?.copyWith(fontWeight: FontWeight.w700),
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: AppSpacing.md),
                   SizedBox(
                     height: 48,
                     child: Row(
@@ -163,7 +164,7 @@ class CategoryDrillDownScreen extends StatelessWidget {
                 ],
               ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: AppSpacing.md),
           ],
         ],
       ),

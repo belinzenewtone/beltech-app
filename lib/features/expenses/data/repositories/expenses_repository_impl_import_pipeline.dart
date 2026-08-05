@@ -19,6 +19,13 @@ Future<int> _processDueQueueImpl(
   DateTime? from,
   void Function(int done, int total)? onProgress,
 }) async {
+  // The store uses a lazy SQLite executor: no statement may run until the DB
+  // is opened and the schema is created. Direct `executor` queries below
+  // would otherwise hit an uninitialized `LazyDatabase` when this drain runs
+  // before any store method that calls ensureInitialized() (e.g. a background
+  // worker draining a queue enqueued by a previous run).
+  await repo._store.ensureInitialized();
+
   // Snapshot `now` once so every iteration uses the same retry-eligibility
   // cutoff — rows that fail and get a future next_retry_at won't re-appear
   // in this drain cycle.

@@ -1,4 +1,5 @@
 import 'package:beltech/core/di/feature_flag_providers.dart';
+import 'package:beltech/core/diagnostics/demo_data_seeder.dart';
 import 'package:beltech/core/diagnostics/device_sms_miner.dart';
 import 'package:beltech/core/platform/runtime_env.dart';
 import 'package:beltech/core/routing/app_router.dart';
@@ -23,6 +24,10 @@ Future<void> main() async {
       // One-shot real-device SMS mining for parser improvement (debug only).
       WidgetsBinding.instance.addPostFrameCallback((_) {
         DeviceSmsMiner.runIfDebug();
+      });
+      // Seed demo M-PESA data (debug + --dart-define=SEED_DEMO=true only).
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        DemoDataSeeder.runIfEnabled();
       });
     }
   }

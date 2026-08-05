@@ -1,4 +1,5 @@
 ﻿import 'package:beltech/core/theme/app_colors.dart';
+import 'package:beltech/core/theme/app_spacing.dart';
 import 'package:beltech/core/utils/category_visual.dart';
 import 'package:beltech/core/utils/currency_formatter.dart';
 import 'package:beltech/core/widgets/app_card.dart';
@@ -55,13 +56,18 @@ class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen> {
         children: [
           // ── Tab toggle ─────────────────────────────────────────────────
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.screenHorizontal,
+              AppSpacing.xs,
+              AppSpacing.screenHorizontal,
+              0,
+            ),
             child: _TabToggle(
               selected: _tabIndex,
               onChanged: (i) => setState(() => _tabIndex = i),
             ),
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: AppSpacing.xs),
           // ── Tab content ────────────────────────────────────────────────
           Expanded(
             child: snapshotAsync.when(
@@ -113,7 +119,10 @@ class _InlineInsightBanner extends StatelessWidget {
     return GestureDetector(
       onTap: () => context.pushNamed('insights'),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.lg - 2,
+          vertical: AppSpacing.sm + 2,
+        ),
         decoration: BoxDecoration(
           color: color.withValues(alpha: 0.08),
           borderRadius: BorderRadius.circular(10),
@@ -126,7 +135,7 @@ class _InlineInsightBanner extends StatelessWidget {
               size: 16,
               color: color,
             ),
-            const SizedBox(width: 8),
+            const SizedBox(width: AppSpacing.sm),
             Expanded(
               child: Text(
                 message,
@@ -170,7 +179,10 @@ class _HealthGaugeCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AppCard(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.lg,
+        vertical: AppSpacing.lg - 2,
+      ),
       child: Column(
         children: [
           Text(
@@ -204,7 +216,7 @@ class _TopCategoryAllTimeCard extends ConsumerWidget {
         if (category == null || category.isEmpty) return const SizedBox.shrink();
         final visual = categoryVisual(category);
         return AppCard(
-          padding: const EdgeInsets.all(14),
+          padding: const EdgeInsets.all(AppSpacing.lg - 2),
           child: Row(
             children: [
               Container(
@@ -349,17 +361,22 @@ class _AnalyticsTabState extends ConsumerState<_AnalyticsTab> {
   Widget build(BuildContext context) {
     final period = ref.watch(analyticsPeriodProvider);
     final snapshot = widget.snapshot;
-    const h = SizedBox(height: 12);
+    const h = SizedBox(height: AppSpacing.md);
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.screenHorizontal,
+        AppSpacing.md,
+        AppSpacing.screenHorizontal,
+        AppSpacing.xxl,
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Inline insight banner — highest-confidence insight
           if (snapshot.periodChangePercent != null) ...[
             _InlineInsightBanner(snapshot: snapshot),
-            const SizedBox(height: 12),
+            const SizedBox(height: AppSpacing.md),
           ],
           // Period filter chips
           _PeriodChips(
@@ -437,7 +454,7 @@ class _InsightsTab extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final insightsAsync = ref.watch(insightsProvider);
-    const h = SizedBox(height: 12);
+    const h = SizedBox(height: AppSpacing.md);
 
     // Derived trend label
     final history = snapshot.monthlyHistory;
@@ -465,7 +482,12 @@ class _InsightsTab extends ConsumerWidget {
     }
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.screenHorizontal,
+        AppSpacing.md,
+        AppSpacing.screenHorizontal,
+        AppSpacing.xxl,
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -483,7 +505,7 @@ class _InsightsTab extends ConsumerWidget {
             _HistoryStatCards(history: history),
           ],
           if (trendLabel != null) ...[
-            const SizedBox(height: 8),
+            const SizedBox(height: AppSpacing.sm),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 2),
               child: Text(
@@ -574,13 +596,13 @@ class _PeriodChips extends StatelessWidget {
             active: selected == AnalyticsPeriod.week && !hasCustom,
             onTap: () => onChanged(AnalyticsPeriod.week),
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: AppSpacing.sm),
           _Chip(
             label: 'This month',
             active: selected == AnalyticsPeriod.month && !hasCustom,
             onTap: () => onChanged(AnalyticsPeriod.month),
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: AppSpacing.sm),
           _Chip(
             label: hasCustom ? customRangeLabel! : 'Custom…',
             active: hasCustom,
@@ -605,7 +627,10 @@ class _Chip extends StatelessWidget {
       onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 160),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.lg - 2,
+          vertical: AppSpacing.sm - 2,
+        ),
         decoration: BoxDecoration(
           color: active
               ? scheme.primary
@@ -684,7 +709,10 @@ class _HighlightTile extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.md,
+          vertical: AppSpacing.sm + 2,
+        ),
         decoration: BoxDecoration(
           color: Theme.of(context)
               .colorScheme
@@ -742,17 +770,22 @@ class _SkeletonLoader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.screenHorizontal,
+        AppSpacing.lg,
+        AppSpacing.screenHorizontal,
+        AppSpacing.xxl,
+      ),
       children: [
         // Period chips
         Row(
           children: [
             AppSkeleton(width: 90, height: 32, borderRadius: 20),
-            const SizedBox(width: 8),
+            const SizedBox(width: AppSpacing.sm),
             AppSkeleton(width: 100, height: 32, borderRadius: 20),
           ],
         ),
-        const SizedBox(height: 14),
+        const SizedBox(height: AppSpacing.lg - 2),
         // Summary cards 2x2
         Row(
           children: [
@@ -843,7 +876,7 @@ class _StatCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AppCard(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(AppSpacing.md),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

@@ -2,10 +2,12 @@ import 'package:beltech/core/theme/app_colors.dart';
 import 'package:beltech/core/theme/app_spacing.dart';
 import 'package:beltech/core/widgets/app_card.dart';
 import 'package:beltech/core/widgets/secondary_page_shell.dart';
+import 'package:beltech/core/diagnostics/demo_data_seeder.dart';
 import 'package:beltech/features/settings/presentation/widgets/fuliza_settings_card.dart';
 import 'package:beltech/features/settings/presentation/widgets/settings_about_card.dart';
 import 'package:beltech/features/settings/presentation/widgets/settings_appearance_card.dart';
 import 'package:beltech/features/settings/presentation/widgets/settings_row.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -62,6 +64,36 @@ class SettingsScreen extends ConsumerWidget {
           // Fuliza M-Pesa
           const FulizaSettingsCard(),
           const SizedBox(height: AppSpacing.sectionGap),
+
+          // Debug-only: demo data seeding
+          if (kDebugMode) ...[
+            AppCard(
+              tone: AppCardTone.muted,
+              padding: EdgeInsets.zero,
+              child: SettingsRow(
+                icon: Icons.data_usage_rounded,
+                title: 'Seed Demo Data',
+                subtitle: 'Insert sample M-PESA transactions',
+                trailing: const Icon(
+                  Icons.chevron_right_rounded,
+                  color: AppColors.textMuted,
+                  size: 20,
+                ),
+                onTap: () async {
+                  final messenger = ScaffoldMessenger.of(context);
+                  await DemoDataSeeder.seedNow();
+                  messenger.showSnackBar(
+                    const SnackBar(
+                      content: Text('Demo data seeded. Pull to refresh.'),
+                      duration: Duration(seconds: 2),
+                    ),
+                  );
+                },
+                isFirst: true,
+              ),
+            ),
+            const SizedBox(height: AppSpacing.sectionGap),
+          ],
 
           // About
           const SettingsAboutCard(),
