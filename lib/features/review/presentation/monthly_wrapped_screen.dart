@@ -6,6 +6,7 @@ import 'package:beltech/core/widgets/secondary_page_shell.dart';
 import 'package:beltech/features/review/domain/entities/monthly_wrapped_data.dart';
 import 'package:beltech/features/review/presentation/providers/monthly_wrapped_providers.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// Monthly Wrapped screen — full month summary.
@@ -119,14 +120,26 @@ class _MonthlyWrappedScreenState extends ConsumerState<MonthlyWrappedScreen> {
               ],
             ),
           ),
-          // ── Content ──────────────────────────────────────────────────
+          // ── Content with swipe navigation ──────────────────────────────
           Expanded(
-            child: dataAsync.when(
-              loading: () => const Center(child: CircularProgressIndicator()),
-              error: (e, _) => Center(child: Text('Error: $e')),
-              data: (data) => data.hasData
-                  ? _WrappedContent(data: data)
-                  : _EmptyState(month: monthNames[_month - 1], year: _year),
+            child: GestureDetector(
+              onHorizontalDragEnd: (details) {
+                if (details.primaryVelocity == null) return;
+                if (details.primaryVelocity! < -200) {
+                  HapticFeedback.lightImpact();
+                  _next();
+                } else if (details.primaryVelocity! > 200 && hasData) {
+                  HapticFeedback.lightImpact();
+                  _prev();
+                }
+              },
+              child: dataAsync.when(
+                loading: () => const Center(child: CircularProgressIndicator()),
+                error: (e, _) => Center(child: Text('Error: $e')),
+                data: (data) => data.hasData
+                    ? _WrappedContent(data: data)
+                    : _EmptyState(month: monthNames[_month - 1], year: _year),
+              ),
             ),
           ),
         ],

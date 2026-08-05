@@ -234,11 +234,23 @@ class _AnalyticsTabState extends ConsumerState<_AnalyticsTab> {
                 ref.read(analyticsPeriodProvider.notifier).state = p,
           ),
           h,
-          // 4-card summary row
-          AnalyticsSummaryCards(snapshot: snapshot),
+          // 4-card summary row wrapped in AnimatedSwitcher for period changes
+          AnimatedSwitcher(
+            duration: const Duration(milliseconds: 200),
+            child: AnalyticsSummaryCards(
+              key: ValueKey(period),
+              snapshot: snapshot,
+            ),
+          ),
           h,
           // vs Last period comparison
-          SpendingComparisonCard(snapshot: snapshot),
+          AnimatedSwitcher(
+            duration: const Duration(milliseconds: 200),
+            child: SpendingComparisonCard(
+              key: ValueKey(period),
+              snapshot: snapshot,
+            ),
+          ),
           h,
           // Category spend cards (with sparklines)
           CategorySpendCards(categories: snapshot.categoryBreakdown),

@@ -50,55 +50,87 @@ class _ReviewScreenState extends State<ReviewScreen> {
 // Health Score Ring
 // ─────────────────────────────────────────────────────────────────────────────
 
-class _HealthScoreRing extends StatelessWidget {
+class _HealthScoreRing extends StatefulWidget {
   const _HealthScoreRing({required this.score});
   final int score;
 
   @override
+  State<_HealthScoreRing> createState() => _HealthScoreRingState();
+}
+
+class _HealthScoreRingState extends State<_HealthScoreRing>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  late final Animation<double> _anim;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 600),
+      vsync: this,
+    );
+    _anim = CurvedAnimation(parent: _controller, curve: Curves.easeOutQuart);
+    WidgetsBinding.instance.addPostFrameCallback((_) => _controller.forward());
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final label = FinancialHealthScore.tierLabel(score);
-    final color = score >= 80
+    final label = FinancialHealthScore.tierLabel(widget.score);
+    final color = widget.score >= 80
         ? AppColors.success
-        : score >= 60
+        : widget.score >= 60
             ? AppColors.warning
-            : score >= 40
+            : widget.score >= 40
                 ? AppColors.orange
                 : AppColors.danger;
 
-    return Center(
-      child: Container(
-        width: 160,
-        height: 160,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          border: Border.all(
-            color: color,
-            width: 6,
-          ),
-        ),
-        child: Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                '$score',
-                style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                      fontWeight: FontWeight.w800,
-                      color: color,
-                      fontSize: 36,
-                    ),
+    return AnimatedBuilder(
+      animation: _anim,
+      builder: (_, child) {
+        final animScore = (widget.score * _anim.value).round();
+        return Center(
+          child: Container(
+            width: 160,
+            height: 160,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(color: color, width: 6),
+            ),
+            child: Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    '$animScore',
+                    style: Theme.of(context)
+                        .textTheme
+                        .headlineMedium
+                        ?.copyWith(
+                          fontWeight: FontWeight.w800,
+                          color: color,
+                          fontSize: 36,
+                        ),
+                  ),
+                  Text(
+                    label,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: color,
+                          fontWeight: FontWeight.w600,
+                        ),
+                  ),
+                ],
               ),
-              Text(
-                label,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: color,
-                      fontWeight: FontWeight.w600,
-                    ),
-              ),
-            ],
+            ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 }

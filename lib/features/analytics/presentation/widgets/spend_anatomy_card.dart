@@ -4,16 +4,39 @@ import 'package:beltech/features/analytics/domain/entities/analytics_snapshot.da
 import 'package:flutter/material.dart';
 
 /// Spend Anatomy card — shows distribution of transaction sizes.
-/// Micro < KES 500 / Medium KES 500–2k / Large ≥ KES 2k.
-/// Mirrors Kotlin "Spend Anatomy" in InsightsScreen Insights tab.
-class SpendAnatomyCard extends StatelessWidget {
+/// Bars animate on entry with staggered timing.
+class SpendAnatomyCard extends StatefulWidget {
   const SpendAnatomyCard({super.key, required this.snapshot});
 
   final AnalyticsSnapshot snapshot;
 
   @override
+  State<SpendAnatomyCard> createState() => _SpendAnatomyCardState();
+}
+
+class _SpendAnatomyCardState extends State<SpendAnatomyCard>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 550),
+      vsync: this,
+    );
+    WidgetsBinding.instance.addPostFrameCallback((_) => _controller.forward());
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final total = snapshot.totalTxCount;
+    final total = widget.snapshot.totalTxCount;
     if (total == 0) return const SizedBox.shrink();
 
     return AppCard(
@@ -34,32 +57,38 @@ class SpendAnatomyCard extends StatelessWidget {
                   color: Theme.of(context)
                       .colorScheme
                       .onSurface
-                      .withOpacity(0.55),
+                      .withValues(alpha: 0.55),
                 ),
           ),
           const SizedBox(height: 16),
           _AnatomyBar(
             label: 'Micro',
             sublabel: '< KES 500',
-            count: snapshot.microTxCount,
+            count: widget.snapshot.microTxCount,
             total: total,
             color: AppColors.success,
+            controller: _controller,
+            staggerDelay: 0,
           ),
           const SizedBox(height: 10),
           _AnatomyBar(
             label: 'Medium',
             sublabel: 'KES 500–2k',
-            count: snapshot.mediumTxCount,
+            count: widget.snapshot.mediumTxCount,
             total: total,
             color: const Color(0xFFF59E0B),
+            controller: _controller,
+            staggerDelay: 80,
           ),
           const SizedBox(height: 10),
           _AnatomyBar(
             label: 'Large',
             sublabel: '≥ KES 2k',
-            count: snapshot.largeTxCount,
+            count: widget.snapshot.largeTxCount,
             total: total,
             color: AppColors.danger,
+            controller: _controller,
+            staggerDelay: 160,
           ),
         ],
       ),
@@ -74,6 +103,8 @@ class _AnatomyBar extends StatelessWidget {
     required this.count,
     required this.total,
     required this.color,
+    required this.controller,
+    required this.staggerDelay,
   });
 
   final String label;
@@ -81,11 +112,18 @@ class _AnatomyBar extends StatelessWidget {
   final int count;
   final int total;
   final Color color;
+  final AnimationController controller;
+  final int staggerDelay;
 
   @override
   Widget build(BuildContext context) {
     final fraction = total > 0 ? (count / total).clamp(0.0, 1.0) : 0.0;
     final pct = (fraction * 100).toStringAsFixed(0);
+    final intervalStart = staggerDelay / controller.duration!.inMilliseconds.toDouble();
+    final barAnim = CurvedAnimation(
+      parent: controller,
+      curve: Interval(intervalStart, (intervalStart + 0.4).clamp(0.0, 1.0), curve: Curves.easeOut),
+    );
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -108,7 +146,7 @@ class _AnatomyBar extends StatelessWidget {
                         color: Theme.of(context)
                             .colorScheme
                             .onSurface
-                            .withOpacity(0.5),
+                            .withValues(alpha: 0.5),
                       ),
                 ),
               ],
@@ -125,11 +163,14 @@ class _AnatomyBar extends StatelessWidget {
         const SizedBox(height: 4),
         ClipRRect(
           borderRadius: BorderRadius.circular(4),
-          child: LinearProgressIndicator(
-            value: fraction,
-            minHeight: 7,
-            backgroundColor: color.withOpacity(0.12),
-            valueColor: AlwaysStoppedAnimation<Color>(color),
+          child: AnimatedBuilder(
+            animation: barAnim,
+            builder: (_, child) => LinearProgressIndicator(
+              value: fraction * barAnim.value,
+              minHeight: 7,
+              backgroundColor: color.withValues(alpha: 0.12),
+              valueColor: AlwaysStoppedAnimation<Color>(color),
+            ),
           ),
         ),
       ],
