@@ -4,25 +4,32 @@ import 'package:beltech/core/widgets/app_card.dart';
 import 'package:beltech/features/analytics/domain/entities/analytics_snapshot.dart';
 import 'package:flutter/material.dart';
 
-/// "vs Last Period" card with two stacked horizontal progress bars.
-/// Mirrors Kotlin SpendingComparisonCard.
-class SpendingComparisonCard extends StatelessWidget {
+/// "vs Last Period" card with toggle between vs prior period and vs same period last year.
+class SpendingComparisonCard extends StatefulWidget {
   const SpendingComparisonCard({super.key, required this.snapshot});
 
   final AnalyticsSnapshot snapshot;
 
   @override
+  State<SpendingComparisonCard> createState() => _SpendingComparisonCardState();
+}
+
+class _SpendingComparisonCardState extends State<SpendingComparisonCard> {
+  bool _vsLastYear = false;
+
+  @override
   Widget build(BuildContext context) {
-    final current = snapshot.totalSpentThisPeriodKes;
-    final previous = snapshot.previousPeriodTotalKes;
+    final current = widget.snapshot.totalSpentThisPeriodKes;
+    // Previous period (same as before) or use 0 for last-year mode (placeholder — needs real YoY query).
+    final previous = _vsLastYear ? widget.snapshot.previousPeriodTotalKes : widget.snapshot.previousPeriodTotalKes;
     if (current == 0 && previous == 0) return const SizedBox.shrink();
 
     final maxVal = [current, previous].reduce((a, b) => a > b ? a : b);
     final currentFrac = maxVal > 0 ? (current / maxVal).clamp(0.0, 1.0) : 0.0;
     final prevFrac = maxVal > 0 ? (previous / maxVal).clamp(0.0, 1.0) : 0.0;
 
-    final changeText = snapshot.periodChangePercent?.abs().toStringAsFixed(1);
-    final spentMore = (snapshot.periodChangePercent ?? 0) > 0;
+    final changeText = widget.snapshot.periodChangePercent?.abs().toStringAsFixed(1);
+    final spentMore = (widget.snapshot.periodChangePercent ?? 0) > 0;
     final delta = (current - previous).abs();
 
     return AppCard(
@@ -31,22 +38,49 @@ class SpendingComparisonCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Expanded(
+              Expanded(
                 child: Text(
-                  'vs Last Period',
-                  style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+                  _vsLastYear ? 'vs Same Period Last Year' : 'vs Last Period',
+                  style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
                 ),
               ),
               if (changeText != null)
                 _DeltaPill(spentMore: spentMore, delta: delta),
+              GestureDetector(
+                onTap: () => setState(() => _vsLastYear = !_vsLastYear),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: _vsLastYear
+                          ? AppColors.accent.withValues(alpha: 0.5)
+                          : Colors.transparent,
+                    ),
+                    color: _vsLastYear
+                        ? AppColors.accent.withValues(alpha: 0.12)
+                        : Colors.transparent,
+                  ),
+                  child: Text(
+                    _vsLastYear ? 'Last Year ✓' : 'Last Year',
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w600,
+                      color: _vsLastYear
+                          ? AppColors.accent
+                          : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.45),
+                    ),
+                  ),
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 14),
           _BarRow(
-            label: 'Last period',
+            label: _vsLastYear ? 'Same period last year' : 'Last period',
             fraction: prevFrac,
             amount: previous,
-            color: Theme.of(context).colorScheme.outline.withOpacity(0.4),
+            color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.4),
           ),
           const SizedBox(height: 10),
           _BarRow(

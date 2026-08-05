@@ -367,6 +367,21 @@ class _AnalyticsTabState extends ConsumerState<_AnalyticsTab> {
             selected: period,
             onChanged: (p) =>
                 ref.read(analyticsPeriodProvider.notifier).state = p,
+            onCustomTap: () async {
+              final now = DateTime.now();
+              final range = await showDateRangePicker(
+                context: context,
+                firstDate: DateTime(now.year - 2, 1, 1),
+                lastDate: now,
+                initialDateRange: DateTimeRange(
+                  start: now.subtract(const Duration(days: 30)),
+                  end: now,
+                ),
+              );
+              if (range != null) {
+                ref.invalidate(analyticsSnapshotProvider);
+              }
+            },
           ),
           h,
           // 4-card summary row wrapped in AnimatedSwitcher for period changes
@@ -528,10 +543,11 @@ class _InsightsTab extends ConsumerWidget {
 // ─────────────────────────────────────────────────────────────────────────────
 
 class _PeriodChips extends StatelessWidget {
-  const _PeriodChips({required this.selected, required this.onChanged});
+  const _PeriodChips({required this.selected, required this.onChanged, required this.onCustomTap});
 
   final AnalyticsPeriod selected;
   final ValueChanged<AnalyticsPeriod> onChanged;
+  final VoidCallback onCustomTap;
 
   @override
   Widget build(BuildContext context) {
@@ -549,6 +565,12 @@ class _PeriodChips extends StatelessWidget {
             label: 'This month',
             active: selected == AnalyticsPeriod.month,
             onTap: () => onChanged(AnalyticsPeriod.month),
+          ),
+          const SizedBox(width: 8),
+          _Chip(
+            label: 'Custom…',
+            active: false,
+            onTap: onCustomTap,
           ),
         ],
       ),

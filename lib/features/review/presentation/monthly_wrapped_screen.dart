@@ -1,6 +1,7 @@
 import 'package:beltech/core/theme/app_colors.dart';
 import 'package:beltech/core/utils/category_visual.dart';
 import 'package:beltech/core/utils/currency_formatter.dart';
+import 'package:beltech/core/widgets/analytics_empty_state.dart';
 import 'package:beltech/core/widgets/app_card.dart';
 import 'package:beltech/core/widgets/secondary_page_shell.dart';
 import 'package:beltech/features/review/domain/entities/monthly_wrapped_data.dart';
@@ -654,42 +655,10 @@ class _EmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.calendar_month_rounded,
-                size: 52,
-                color: Theme.of(context)
-                    .colorScheme
-                    .onSurface
-                    .withOpacity(0.2)),
-            const SizedBox(height: 16),
-            Text(
-              'No data for $month $year',
-              style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                    color: Theme.of(context)
-                        .colorScheme
-                        .onSurface
-                        .withOpacity(0.4),
-                  ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Transactions for this month will appear here.',
-              textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(context)
-                        .colorScheme
-                        .onSurface
-                        .withOpacity(0.3),
-                  ),
-            ),
-          ],
-        ),
-      ),
+    return AnalyticsEmptyState(
+      variant: EmptyVariant.calendar,
+      title: 'No data for $month $year',
+      subtitle: 'Transactions for this month will appear here.',
     );
   }
 }
