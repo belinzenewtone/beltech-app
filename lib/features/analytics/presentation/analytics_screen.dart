@@ -1,6 +1,9 @@
-﻿import 'package:beltech/core/utils/category_visual.dart';
+﻿import 'package:beltech/core/theme/app_colors.dart';
+import 'package:beltech/core/utils/category_visual.dart';
 import 'package:beltech/core/utils/currency_formatter.dart';
 import 'package:beltech/core/widgets/app_card.dart';
+import 'package:beltech/core/widgets/app_skeleton.dart';
+import 'package:beltech/core/widgets/chart_semantics.dart';
 import 'package:beltech/core/widgets/secondary_page_shell.dart';
 import 'package:beltech/core/widgets/section_header.dart';
 import 'package:beltech/features/analytics/domain/entities/analytics_snapshot.dart';
@@ -65,12 +68,86 @@ class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen> {
               error: (e, _) => _ErrorView(
                 onRetry: () => ref.invalidate(analyticsSnapshotProvider),
               ),
-              data: (snapshot) => AnimatedSwitcher(
-                duration: const Duration(milliseconds: 220),
-                child: _tabIndex == 0
-                    ? _AnalyticsTab(key: const ValueKey(0), snapshot: snapshot)
-                    : _InsightsTab(key: const ValueKey(1), snapshot: snapshot),
+              data: (snapshot) => RefreshIndicator(
+                onRefresh: () async {
+                  // StreamProvider auto-refreshes; invalidate to force re-fetch.
+                  ref.invalidate(analyticsSnapshotProvider);
+                },
+                child: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 220),
+                  child: _tabIndex == 0
+                      ? _AnalyticsTab(key: const ValueKey(0), snapshot: snapshot)
+                      : _InsightsTab(key: const ValueKey(1), snapshot: snapshot),
+                ),
               ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+String _buildChartLabel(List<MonthlyTotalPoint> history) {
+  if (history.isEmpty) return 'No spending data available';
+  final nonZero = history.where((p) => p.totalKes > 0).toList();
+  if (nonZero.isEmpty) return 'No spending recorded in any month';
+  final highest = nonZero.reduce((a, b) => a.totalKes > b.totalKes ? a : b);
+  return 'Spending trend, ${nonZero.length} months, highest in ${highest.monthLabel} ${highest.year}';
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Financial Health Gauge in Insights tab header
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _HealthGauge extends StatelessWidget {
+  const _HealthGauge({required this.score});
+  final int score;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = score >= 80
+        ? AppColors.success
+        : score >= 60
+            ? AppColors.warning
+            : score >= 40
+                ? AppColors.orange
+                : AppColors.danger;
+
+    return AppCard(
+      padding: const EdgeInsets.all(14),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(9),
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(Icons.favorite_rounded, size: 20, color: color),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Financial Health',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  'Productivity Score · $score%',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Theme.of(context)
+                            .colorScheme
+                            .onSurface
+                            .withValues(alpha: 0.55),
+                      ),
+                ),
+              ],
             ),
           ),
         ],
@@ -312,11 +389,14 @@ class _InsightsTab extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // 6-month trend bars
-          MonthlyTrendBars(
-            monthlyHistory: history,
-            onTapMonth: (y, m) =>
-                context.pushNamed('monthly-wrapped', extra: (y, m)),
+          // 6-month trend bars with screen-reader label
+          ChartSemantics(
+            label: _buildChartLabel(history),
+            child: MonthlyTrendBars(
+              monthlyHistory: history,
+              onTapMonth: (y, m) =>
+                  context.pushNamed('monthly-wrapped', extra: (y, m)),
+            ),
           ),
           if (history.isNotEmpty) ...[
             const SizedBox(height: 10),
@@ -333,10 +413,15 @@ class _InsightsTab extends ConsumerWidget {
                       color: Theme.of(context)
                           .colorScheme
                           .onSurface
-                          .withOpacity(0.7),
+                          .withValues(alpha: 0.7),
                     ),
               ),
             ),
+          ],
+          // Financial Health Gauge in header
+          if (snapshot.productivityScore > 0) ...[
+            h,
+            _HealthGauge(score: snapshot.productivityScore.toInt()),
           ],
           // Highest / lowest month quick links
           if (highest != null || lowest != null) ...[
@@ -564,20 +649,44 @@ class _SkeletonLoader extends StatelessWidget {
   Widget build(BuildContext context) {
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
-      children: List.generate(
-        4,
-        (_) => Container(
-          height: 80,
-          margin: const EdgeInsets.only(bottom: 12),
-          decoration: BoxDecoration(
-            color: Theme.of(context)
-                .colorScheme
-                .surfaceContainerHighest
-                .withOpacity(0.4),
-            borderRadius: BorderRadius.circular(12),
-          ),
+      children: [
+        // Period chips
+        Row(
+          children: [
+            AppSkeleton(width: 90, height: 32, borderRadius: 20),
+            const SizedBox(width: 8),
+            AppSkeleton(width: 100, height: 32, borderRadius: 20),
+          ],
         ),
-      ),
+        const SizedBox(height: 14),
+        // Summary cards 2x2
+        Row(
+          children: [
+            Expanded(child: AppSkeleton.card(context, height: 72)),
+            const SizedBox(width: 10),
+            Expanded(child: AppSkeleton.card(context, height: 72)),
+          ],
+        ),
+        const SizedBox(height: 10),
+        Row(
+          children: [
+            Expanded(child: AppSkeleton.card(context, height: 72)),
+            const SizedBox(width: 10),
+            Expanded(child: AppSkeleton.card(context, height: 72)),
+          ],
+        ),
+        const SizedBox(height: 14),
+        // Comparison card
+        AppSkeleton.card(context, height: 110),
+        const SizedBox(height: 14),
+        // Category cards
+        for (int i = 0; i < 3; i++) ...[
+          AppSkeleton.card(context, height: 64),
+          const SizedBox(height: 10),
+        ],
+        const SizedBox(height: 6),
+        AppSkeleton.card(context, height: 58),
+      ],
     );
   }
 }
