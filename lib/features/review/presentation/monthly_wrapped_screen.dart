@@ -6,8 +6,14 @@ import 'package:beltech/core/widgets/secondary_page_shell.dart';
 import 'package:beltech/features/review/domain/entities/monthly_wrapped_data.dart';
 import 'package:beltech/features/review/presentation/providers/monthly_wrapped_providers.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:share_plus/share_plus.dart';
+import 'dart:io';
+import 'dart:typed_data';
+import 'dart:ui' as ui;
 
 /// Monthly Wrapped screen — full month summary.
 /// Mirrors Kotlin MonthlyWrappedScreen.
@@ -62,6 +68,22 @@ class _MonthlyWrappedScreenState extends ConsumerState<MonthlyWrappedScreen> {
     return _year == now.year && _month == now.month;
   }
 
+  Future<void> _shareCard(BuildContext context, WidgetRef ref) async {
+    try {
+      final boundary = context.findRenderObject() as RenderRepaintBoundary?;
+      if (boundary == null) return;
+      final image = await boundary.toImage(pixelRatio: 3.0);
+      final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
+      if (byteData == null) return;
+      final dir = await getTemporaryDirectory();
+      final file = await File('${dir.path}/monthly_wrapped_$_year-$_month.png').create();
+      await file.writeAsBytes(byteData.buffer.asUint8List());
+      await Share.shareXFiles([XFile(file.path)], text: 'My $_month/$_year Wrapped — Beltech');
+    } catch (_) {
+      // Share silently fails if user cancels
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final dataAsync = ref.watch(monthlyWrappedProvider((_year, _month)));
@@ -71,6 +93,8 @@ class _MonthlyWrappedScreenState extends ConsumerState<MonthlyWrappedScreen> {
     ];
 
     final hasData = dataAsync.maybeWhen(data: (d) => d.hasData, orElse: () => false);
+
+    final _shareKey = GlobalKey();
 
     return SecondaryPageShell(
       title: 'Monthly Wrapped',
@@ -117,6 +141,16 @@ class _MonthlyWrappedScreenState extends ConsumerState<MonthlyWrappedScreen> {
                   ),
                   onPressed: _isCurrentMonth ? null : _next,
                 ),
+                dataAsync.maybeWhen(
+                  data: (d) => d.hasData
+                      ? IconButton(
+                          icon: const Icon(Icons.share_rounded, size: 20),
+                          tooltip: 'Share as image',
+                          onPressed: () => _shareCard(context, ref),
+                        )
+                      : null,
+                  orElse: () => null,
+                ) ?? const SizedBox.shrink(),
               ],
             ),
           ),
@@ -133,12 +167,14 @@ class _MonthlyWrappedScreenState extends ConsumerState<MonthlyWrappedScreen> {
                   _prev();
                 }
               },
-              child: dataAsync.when(
-                loading: () => const Center(child: CircularProgressIndicator()),
-                error: (e, _) => Center(child: Text('Error: $e')),
-                data: (data) => data.hasData
-                    ? _WrappedContent(data: data)
-                    : _EmptyState(month: monthNames[_month - 1], year: _year),
+              child: RepaintBoundary(
+                child: dataAsync.when(
+                  loading: () => const Center(child: CircularProgressIndicator()),
+                  error: (e, _) => Center(child: Text('Error: $e')),
+                  data: (data) => data.hasData
+                      ? _WrappedContent(data: data)
+                      : _EmptyState(month: monthNames[_month - 1], year: _year),
+                ),
               ),
             ),
           ),
