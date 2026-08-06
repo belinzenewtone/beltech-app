@@ -1,11 +1,7 @@
 ﻿import 'package:beltech/core/theme/app_colors.dart';
 import 'package:beltech/core/theme/app_spacing.dart';
-import 'package:beltech/core/utils/category_visual.dart';
-import 'package:beltech/core/utils/currency_formatter.dart';
 import 'package:beltech/core/widgets/app_card.dart';
 import 'package:beltech/core/widgets/app_skeleton.dart';
-import 'package:beltech/core/widgets/chart_semantics.dart';
-import 'package:beltech/core/widgets/health_gauge.dart';
 import 'package:beltech/core/widgets/secondary_page_shell.dart';
 import 'package:beltech/core/widgets/section_header.dart';
 import 'package:beltech/features/analytics/domain/entities/analytics_snapshot.dart';
@@ -14,37 +10,22 @@ import 'package:beltech/features/analytics/presentation/widgets/analytics_fees_c
 import 'package:beltech/features/analytics/presentation/widgets/analytics_summary_cards.dart';
 import 'package:beltech/features/analytics/presentation/widgets/analytics_top_merchants.dart';
 import 'package:beltech/features/analytics/presentation/widgets/category_spend_cards.dart';
-import 'package:beltech/features/analytics/presentation/widgets/insights_section.dart';
-import 'package:beltech/features/analytics/presentation/widgets/monthly_trend_bars.dart';
-import 'package:beltech/features/analytics/presentation/widgets/monthly_breakdown_section.dart';
-import 'package:beltech/features/analytics/presentation/widgets/payday_pulse_card.dart';
-import 'package:beltech/features/analytics/presentation/widgets/spend_anatomy_card.dart';
 import 'package:beltech/features/analytics/presentation/widgets/spending_comparison_card.dart';
-import 'package:beltech/features/insights/presentation/providers/insights_providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-/// Analytics screen — 2-tab layout matching Kotlin InsightsScreen:
-///   • Analytics tab  — period-filtered spend summary + categories + merchants
-///   • Insights tab   — 6-month trend chart + deterministic insight cards + anatomy + pulse
-class AnalyticsScreen extends ConsumerStatefulWidget {
+/// Analytics screen — period-filtered spend summary, categories, and merchants.
+class AnalyticsScreen extends ConsumerWidget {
   const AnalyticsScreen({super.key});
 
   @override
-  ConsumerState<AnalyticsScreen> createState() => _AnalyticsScreenState();
-}
-
-class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen> {
-  int _tabIndex = 0; // 0 = Analytics, 1 = Insights
-
-  @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final snapshotAsync = ref.watch(analyticsSnapshotProvider);
 
     return SecondaryPageShell(
       title: 'Analytics',
-      scrollable: false, // we handle scrolling per-tab
+      scrollable: false,
       actions: [
         IconButton(
           icon: const Icon(Icons.refresh_rounded, size: 20),
@@ -52,46 +33,15 @@ class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen> {
           onPressed: () => ref.invalidate(analyticsSnapshotProvider),
         ),
       ],
-      child: Column(
-        children: [
-          // ── Tab toggle ─────────────────────────────────────────────────
-          Padding(
-            padding: const EdgeInsets.fromLTRB(
-              AppSpacing.screenHorizontal,
-              AppSpacing.xs,
-              AppSpacing.screenHorizontal,
-              0,
-            ),
-            child: _TabToggle(
-              selected: _tabIndex,
-              onChanged: (i) => setState(() => _tabIndex = i),
-            ),
-          ),
-          const SizedBox(height: AppSpacing.xs),
-          // ── Tab content ────────────────────────────────────────────────
-          Expanded(
-            child: snapshotAsync.when(
-              loading: () => const _SkeletonLoader(),
-              error: (e, _) => _ErrorView(
-                onRetry: () => ref.invalidate(analyticsSnapshotProvider),
-              ),
-              data: (snapshot) => RefreshIndicator(
-                onRefresh: () async {
-                  // Invalidate both providers so Analytics + Insights tabs
-                  // both refresh when the user pulls down.
-                  ref.invalidate(analyticsSnapshotProvider);
-                  ref.invalidate(insightsProvider);
-                },
-                child: AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 220),
-                  child: _tabIndex == 0
-                      ? _AnalyticsTab(key: const ValueKey(0), snapshot: snapshot)
-                      : _InsightsTab(key: const ValueKey(1), snapshot: snapshot),
-                ),
-              ),
-            ),
-          ),
-        ],
+      child: snapshotAsync.when(
+        loading: () => const _SkeletonLoader(),
+        error: (e, _) => _ErrorView(
+          onRetry: () => ref.invalidate(analyticsSnapshotProvider),
+        ),
+        data: (snapshot) => RefreshIndicator(
+          onRefresh: () async => ref.invalidate(analyticsSnapshotProvider),
+          child: _AnalyticsTab(snapshot: snapshot),
+        ),
       ),
     );
   }
@@ -111,9 +61,9 @@ class _InlineInsightBanner extends StatelessWidget {
     final spentMore = (change ?? 0) > 0;
     final color = spentMore ? AppColors.danger : AppColors.success;
     final message = change == null
-        ? 'View your latest insights'
+        ? 'Tap to view monthly details'
         : spentMore
-            ? 'Spending up ${change.abs().toStringAsFixed(0)}% — tap for Insights'
+            ? 'Spending up ${change.abs().toStringAsFixed(0)}% vs last period'
             : 'Spending down ${change.abs().toStringAsFixed(0)}% — keep it going';
 
     return GestureDetector(
@@ -156,182 +106,6 @@ class _InlineInsightBanner extends StatelessWidget {
   }
 }
 
-String _buildChartLabel(List<MonthlyTotalPoint> history) {
-  if (history.isEmpty) return 'No spending data available';
-  final nonZero = history.where((p) => p.totalKes > 0).toList();
-  if (nonZero.isEmpty) return 'No spending recorded in any month';
-  final highest = nonZero.reduce((a, b) => a.totalKes > b.totalKes ? a : b);
-  return 'Spending trend, ${nonZero.length} months, highest in ${highest.monthLabel} ${highest.year}';
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Financial Health Gauge in Insights tab header — animated semi-circular arc
-// ─────────────────────────────────────────────────────────────────────────────
-
-class _HealthGaugeCard extends StatelessWidget {
-  const _HealthGaugeCard({required this.score});
-  final int score;
-
-  static String _tier(int s) {
-    if (s >= 80) return 'Excellent';
-    if (s >= 60) return 'Good';
-    if (s >= 40) return 'Fair';
-    return 'Needs Work';
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AppCard(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.lg,
-        vertical: AppSpacing.md,
-      ),
-      child: Column(
-        children: [
-          Text(
-            'Financial Health',
-            style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                  fontWeight: FontWeight.w700,
-                ),
-          ),
-          const SizedBox(height: 10),
-          Center(child: HealthGauge(score: score, tierLabel: _tier(score))),
-        ],
-      ),
-    );
-  }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Top Category All Time insight row — backed by real SQL all-time query
-// ─────────────────────────────────────────────────────────────────────────────
-
-class _TopCategoryAllTimeCard extends ConsumerWidget {
-  const _TopCategoryAllTimeCard();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final async = ref.watch(topCategoryAllTimeProvider);
-    return async.when(
-      loading: () => const SizedBox.shrink(),
-      error: (_, __) => const SizedBox.shrink(),
-      data: (category) {
-        if (category == null || category.isEmpty) return const SizedBox.shrink();
-        final visual = categoryVisual(category);
-        return AppCard(
-          padding: const EdgeInsets.all(AppSpacing.md),
-          child: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(7),
-                decoration: BoxDecoration(
-                  color: visual.foreground.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Icon(visual.icon, size: 16, color: visual.foreground),
-              ),
-              const SizedBox(width: 12),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Top Category All Time',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Theme.of(context)
-                              .colorScheme
-                              .onSurface
-                              .withValues(alpha: 0.55),
-                        ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    category,
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          fontWeight: FontWeight.w600,
-                        ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Tab toggle
-// ─────────────────────────────────────────────────────────────────────────────
-
-class _TabToggle extends StatelessWidget {
-  const _TabToggle({required this.selected, required this.onChanged});
-
-  final int selected;
-  final ValueChanged<int> onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.5),
-        borderRadius: BorderRadius.circular(10),
-      ),
-      padding: const EdgeInsets.all(3),
-      child: Row(
-        children: [
-          _Tab(label: 'Analytics', active: selected == 0, onTap: () => onChanged(0)),
-          _Tab(label: 'Insights', active: selected == 1, onTap: () => onChanged(1)),
-        ],
-      ),
-    );
-  }
-}
-
-class _Tab extends StatelessWidget {
-  const _Tab({required this.label, required this.active, required this.onTap});
-  final String label;
-  final bool active;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Expanded(
-      child: GestureDetector(
-        onTap: onTap,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 180),
-          padding: const EdgeInsets.symmetric(vertical: 7),
-          decoration: BoxDecoration(
-            color: active
-                ? Theme.of(context).colorScheme.surface
-                : Colors.transparent,
-            borderRadius: BorderRadius.circular(7),
-            boxShadow: active
-                ? [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.08),
-                      blurRadius: 6,
-                      offset: const Offset(0, 1),
-                    )
-                  ]
-                : null,
-          ),
-          alignment: Alignment.center,
-          child: Text(
-            label,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  fontWeight: active ? FontWeight.w700 : FontWeight.w500,
-                  color: active
-                      ? Theme.of(context).colorScheme.onSurface
-                      : Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
-                ),
-          ),
-        ),
-      ),
-    );
-  }
-}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Analytics tab
@@ -446,97 +220,6 @@ class _AnalyticsTabState extends ConsumerState<_AnalyticsTab> {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Insights tab
-// ─────────────────────────────────────────────────────────────────────────────
-
-class _InsightsTab extends ConsumerWidget {
-  const _InsightsTab({super.key, required this.snapshot});
-  final AnalyticsSnapshot snapshot;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final insightsAsync = ref.watch(insightsProvider);
-    const h = SizedBox(height: AppSpacing.md);
-
-    final history = snapshot.monthlyHistory;
-
-    // Highest / lowest month
-    final nonZero = history.where((p) => p.totalKes > 0).toList();
-    MonthlyTotalPoint? highest, lowest;
-    if (nonZero.isNotEmpty) {
-      highest = nonZero.reduce((a, b) => a.totalKes > b.totalKes ? a : b);
-      lowest = nonZero.reduce((a, b) => a.totalKes < b.totalKes ? a : b);
-      if (highest == lowest) lowest = null;
-    }
-
-    return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(
-        AppSpacing.screenHorizontal,
-        AppSpacing.md,
-        AppSpacing.screenHorizontal,
-        AppSpacing.xxl,
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // 6-month trend bars with screen-reader label
-          ChartSemantics(
-            label: _buildChartLabel(history),
-            child: MonthlyTrendBars(
-              monthlyHistory: history,
-              onTapMonth: (y, m) =>
-                  context.pushNamed('monthly-wrapped', extra: (y, m)),
-            ),
-          ),
-          if (history.isNotEmpty) ...[
-            const SizedBox(height: 10),
-            _HistoryStatCards(history: history),
-          ],
-          // Financial Health Gauge in header — animated arc
-          if (snapshot.productivityScore > 0) ...[
-            h,
-            _HealthGaugeCard(score: snapshot.productivityScore.toInt()),
-          ],
-          // Highest / lowest month quick links
-          if (highest != null || lowest != null) ...[
-            h,
-            _MonthHighlightRow(
-              highest: highest,
-              lowest: lowest,
-              onTap: (y, m) =>
-                  context.pushNamed('monthly-wrapped', extra: (y, m)),
-            ),
-          ],
-          // Top Category All Time insight — backed by real all-time SQL query
-          h,
-          _TopCategoryAllTimeCard(),
-          h,
-          // Monthly history breakdown
-          MonthlyBreakdownSection(
-            history: history,
-            categoryBreakdown: snapshot.categoryBreakdown,
-            onTapMonth: (y, m) =>
-                context.pushNamed('monthly-wrapped', extra: (y, m)),
-          ),
-          h,
-          // Deterministic insight cards
-          insightsAsync.when(
-            loading: () => const SizedBox.shrink(),
-            error: (_, __) => const SizedBox.shrink(),
-            data: (cards) => InsightsSection(insights: cards),
-          ),
-          h,
-          // Spend anatomy
-          SpendAnatomyCard(snapshot: snapshot),
-          h,
-          // Payday pulse
-          PaydayPulseCard(snapshot: snapshot),
-        ],
-      ),
-    );
-  }
-}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Period filter chips
@@ -622,116 +305,6 @@ class _Chip extends StatelessWidget {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Highest / lowest month links
-// ─────────────────────────────────────────────────────────────────────────────
-
-class _MonthHighlightRow extends StatelessWidget {
-  const _MonthHighlightRow({
-    required this.highest,
-    required this.lowest,
-    required this.onTap,
-  });
-
-  final MonthlyTotalPoint? highest;
-  final MonthlyTotalPoint? lowest;
-  final void Function(int year, int month) onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        if (highest != null)
-          Expanded(
-            child: _HighlightTile(
-              icon: Icons.arrow_upward_rounded,
-              label: 'Highest: ${highest!.monthLabel}',
-              amount: highest!.totalKes,
-              onTap: () => onTap(highest!.year, highest!.month),
-            ),
-          ),
-        if (highest != null && lowest != null) const SizedBox(width: 10),
-        if (lowest != null)
-          Expanded(
-            child: _HighlightTile(
-              icon: Icons.arrow_downward_rounded,
-              label: 'Lowest: ${lowest!.monthLabel}',
-              amount: lowest!.totalKes,
-              onTap: () => onTap(lowest!.year, lowest!.month),
-            ),
-          ),
-      ],
-    );
-  }
-}
-
-class _HighlightTile extends StatelessWidget {
-  const _HighlightTile({
-    required this.icon,
-    required this.label,
-    required this.amount,
-    required this.onTap,
-  });
-  final IconData icon;
-  final String label;
-  final double amount;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.md,
-          vertical: AppSpacing.sm + 2,
-        ),
-        decoration: BoxDecoration(
-          color: Theme.of(context)
-              .colorScheme
-              .surfaceContainerHighest
-              .withOpacity(0.4),
-          borderRadius: BorderRadius.circular(10),
-        ),
-        child: Row(
-          children: [
-            Icon(icon, size: 14,
-                color: Theme.of(context)
-                    .colorScheme
-                    .onSurface
-                    .withOpacity(0.5)),
-            const SizedBox(width: 6),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(label,
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Theme.of(context)
-                              .colorScheme
-                              .onSurface
-                              .withOpacity(0.6))),
-                  Text(
-                    'KES ${amount.toStringAsFixed(0)}',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          fontWeight: FontWeight.w700,
-                        ),
-                  ),
-                ],
-              ),
-            ),
-            Icon(Icons.arrow_forward_ios_rounded,
-                size: 10,
-                color: Theme.of(context)
-                    .colorScheme
-                    .onSurface
-                    .withOpacity(0.3)),
-          ],
-        ),
-      ),
-    );
-  }
-}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Loading / error states
@@ -812,62 +385,3 @@ class _ErrorView extends StatelessWidget {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// History stat cards (Avg Monthly / Total Tracked)
-// ─────────────────────────────────────────────────────────────────────────────
-
-class _HistoryStatCards extends StatelessWidget {
-  const _HistoryStatCards({required this.history});
-  final List<MonthlyTotalPoint> history;
-
-  @override
-  Widget build(BuildContext context) {
-    final nonZero = history.where((p) => p.totalKes > 0).toList();
-    if (nonZero.isEmpty) return const SizedBox.shrink();
-
-    final avgMonthly = nonZero
-        .map((p) => p.totalKes)
-        .reduce((a, b) => a + b) /
-        nonZero.length;
-    final totalTracked = nonZero.fold(0.0, (sum, p) => sum + p.totalKes);
-
-    return Row(
-      children: [
-        Expanded(child: _StatCard(label: 'Avg Monthly', value: CurrencyFormatter.money(avgMonthly))),
-        const SizedBox(width: 10),
-        Expanded(child: _StatCard(label: 'Total Tracked', value: CurrencyFormatter.money(totalTracked))),
-      ],
-    );
-  }
-}
-
-class _StatCard extends StatelessWidget {
-  const _StatCard({required this.label, required this.value});
-  final String label;
-  final String value;
-
-  @override
-  Widget build(BuildContext context) {
-    return AppCard(
-      padding: const EdgeInsets.all(AppSpacing.md),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            label,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.55),
-                ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            value,
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w700,
-                ),
-          ),
-        ],
-      ),
-    );
-  }
-}

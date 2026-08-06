@@ -168,7 +168,38 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
                           await editExpenseEntry(context, ref, expense);
                         },
                         onMerchantTap: (expense) async {
-                          await editExpenseEntry(context, ref, expense);
+                          await showExpenseDetailSheet(
+                            context,
+                            expense: expense,
+                            onDelete: () async {
+                              await ref
+                                  .read(expenseWriteControllerProvider.notifier)
+                                  .deleteExpense(expense.id);
+                              if (!context.mounted) return;
+                              if (ref
+                                  .read(expenseWriteControllerProvider)
+                                  .hasError) return;
+                              ref
+                                  .read(toastProvider.notifier)
+                                  .showWithUndo(
+                                    'Transaction deleted',
+                                    onUndo: () async {
+                                      // Re-add the original transaction
+                                      await ref
+                                          .read(expenseWriteControllerProvider.notifier)
+                                          .addExpense(
+                                            title: expense.title,
+                                            category: expense.category,
+                                            amountKes: expense.amountKes,
+                                            occurredAt: expense.occurredAt,
+                                          );
+                                    },
+                                  );
+                            },
+                            onEdit: () async {
+                              await editExpenseEntry(context, ref, expense);
+                            },
+                          );
                         },
                         onDeleteExpense: (expense) async {
                           await ref
