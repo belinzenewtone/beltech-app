@@ -71,7 +71,7 @@ class _MonthlyWrappedScreenState extends ConsumerState<MonthlyWrappedScreen> {
 
   Future<void> _shareCard(BuildContext context, WidgetRef ref) async {
     // Resolve data synchronously — bail if not ready.
-    final data = ref.read(monthlyWrappedProvider((_year, _month))).valueOrNull;
+    final data = ref.read(monthlyWrappedProvider((_year, _month))).asData?.value;
     if (data == null || !data.hasData) return;
 
     // Render _WrappedContent off-screen at its FULL intrinsic height so

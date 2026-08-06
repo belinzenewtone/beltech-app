@@ -23,10 +23,10 @@ class FinanceHubScreen extends ConsumerWidget {
     final incomeAsync = ref.watch(incomeOverviewProvider);
     final budgetAsync = ref.watch(budgetTargetProgressProvider);
 
-    final todayKes = snapshotAsync.valueOrNull?.todayKes ?? 0;
-    final weekKes = snapshotAsync.valueOrNull?.weekKes ?? 0;
-    final monthKes = snapshotAsync.valueOrNull?.monthKes ?? 0;
-    final incomeKes = incomeAsync.valueOrNull?.currentMonthIncomeKes ?? 0;
+    final todayKes = snapshotAsync.asData?.value.todayKes ?? 0;
+    final weekKes = snapshotAsync.asData?.value.weekKes ?? 0;
+    final monthKes = snapshotAsync.asData?.value.monthKes ?? 0;
+    final incomeKes = incomeAsync.asData?.value.currentMonthIncomeKes ?? 0;
 
     return SecondaryPageShell(
       title: 'Finance Hub',
