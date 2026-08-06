@@ -461,7 +461,7 @@ class _TabPillSelector extends StatelessWidget {
               color: Colors.transparent,
               child: InkWell(
                 onTap: () => onTap(index),
-                borderRadius: BorderRadius.circular(AppRadius.md),
+                borderRadius: BorderRadius.circular(AppRadius.lg),
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 180),
                   curve: Curves.easeInOut,
@@ -472,7 +472,7 @@ class _TabPillSelector extends StatelessWidget {
                         : brightness == Brightness.dark
                             ? AppColors.surfaceElevated
                             : AppColors.surfaceFor(brightness),
-                    borderRadius: BorderRadius.circular(AppRadius.md),
+                    borderRadius: BorderRadius.circular(AppRadius.lg),
                     border: Border.all(
                       color: selected
                           ? AppColors.accent
@@ -529,7 +529,7 @@ class _FormCard extends StatelessWidget {
     return AppCard(
       tone: AppCardTone.muted,
       padding: const EdgeInsets.all(AppSpacing.md),
-      borderRadius: AppSpacing.md,
+      borderRadius: AppRadius.lg,
       child: child,
     );
   }
@@ -555,7 +555,7 @@ class _PickerRow extends StatelessWidget {
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(AppSpacing.md),
+        borderRadius: BorderRadius.circular(AppRadius.lg),
         child: Padding(
           padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
           child: Row(
@@ -611,7 +611,7 @@ class _NavRow extends StatelessWidget {
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(AppSpacing.md),
+        borderRadius: BorderRadius.circular(AppRadius.lg),
         child: Padding(
           padding: const EdgeInsets.symmetric(vertical: 2),
           child: Row(
@@ -845,7 +845,7 @@ class _GuestInputState extends State<_GuestInput> {
                 height: 44,
                 decoration: BoxDecoration(
                   color: AppColors.accent,
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(16),
                 ),
                 alignment: Alignment.center,
                 child: const Icon(

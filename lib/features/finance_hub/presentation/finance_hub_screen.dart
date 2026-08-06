@@ -8,8 +8,6 @@ import 'package:beltech/core/widgets/app_card.dart';
 import 'package:beltech/core/widgets/secondary_page_shell.dart';
 import 'package:beltech/features/budget/domain/entities/budget_target_progress.dart';
 import 'package:beltech/features/budget/presentation/providers/budget_providers.dart';
-import 'package:beltech/features/expenses/presentation/providers/expenses_providers.dart';
-import 'package:beltech/features/income/presentation/providers/income_providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -19,14 +17,7 @@ class FinanceHubScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final snapshotAsync = ref.watch(expensesSnapshotProvider);
-    final incomeAsync = ref.watch(incomeOverviewProvider);
     final budgetAsync = ref.watch(budgetTargetProgressProvider);
-
-    final todayKes = snapshotAsync.asData?.value.todayKes ?? 0;
-    final weekKes = snapshotAsync.asData?.value.weekKes ?? 0;
-    final monthKes = snapshotAsync.asData?.value.monthKes ?? 0;
-    final incomeKes = incomeAsync.asData?.value.currentMonthIncomeKes ?? 0;
 
     return SecondaryPageShell(
       title: 'Finance Hub',
@@ -34,15 +25,6 @@ class FinanceHubScreen extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ── Spending hero card ────────────────────────────────────────
-          _SpendingHeroCard(
-            monthKes: monthKes,
-            todayKes: todayKes,
-            weekKes: weekKes,
-            incomeKes: incomeKes,
-          ),
-          const SizedBox(height: AppSpacing.lg),
-
           // ── Budget snapshot (only when user has set budgets) ──────────
           _BudgetSection(budgetAsync: budgetAsync),
 
@@ -98,95 +80,6 @@ class FinanceHubScreen extends ConsumerWidget {
           const SizedBox(height: AppSpacing.sectionGap),
         ],
       ),
-    );
-  }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Hero spending card — mirrors Kotlin FinanceSpendingHeroCard
-// ─────────────────────────────────────────────────────────────────────────────
-
-class _SpendingHeroCard extends StatelessWidget {
-  const _SpendingHeroCard({
-    required this.monthKes,
-    required this.todayKes,
-    required this.weekKes,
-    required this.incomeKes,
-  });
-
-  final double monthKes;
-  final double todayKes;
-  final double weekKes;
-  final double incomeKes;
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    return AppCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Spent this month',
-            style: AppTypography.bodySm(context)
-                .copyWith(color: scheme.onSurfaceVariant),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            CurrencyFormatter.money(monthKes),
-            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                  fontWeight: FontWeight.w800,
-                  color: scheme.primary,
-                ),
-          ),
-          const SizedBox(height: AppSpacing.md),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              _Metric(label: 'Today', value: todayKes),
-              _Metric(label: 'This week', value: weekKes),
-              _Metric(label: 'Income', value: incomeKes, isPrimary: true),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _Metric extends StatelessWidget {
-  const _Metric({
-    required this.label,
-    required this.value,
-    this.isPrimary = false,
-  });
-
-  final String label;
-  final double value;
-  final bool isPrimary;
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: AppTypography.bodySm(context).copyWith(
-                color: scheme.onSurfaceVariant,
-                fontSize: 11,
-              ),
-        ),
-        const SizedBox(height: 2),
-        Text(
-          CurrencyFormatter.money(value),
-          style: AppTypography.bodyMd(context).copyWith(
-                fontWeight: FontWeight.w600,
-                color: isPrimary ? scheme.primary : scheme.onSurface,
-              ),
-        ),
-      ],
     );
   }
 }

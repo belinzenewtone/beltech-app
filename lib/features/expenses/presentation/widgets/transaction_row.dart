@@ -42,10 +42,9 @@ class ExpenseTransactionRow extends StatelessWidget {
     final amountNumber = amount.replaceFirst('KES ', '');
     final scheme = Theme.of(context).colorScheme;
 
-    // Subtitle: "Category · MMM d" — short date keeps the line from truncating
-    // when category names are long (e.g. "Bills & Utilities · Aug 5").
-    // Full date + time is shown in the detail popup when the row is tapped.
-    final dateLabel = DateFormat('MMM d').format(occurredAt);
+    // Subtitle: "Category · MMM d, h:mm a" — includes time.
+    // TextOverflow.ellipsis handles truncation when category names are very long.
+    final dateLabel = DateFormat('MMM d, h:mm a').format(occurredAt);
     final subtitle = '$category · $dateLabel';
 
     // Secondary info line: balance and/or fee when present
