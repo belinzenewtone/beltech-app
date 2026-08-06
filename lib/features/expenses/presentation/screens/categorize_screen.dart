@@ -222,7 +222,7 @@ class _CategorizeRow extends StatelessWidget {
                 height: 36,
                 decoration: BoxDecoration(
                   color: visual.background,
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.circular(16),
                 ),
                 child: Icon(visual.icon, color: visual.foreground, size: 17),
               ),

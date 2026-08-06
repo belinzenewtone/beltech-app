@@ -26,7 +26,7 @@ class AnalyticsFeesCard extends StatelessWidget {
             padding: const EdgeInsets.all(9),
             decoration: BoxDecoration(
               color: AppColors.warning.withOpacity(0.12),
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: BorderRadius.circular(16),
             ),
             child: const Icon(Icons.receipt_long_rounded,
                 size: 20, color: AppColors.warning),

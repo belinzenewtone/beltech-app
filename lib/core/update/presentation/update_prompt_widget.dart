@@ -45,7 +45,7 @@ class UpdatePromptWidget extends StatelessWidget {
                 height: 40,
                 decoration: BoxDecoration(
                   color: AppColors.accent.withValues(alpha: 0.14),
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.circular(16),
                 ),
                 child: const Icon(
                   Icons.system_update_rounded,
@@ -138,7 +138,7 @@ class _ChangelogSection extends StatelessWidget {
       constraints: const BoxConstraints(maxHeight: 200),
       decoration: BoxDecoration(
         color: AppColors.surfaceSubtle,
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(16),
       ),
       padding: const EdgeInsets.all(12),
       child: SingleChildScrollView(

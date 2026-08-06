@@ -38,7 +38,7 @@ class ImportProgressBanner extends ConsumerWidget {
           Text(label, style: AppTypography.bodySm(context)),
           const SizedBox(height: 8),
           ClipRRect(
-            borderRadius: BorderRadius.circular(6),
+            borderRadius: BorderRadius.circular(8),
             child: LinearProgressIndicator(
               minHeight: 6,
               value: progress.total > 0 ? progress.fraction : null,

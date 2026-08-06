@@ -20,7 +20,7 @@ class AppSpacing {
 
   // ── Layout ───────────────────────────────────────────────────────────────────
   static const double screenHorizontal =
-      lg; // 16 — Kotlin-parity (was 8, too tight)
+      md; // 12 — matches reference app spacing.screenHorizontal exactly
   static const double screenTop = 12; // 12 (was 16) — tighter top padding
   static const double shellHorizontal = lg; // 16 (was 8)
   static const double contentBottomSafe =

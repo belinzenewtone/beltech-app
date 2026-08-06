@@ -96,7 +96,7 @@ class ExpenseTransactionRow extends StatelessWidget {
                 width: 40,
                 height: 40,
                 decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.circular(16),
                   color: visual.background,
                 ),
                 child: Icon(visual.icon, color: visual.foreground, size: 20),
@@ -224,7 +224,7 @@ class _ExpenseSwipeBackground extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: color,
-        borderRadius: BorderRadius.circular(6),
+        borderRadius: BorderRadius.circular(8),
       ),
       padding: const EdgeInsets.symmetric(horizontal: 20),
       alignment: alignment,

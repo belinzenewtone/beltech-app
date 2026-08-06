@@ -49,7 +49,7 @@ class _HomeAiInsightCardState extends State<HomeAiInsightCard> {
             height: 36,
             decoration: BoxDecoration(
               color: AppColors.surfaceMutedFor(br),
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: BorderRadius.circular(16),
             ),
             child: const Icon(
               Icons.auto_awesome_rounded,
@@ -129,7 +129,7 @@ class HomeWeeklyMoneyBrief extends StatelessWidget {
                 height: 36,
                 decoration: BoxDecoration(
                   color: AppColors.surfaceMutedFor(brightness),
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.circular(16),
                 ),
                 child: const Icon(
                   Icons.insights_rounded,
@@ -224,7 +224,7 @@ class HomeProductivityCard extends StatelessWidget {
             height: 40,
             decoration: BoxDecoration(
               color: AppColors.surfaceMutedFor(brightness),
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: BorderRadius.circular(16),
             ),
             child: const Icon(
               Icons.check_circle_rounded,

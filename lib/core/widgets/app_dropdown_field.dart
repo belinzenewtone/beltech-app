@@ -31,7 +31,7 @@ class AppDropdownField<T> extends StatelessWidget {
         color: AppColors.textSecondaryFor(brightness),
       ),
       dropdownColor: AppColors.surfaceFor(brightness).withValues(alpha: 0.98),
-      borderRadius: BorderRadius.circular(10),
+      borderRadius: BorderRadius.circular(16),
       menuMaxHeight: 320,
       style: Theme.of(context).textTheme.bodyLarge?.copyWith(
         color: AppColors.textPrimaryFor(brightness),

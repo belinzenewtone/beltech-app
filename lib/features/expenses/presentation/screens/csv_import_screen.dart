@@ -140,7 +140,7 @@ class _CsvImportScreenState extends ConsumerState<CsvImportScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 12),
             decoration: BoxDecoration(
               color: AppColors.surfaceMutedFor(brightness),
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: BorderRadius.circular(16),
               border: Border.all(
                 color: selectedCol != null
                     ? AppColors.accent.withValues(alpha: 0.40)

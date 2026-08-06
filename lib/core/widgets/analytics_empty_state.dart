@@ -124,7 +124,7 @@ class _EmptyStatePainter extends CustomPainter {
   void _drawCalendar(Canvas canvas, double w, double h, Paint paint, Paint fillPaint) {
     final rect = RRect.fromRectAndRadius(
       Rect.fromLTWH(w * 0.2, h * 0.1, w * 0.6, h * 0.8),
-      const Radius.circular(6),
+      const Radius.circular(8),
     );
     canvas.drawRRect(rect, fillPaint);
     canvas.drawRRect(rect, paint);
@@ -135,7 +135,7 @@ class _EmptyStatePainter extends CustomPainter {
     canvas.drawRRect(
       RRect.fromRectAndRadius(
         Rect.fromLTWH(w * 0.2, h * 0.1, w * 0.6, h * 0.22),
-        const Radius.circular(6),
+        const Radius.circular(8),
       ),
       headerPaint,
     );

@@ -51,7 +51,7 @@ class ProfileAvatar extends StatelessWidget {
               child: Material(
                 color: Colors.transparent,
                 child: InkWell(
-                  borderRadius: BorderRadius.circular(13),
+                  borderRadius: BorderRadius.circular(12),
                   onTap: onCameraTap,
                   child: Container(
                     width: 26,

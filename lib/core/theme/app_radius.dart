@@ -5,26 +5,21 @@ import 'package:flutter/material.dart';
 /// Use these constants everywhere instead of raw doubles so that
 /// the visual language stays consistent in one pass.
 ///
-/// Crisp, Kotlin-parity corner scale. The reference app uses near-square
-/// ~6dp corners on cards which is a large part of its tight, well-fitted
-/// feel; large 16–28dp radii read as oversized/bubbly. Only true pills and
-/// avatars use [full].
-///
-/// Mapping:
-///   sm   (6)   — inline badges, tiny chips
-///   md   (8)   — standard cards, small cards
-///   lg   (10)  — buttons, inputs, snackbars
-///   xl   (12)  — larger cards, panels
-///   xxl  (16)  — bottom-sheets, dialogs, hero cards
+/// Matches the React Native reference app token scale exactly:
+///   sm   (8)   — inline badges, tiny chips, micro elements
+///   md   (12)  — small elements, icon containers, tags
+///   lg   (16)  — standard cards, buttons, inputs  ← AppCard default
+///   xl   (20)  — hero/summary cards               ← FrostCard equivalent
+///   xxl  (24)  — bottom-sheets, dialogs, modals
 ///   full       — pills, avatars, floating nav
 class AppRadius {
   AppRadius._();
 
-  static const double sm = 6; // was 8
-  static const double md = 8; // was 12
-  static const double lg = 10; // was 16
-  static const double xl = 12; // was 22
-  static const double xxl = 16; // was 28
+  static const double sm = 8;
+  static const double md = 12;
+  static const double lg = 16;
+  static const double xl = 20;
+  static const double xxl = 24;
   static const double full = 9999;
 
   // ── Convenience BorderRadius objects ────────────────────────────────────────

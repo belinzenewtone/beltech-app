@@ -388,7 +388,7 @@ class _ExpenseDetailSheet extends StatelessWidget {
                     height: 44,
                     decoration: BoxDecoration(
                       color: visual.background,
-                      borderRadius: BorderRadius.circular(10),
+                      borderRadius: BorderRadius.circular(16),
                     ),
                     child: Icon(visual.icon, color: visual.foreground, size: 22),
                   ),

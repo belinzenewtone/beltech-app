@@ -342,7 +342,7 @@ class _DailySpendBarsState extends State<_DailySpendBars>
                                         horizontal: 6, vertical: 2),
                                     decoration: BoxDecoration(
                                       color: AppColors.tooltipBackground,
-                                      borderRadius: BorderRadius.circular(10),
+                                      borderRadius: BorderRadius.circular(16),
                                     ),
                                     child: Text(
                                       'KSh ${v.toStringAsFixed(0)}',

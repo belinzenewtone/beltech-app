@@ -179,7 +179,7 @@ class _MonthlyTrendBarsState extends State<MonthlyTrendBars>
                                     ),
                                     decoration: BoxDecoration(
                                       color: AppColors.tooltipBackground,
-                                      borderRadius: BorderRadius.circular(10),
+                                      borderRadius: BorderRadius.circular(16),
                                     ),
                                     child: Text(
                                       CurrencyFormatter.compact(point.totalKes),

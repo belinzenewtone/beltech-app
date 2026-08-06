@@ -26,7 +26,7 @@ class FulizaBanner extends ConsumerWidget {
         margin: const EdgeInsets.only(bottom: AppSpacing.md),
         decoration: BoxDecoration(
           color: AppColors.warning.withValues(alpha: 0.12),
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: BorderRadius.circular(16),
           border: Border.all(
             color: AppColors.warning.withValues(alpha: 0.35),
             width: 1,

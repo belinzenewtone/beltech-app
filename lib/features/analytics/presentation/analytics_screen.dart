@@ -1,4 +1,4 @@
-﻿import 'package:beltech/core/theme/app_colors.dart';
+import 'package:beltech/core/theme/app_colors.dart';
 import 'package:beltech/core/theme/app_spacing.dart';
 import 'package:beltech/core/widgets/app_card.dart';
 import 'package:beltech/core/widgets/app_skeleton.dart';
@@ -78,7 +78,7 @@ class _InlineInsightBanner extends StatelessWidget {
         ),
         decoration: BoxDecoration(
           color: color.withValues(alpha: 0.08),
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: BorderRadius.circular(16),
           border: Border.all(color: color.withValues(alpha: 0.3)),
         ),
         child: Row(

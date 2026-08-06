@@ -644,7 +644,7 @@ class _VerdictCard extends StatelessWidget {
             padding: const EdgeInsets.all(9),
             decoration: BoxDecoration(
               color: color.withOpacity(0.12),
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: BorderRadius.circular(16),
             ),
             child: Icon(icon, size: 20, color: color),
           ),
