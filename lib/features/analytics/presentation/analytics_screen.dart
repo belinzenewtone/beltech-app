@@ -1,15 +1,16 @@
 import 'package:beltech/core/theme/app_colors.dart';
 import 'package:beltech/core/theme/app_spacing.dart';
-import 'package:beltech/core/widgets/app_card.dart';
 import 'package:beltech/core/widgets/app_skeleton.dart';
 import 'package:beltech/core/widgets/secondary_page_shell.dart';
 import 'package:beltech/core/widgets/section_header.dart';
 import 'package:beltech/features/analytics/domain/entities/analytics_snapshot.dart';
 import 'package:beltech/features/analytics/presentation/providers/analytics_providers.dart';
+import 'package:beltech/features/analytics/presentation/widgets/analytics_bar_chart.dart';
 import 'package:beltech/features/analytics/presentation/widgets/analytics_fees_card.dart';
 import 'package:beltech/features/analytics/presentation/widgets/analytics_summary_cards.dart';
 import 'package:beltech/features/analytics/presentation/widgets/analytics_top_merchants.dart';
 import 'package:beltech/features/analytics/presentation/widgets/category_spend_cards.dart';
+import 'package:beltech/features/analytics/presentation/widgets/monthly_trend_bars.dart';
 import 'package:beltech/features/analytics/presentation/widgets/spending_comparison_card.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -141,12 +142,7 @@ class _AnalyticsTabState extends ConsumerState<_AnalyticsTab> {
     const h = SizedBox(height: AppSpacing.md);
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(
-        AppSpacing.screenHorizontal,
-        AppSpacing.md,
-        AppSpacing.screenHorizontal,
-        AppSpacing.xxl,
-      ),
+      padding: const EdgeInsets.fromLTRB(0, AppSpacing.md, 0, AppSpacing.xxl),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -202,6 +198,28 @@ class _AnalyticsTabState extends ConsumerState<_AnalyticsTab> {
               snapshot: snapshot,
             ),
           ),
+          h,
+          // Spending bar chart for current period
+          if ((period == AnalyticsPeriod.week
+                  ? snapshot.weeklySpending
+                  : snapshot.monthlySpending)
+              .isNotEmpty)
+            AnalyticsBarChart(
+              title: period == AnalyticsPeriod.week
+                  ? 'Daily spending this week'
+                  : 'Daily spending this month',
+              points: period == AnalyticsPeriod.week
+                  ? snapshot.weeklySpending
+                  : snapshot.monthlySpending,
+            ),
+          h,
+          // 6-month rolling bar chart — tap a month to see its Wrapped
+          if (snapshot.monthlyHistory.length > 1)
+            MonthlyTrendBars(
+              monthlyHistory: snapshot.monthlyHistory,
+              onTapMonth: (year, month) =>
+                  context.pushNamed('monthly-wrapped', extra: (year, month)),
+            ),
           h,
           // Category spend cards (with sparklines)
           CategorySpendCards(categories: snapshot.categoryBreakdown),
@@ -316,12 +334,7 @@ class _SkeletonLoader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListView(
-      padding: const EdgeInsets.fromLTRB(
-        AppSpacing.screenHorizontal,
-        AppSpacing.lg,
-        AppSpacing.screenHorizontal,
-        AppSpacing.xxl,
-      ),
+      padding: const EdgeInsets.fromLTRB(0, AppSpacing.lg, 0, AppSpacing.xxl),
       children: [
         // Period chips
         Row(

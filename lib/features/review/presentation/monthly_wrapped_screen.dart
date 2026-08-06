@@ -144,7 +144,7 @@ class _MonthlyWrappedScreenState extends ConsumerState<MonthlyWrappedScreen> {
         children: [
           // ── Month navigator ──────────────────────────────────────────
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 0, vertical: 8),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -239,7 +239,7 @@ class _WrappedContent extends StatelessWidget {
     final spentMore = (momPct ?? 0) > 0;
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(16, 4, 16, 32),
+      padding: const EdgeInsets.fromLTRB(0, 4, 0, 32),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

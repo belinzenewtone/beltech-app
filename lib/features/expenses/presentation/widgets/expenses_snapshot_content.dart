@@ -74,74 +74,11 @@ class _ExpensesSnapshotContentState extends State<ExpensesSnapshotContent> {
         .where((t) => !t.occurredAt.isBefore(monthStart))
         .fold(0.0, (s, t) => s + t.amountKes);
 
-    // Week-over-week trend delta for the Week card.
-    final weekStart = DateTime(
-      now.year,
-      now.month,
-      now.day,
-    ).subtract(Duration(days: now.weekday - 1));
-    final prevWeekStart = weekStart.subtract(const Duration(days: 7));
-    final prevWeekTotal = widget.snapshot.transactions
-        .where(
-          (t) =>
-              !t.occurredAt.isBefore(prevWeekStart) &&
-              t.occurredAt.isBefore(weekStart),
-        )
-        .fold(0.0, (s, t) => s + t.amountKes);
-
-    String? weekDelta;
-    bool? weekDeltaIsGood;
-    if (prevWeekTotal > 0) {
-      final pct =
-          (widget.snapshot.weekKes - prevWeekTotal) / prevWeekTotal * 100;
-      weekDelta = '${pct >= 0 ? '+' : ''}${pct.round()}%';
-      weekDeltaIsGood = pct <= 0;
-    }
-
     return ListView(
       padding: const EdgeInsets.only(bottom: AppSpacing.contentBottomSafe),
       children: [
         // ── Injected header (title, pills, etc.) ─────────────────────────────
         ...widget.headerItems,
-        // ── Summary ───────────────────────────────────────────────────────────
-        SizedBox(
-          height: 96,
-          child: ListView(
-            scrollDirection: Axis.horizontal,
-            clipBehavior: Clip.none,
-            children: [
-              SizedBox(
-                width: 160,
-                child: _SummaryCard(
-                  title: 'Today',
-                  amount: CurrencyFormatter.money(widget.snapshot.todayKes),
-                  tone: AppCardTone.accent,
-                  accentColor: AppColors.accent,
-                ),
-              ),
-              const SizedBox(width: AppSpacing.sm),
-              SizedBox(
-                width: 160,
-                child: _SummaryCard(
-                  title: 'Week',
-                  amount: CurrencyFormatter.money(widget.snapshot.weekKes),
-                  tone: AppCardTone.standard,
-                  delta: weekDelta,
-                  deltaIsGood: weekDeltaIsGood,
-                ),
-              ),
-              const SizedBox(width: AppSpacing.sm),
-              SizedBox(
-                width: 160,
-                child: _SummaryCard(
-                  title: 'Month',
-                  amount: CurrencyFormatter.money(widget.snapshot.monthKes),
-                  tone: AppCardTone.standard,
-                ),
-              ),
-            ],
-          ),
-        ),
         const SizedBox(height: AppSpacing.md),
         // ── Budget + Forecast ─────────────────────────────────────────────────
         SizedBox(

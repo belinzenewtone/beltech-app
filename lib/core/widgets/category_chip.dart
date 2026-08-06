@@ -50,7 +50,7 @@ class _CategoryChipState extends State<CategoryChip> {
           selected: widget.selected,
           button: true,
           child: InkWell(
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(20),
             onTap: widget.onTap,
             onHighlightChanged: (value) => setState(() => _pressed = value),
             child: AnimatedContainer(
@@ -59,7 +59,7 @@ class _CategoryChipState extends State<CategoryChip> {
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
               decoration: BoxDecoration(
                 color: widget.selected ? selectedBg : unselectedBg,
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(20),
                 border: Border.all(
                   color: widget.selected ? selectedBorder : unselectedBorder,
                   width: 1,
