@@ -217,12 +217,12 @@ class _MonthlyWrappedScreenState extends ConsumerState<MonthlyWrappedScreen> {
                 ),
               ),
             ),
-          ),
         ],
       ),
     );
   }
 }
+
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Main content
