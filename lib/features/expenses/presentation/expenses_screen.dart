@@ -7,9 +7,14 @@ import 'package:beltech/core/widgets/app_skeleton.dart';
 import 'package:beltech/core/widgets/error_message.dart';
 import 'package:beltech/core/widgets/page_header.dart';
 import 'package:beltech/core/widgets/page_shell.dart';
+import 'package:beltech/core/theme/app_colors.dart';
+import 'package:beltech/core/theme/app_typography.dart';
+import 'package:beltech/core/utils/currency_formatter.dart';
+import 'package:beltech/core/widgets/app_card.dart';
 import 'package:beltech/features/budget/presentation/providers/budget_providers.dart';
 import 'package:beltech/features/expenses/domain/entities/expense_import_review.dart';
 import 'package:beltech/features/expenses/presentation/providers/expenses_providers.dart';
+import 'package:beltech/features/income/presentation/providers/income_providers.dart';
 import 'package:beltech/features/expenses/presentation/expenses_screen_helpers.dart';
 import 'package:beltech/features/expenses/presentation/widgets/expense_dialogs.dart';
 import 'package:beltech/features/expenses/presentation/widgets/expenses_snapshot_content.dart';
@@ -25,6 +30,95 @@ class ExpensesScreen extends ConsumerStatefulWidget {
 
   @override
   ConsumerState<ExpensesScreen> createState() => _ExpensesScreenState();
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Spending hero card — "Spent this month" headline with sub-metrics
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _SpendingHeroCard extends StatelessWidget {
+  const _SpendingHeroCard({
+    required this.monthKes,
+    required this.todayKes,
+    required this.weekKes,
+    required this.incomeKes,
+  });
+
+  final double monthKes;
+  final double todayKes;
+  final double weekKes;
+  final double incomeKes;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final bodySm = AppTypography.bodySm(context);
+    return AppCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Spent this month',
+            style: bodySm.copyWith(color: scheme.onSurfaceVariant),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            CurrencyFormatter.money(monthKes),
+            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                  fontWeight: FontWeight.w800,
+                  color: scheme.primary,
+                ),
+          ),
+          const SizedBox(height: AppSpacing.md),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              _Metric(label: 'Today', value: todayKes),
+              _Metric(label: 'This week', value: weekKes),
+              _Metric(label: 'Income', value: incomeKes, isPrimary: true),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _Metric extends StatelessWidget {
+  const _Metric({
+    required this.label,
+    required this.value,
+    this.isPrimary = false,
+  });
+
+  final String label;
+  final double value;
+  final bool isPrimary;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: AppTypography.bodySm(context).copyWith(
+            color: scheme.onSurfaceVariant,
+            fontSize: 11,
+          ),
+        ),
+        const SizedBox(height: 2),
+        Text(
+          CurrencyFormatter.money(value),
+          style: AppTypography.bodyMd(context).copyWith(
+            fontWeight: FontWeight.w700,
+            color: isPrimary ? AppColors.teal : scheme.onSurface,
+          ),
+        ),
+      ],
+    );
+  }
 }
 
 class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
@@ -46,6 +140,13 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
       expenseWriteControllerProvider.select((s) => s.isLoading),
     );
     final budgetSnapshotState = ref.watch(budgetSnapshotProvider);
+    final incomeOverview = ref.watch(incomeOverviewProvider);
+
+    // Spending hero metrics — snapshot may still be loading; fall back to 0.
+    final monthKes = snapshotState.value?.monthKes ?? 0.0;
+    final todayKes = snapshotState.value?.todayKes ?? 0.0;
+    final weekKes = snapshotState.value?.weekKes ?? 0.0;
+    final incomeKes = incomeOverview.asData?.value.currentMonthIncomeKes ?? 0.0;
 
     final contentSwitchDuration = AppMotion.duration(
       context,
@@ -121,6 +222,13 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
       ),
       const SizedBox(height: AppSpacing.md),
       const FulizaBanner(),
+      const SizedBox(height: AppSpacing.md),
+      _SpendingHeroCard(
+        monthKes: monthKes,
+        todayKes: todayKes,
+        weekKes: weekKes,
+        incomeKes: incomeKes,
+      ),
     ];
 
     ref.listen<AsyncValue<void>>(expenseWriteControllerProvider, (

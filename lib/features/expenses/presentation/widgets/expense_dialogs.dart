@@ -352,7 +352,6 @@ class _ExpenseDetailSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final brightness = Theme.of(context).brightness;
     final visual = categoryVisual(expense.category);
     final dateStr = DateFormat('EEE, d MMM yyyy · h:mm a').format(expense.occurredAt);
     final categoryDisplay = _cleanLabel(expense.category);
@@ -404,15 +403,6 @@ class _ExpenseDetailSheet extends StatelessWidget {
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                         ),
-                        const SizedBox(height: 2),
-                        Text(
-                          dateStr,
-                          style: AppTypography.bodySm(context).copyWith(
-                            color: AppColors.textSecondaryFor(brightness),
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
                       ],
                     ),
                   ),
@@ -437,6 +427,12 @@ class _ExpenseDetailSheet extends StatelessWidget {
               ),
               child: Column(
                 children: [
+                  _DetailRow(
+                    icon: Icons.calendar_today_outlined,
+                    label: 'Date',
+                    value: dateStr,
+                  ),
+                  _DetailDivider(),
                   _DetailRow(
                     icon: Icons.label_outline_rounded,
                     label: 'Category',
