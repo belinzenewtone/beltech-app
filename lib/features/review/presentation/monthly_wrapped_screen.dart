@@ -32,8 +32,6 @@ class _MonthlyWrappedScreenState extends ConsumerState<MonthlyWrappedScreen> {
   late int _year;
   late int _month;
 
-  /// Key pointing directly at the RepaintBoundary so toImage() can find it.
-  final GlobalKey _cardKey = GlobalKey();
 
   @override
   void initState() {
@@ -72,22 +70,60 @@ class _MonthlyWrappedScreenState extends ConsumerState<MonthlyWrappedScreen> {
   }
 
   Future<void> _shareCard(BuildContext context, WidgetRef ref) async {
+    // Resolve data synchronously — bail if not ready.
+    final data = ref.read(monthlyWrappedProvider((_year, _month))).valueOrNull;
+    if (data == null || !data.hasData) return;
+
+    // Render _WrappedContent off-screen at its FULL intrinsic height so
+    // toImage() captures everything — not just the visible scrollable area.
+    final screenWidth = MediaQuery.of(context).size.width;
+    final overlayKey = GlobalKey();
+
+    final entry = OverlayEntry(
+      builder: (_) => Positioned(
+        // Place far off-screen so the user never sees it.
+        top: -99999,
+        left: 0,
+        width: screenWidth,
+        child: Material(
+          color: Theme.of(context).colorScheme.surface,
+          child: RepaintBoundary(
+            key: overlayKey,
+            child: _WrappedContent(data: data),
+          ),
+        ),
+      ),
+    );
+
     try {
-      // Use the GlobalKey to locate the RenderRepaintBoundary directly —
-      // context.findRenderObject() finds the outermost render object of the
-      // screen, not the inner boundary, so share would always silently fail.
+      Overlay.of(context).insert(entry);
+      // Wait two frames: first to layout, second to paint.
+      await WidgetsBinding.instance.endOfFrame;
+      await WidgetsBinding.instance.endOfFrame;
+
       final boundary =
-          _cardKey.currentContext?.findRenderObject() as RenderRepaintBoundary?;
+          overlayKey.currentContext?.findRenderObject() as RenderRepaintBoundary?;
       if (boundary == null) return;
+
       final image = await boundary.toImage(pixelRatio: 3.0);
       final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
       if (byteData == null) return;
+
       final dir = await getTemporaryDirectory();
-      final file = await File('${dir.path}/monthly_wrapped_$_year-$_month.png').create();
+      final file = await File(
+              '${dir.path}/monthly_wrapped_$_year-$_month.png')
+          .create();
       await file.writeAsBytes(byteData.buffer.asUint8List());
-      await SharePlus.instance.share(ShareParams(files: [XFile(file.path)], text: 'My $_month/$_year Wrapped — Beltech'));
+      await SharePlus.instance.share(
+        ShareParams(
+          files: [XFile(file.path)],
+          text: 'My $_month/$_year Wrapped — Beltech',
+        ),
+      );
     } catch (_) {
-      // Share silently fails if user cancels
+      // Share silently fails if user cancels or share sheet is dismissed.
+    } finally {
+      entry.remove();
     }
   }
 
@@ -172,9 +208,7 @@ class _MonthlyWrappedScreenState extends ConsumerState<MonthlyWrappedScreen> {
                   _prev();
                 }
               },
-              child: RepaintBoundary(
-                key: _cardKey,
-                child: dataAsync.when(
+              child: dataAsync.when(
                   loading: () => const Center(child: CircularProgressIndicator()),
                   error: (e, _) => Center(child: Text('Error: $e')),
                   data: (data) => data.hasData

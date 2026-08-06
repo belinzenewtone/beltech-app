@@ -16,6 +16,7 @@ class ToolShortcut {
     required this.color,
     this.routeName,
     this.shellTab,
+    this.showBadge = false,
   });
 
   final String label;
@@ -23,6 +24,9 @@ class ToolShortcut {
   final Color color;
   final String? routeName;
   final ShellTab? shellTab;
+  /// When true, a small red dot is shown on the top-right of the icon to
+  /// indicate pending actions (e.g. import-health issues after banner dismissal).
+  final bool showBadge;
 }
 
 const defaultToolShortcuts = [
@@ -196,14 +200,36 @@ class _ToolShortcutTile extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.center,
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Container(
-                width: 36,
-                height: 36,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(12),
-                  color: shortcut.color.withValues(alpha: 0.18),
-                ),
-                child: Icon(shortcut.icon, color: shortcut.color, size: 18),
+              Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  Container(
+                    width: 36,
+                    height: 36,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(AppRadius.md),
+                      color: shortcut.color.withValues(alpha: 0.18),
+                    ),
+                    child: Icon(shortcut.icon, color: shortcut.color, size: 18),
+                  ),
+                  if (shortcut.showBadge)
+                    Positioned(
+                      top: -2,
+                      right: -2,
+                      child: Container(
+                        width: 9,
+                        height: 9,
+                        decoration: BoxDecoration(
+                          color: AppColors.danger,
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: AppColors.surfaceFor(brightness),
+                            width: 1.5,
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
               ),
               const SizedBox(height: 8),
               // Flexible + FittedBox guarantee the label never overflows the

@@ -1,4 +1,5 @@
 import 'package:beltech/core/theme/app_colors.dart';
+import 'package:beltech/core/theme/app_radius.dart';
 import 'package:beltech/core/theme/app_spacing.dart';
 import 'package:beltech/core/theme/app_typography.dart';
 import 'package:beltech/core/widgets/app_card.dart';
@@ -102,12 +103,12 @@ class _EntryCard extends StatelessWidget {
                 if (entry.isLatest)
                   Container(
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 7,
+                      horizontal: AppSpacing.sm,
                       vertical: 2,
                     ),
                     decoration: BoxDecoration(
                       color: AppColors.success.withValues(alpha: 0.15),
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(AppRadius.md),
                     ),
                     child: Text(
                       'Latest',

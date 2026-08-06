@@ -73,7 +73,7 @@ class CategoryDrillDownScreen extends StatelessWidget {
           if (share != null) ...[
             const SizedBox(height: AppSpacing.md),
             AppCard(
-              padding: const EdgeInsets.all(AppSpacing.lg - 2),
+              padding: const EdgeInsets.all(AppSpacing.md),
               child: Row(
                 children: [
                   Expanded(
@@ -108,7 +108,7 @@ class CategoryDrillDownScreen extends StatelessWidget {
           // ── 8-week sparkline trend ─────────────────────────────────────────
           if (share != null && share!.weeklySparkline.any((v) => v > 0)) ...[
             AppCard(
-              padding: const EdgeInsets.all(AppSpacing.lg - 2),
+              padding: const EdgeInsets.all(AppSpacing.md),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [

@@ -6,10 +6,10 @@ class AppSpacing {
   AppSpacing._();
 
   // ── Tokens ───────────────────────────────────────────────────────────────────
-  // Kotlin-parity compact scale: 4 / 8 / 12 / 16 / 24 / 32 / 48.
-  // The mid-range (md/lg/xl) was previously inflated (16/24/32) which made
-  // gaps and whitespace feel oversized. These are the primary spacing units
-  // (md is used ~145×, sm ~147×), so tightening them compacts the whole app.
+  // Kotlin-parity scale: 4 / 8 / 12 / 16 / 24 / 32 / 48.
+  // screenHorizontal = lg (16) matches Kotlin's 20dp hero margin closely and
+  // prevents cards from spanning edge-to-edge, which was the main cause of the
+  // layout feeling large/exaggerated.
   static const double xs = 4;
   static const double sm = 8;
   static const double md = 12; // was 16 — Kotlin md
@@ -20,9 +20,9 @@ class AppSpacing {
 
   // ── Layout ───────────────────────────────────────────────────────────────────
   static const double screenHorizontal =
-      sm; // 8 (was 24) — Kotlin-parity tight margins
+      lg; // 16 — Kotlin-parity (was 8, too tight)
   static const double screenTop = 12; // 12 (was 16) — tighter top padding
-  static const double shellHorizontal = sm; // 8 (was 16)
+  static const double shellHorizontal = lg; // 16 (was 8)
   static const double contentBottomSafe =
       20; // Consistent bottom padding across all screens
   static const double sectionBottom = 12; // reduced from 16

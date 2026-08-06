@@ -105,7 +105,7 @@ class _SpendingComparisonCardState
                 ),
               ],
             ),
-            const SizedBox(height: 14),
+            const SizedBox(height: AppSpacing.md),
             if (loadingYoY)
               const Center(
                 child: Padding(
@@ -203,7 +203,7 @@ class _DeltaPill extends StatelessWidget {
         ? 'Spent KSh ${CurrencyFormatter.compact(delta)} more'
         : 'Saved KSh ${CurrencyFormatter.compact(delta)}';
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: 3),
       decoration: BoxDecoration(
         color: color.withOpacity(0.12),
         borderRadius: BorderRadius.circular(20),

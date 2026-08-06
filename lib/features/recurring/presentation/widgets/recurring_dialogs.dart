@@ -1,10 +1,13 @@
 import 'package:beltech/core/theme/app_colors.dart';
 import 'package:beltech/core/theme/app_typography.dart';
+import 'package:beltech/core/utils/category_visual.dart';
 import 'package:beltech/core/widgets/app_button.dart';
 import 'package:beltech/core/widgets/app_card.dart';
 import 'package:beltech/core/widgets/app_form_sheet.dart';
+import 'package:beltech/features/expenses/presentation/providers/expense_categories_provider.dart';
 import 'package:beltech/features/recurring/domain/entities/recurring_template.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 class RecurringTemplateInput {
@@ -152,9 +155,34 @@ Future<RecurringTemplateInput?> showRecurringTemplateDialog(
                 ),
                 if (needsCategory) ...[
                   const SizedBox(height: 14),
-                  TextFormField(
-                    controller: categoryController,
-                    decoration: const InputDecoration(hintText: 'Category'),
+                  Consumer(
+                    builder: (context, ref, _) {
+                      final cats = ref.watch(expenseCategoriesProvider).value ??
+                          expenseCategoryDefaults;
+                      return Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: cats.map((name) {
+                          final selected =
+                              categoryController.text == name;
+                          final visual = categoryVisual(name);
+                          return ChoiceChip(
+                            avatar: CircleAvatar(
+                              backgroundColor: selected
+                                  ? visual.foreground.withOpacity(0.2)
+                                  : visual.background,
+                              child: Icon(visual.icon,
+                                  color: visual.foreground, size: 13),
+                            ),
+                            label: Text(name),
+                            selected: selected,
+                            onSelected: (_) => setState(() {
+                              categoryController.text = name;
+                            }),
+                          );
+                        }).toList(),
+                      );
+                    },
                   ),
                 ],
                 if (needsAmount) ...[

@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import 'package:beltech/core/logger/app_logger.dart';
 import 'package:beltech/core/theme/app_colors.dart';
 import 'package:beltech/core/widgets/app_toast.dart';
+import 'package:beltech/core/theme/app_radius.dart';
 import 'package:beltech/core/theme/app_spacing.dart';
 import 'package:beltech/core/theme/app_typography.dart';
 import 'package:beltech/core/widgets/app_background.dart';
@@ -460,18 +461,18 @@ class _TabPillSelector extends StatelessWidget {
               color: Colors.transparent,
               child: InkWell(
                 onTap: () => onTap(index),
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(AppRadius.md),
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 180),
                   curve: Curves.easeInOut,
-                  padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
+                  padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm - 2),
                   decoration: BoxDecoration(
                     color: selected
                         ? AppColors.accent
                         : brightness == Brightness.dark
                             ? AppColors.surfaceElevated
                             : AppColors.surfaceFor(brightness),
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: BorderRadius.circular(AppRadius.md),
                     border: Border.all(
                       color: selected
                           ? AppColors.accent

@@ -86,7 +86,7 @@ class AppFormSheet extends StatelessWidget {
                         ),
                       ),
                       Padding(
-                        padding: const EdgeInsets.fromLTRB(16, 18, 14, 12),
+                        padding: const EdgeInsets.fromLTRB(16, 14, 14, 12),
                         child: Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [

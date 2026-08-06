@@ -41,16 +41,16 @@ class UpdatePromptWidget extends StatelessWidget {
           Row(
             children: [
               Container(
-                width: 42,
-                height: 42,
+                width: 40,
+                height: 40,
                 decoration: BoxDecoration(
                   color: AppColors.accent.withValues(alpha: 0.14),
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(10),
                 ),
                 child: const Icon(
                   Icons.system_update_rounded,
                   color: AppColors.accent,
-                  size: 22,
+                  size: 20,
                 ),
               ),
               const SizedBox(width: 12),

@@ -147,7 +147,7 @@ ThemeData buildLightTheme() {
       labelStyle: const TextStyle(color: textSecondary),
       prefixIconColor: textMuted,
       suffixIconColor: textMuted,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(10),
         borderSide: const BorderSide(color: border),
@@ -227,6 +227,8 @@ ThemeData buildLightTheme() {
       side: const BorderSide(color: border),
       labelStyle: const TextStyle(color: textPrimary),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 0),
+      labelPadding: const EdgeInsets.symmetric(horizontal: 6),
     ),
     dialogTheme: DialogThemeData(
       backgroundColor: surface,

@@ -6,6 +6,8 @@ class DriftTransactionRecord {
     required this.amountKes,
     required this.occurredAt,
     this.balanceAfterKes,
+    this.feeKes,
+    this.source = 'manual',
   });
   final int id;
   final String title;
@@ -13,6 +15,8 @@ class DriftTransactionRecord {
   final double amountKes;
   final DateTime occurredAt;
   final double? balanceAfterKes;
+  final double? feeKes;
+  final String source;
 }
 
 class CategoryTotalRecord {

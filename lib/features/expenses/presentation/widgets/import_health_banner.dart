@@ -1,23 +1,25 @@
 import 'package:beltech/core/theme/app_colors.dart';
+import 'package:beltech/core/theme/app_radius.dart';
+import 'package:beltech/core/theme/app_spacing.dart';
 import 'package:beltech/features/expenses/domain/entities/expense_import_review.dart';
 import 'package:flutter/material.dart';
 
-/// A thin persistent strip shown above the Finance screen content, matching
-/// the React Native `ImportHealthBanner` pattern.
+/// Floating overlay banner shown on the Finance screen when import issues exist.
 ///
-/// States
-/// ──────
-/// • Green  — all zeros, healthy                 "All imports up to date"
-/// • Amber  — retry / failed queue pending       "N pending"
-/// • Red    — parse errors present               "N duplicates · N parse failed"
-///
-/// The strip is always rendered when there is something to report.
-/// Tap navigates to the analytics / health panel (via [onTap]).
+/// • Appears on top of the scroll content (no layout shift).
+/// • Shows once per session — dismissed via the [onDismiss] callback.
+/// • Tap navigates to the health screen via [onTap].
 class ImportHealthBanner extends StatelessWidget {
-  const ImportHealthBanner({super.key, required this.metrics, this.onTap});
+  const ImportHealthBanner({
+    super.key,
+    required this.metrics,
+    this.onTap,
+    this.onDismiss,
+  });
 
   final ExpenseImportMetrics metrics;
   final VoidCallback? onTap;
+  final VoidCallback? onDismiss;
 
   @override
   Widget build(BuildContext context) {
@@ -25,9 +27,7 @@ class ImportHealthBanner extends StatelessWidget {
     final parseErrors = metrics.failedQueueCount + metrics.quarantineCount;
     final pending = metrics.retryQueueCount;
 
-    if (duplicates == 0 && parseErrors == 0 && pending == 0) {
-      return const SizedBox.shrink();
-    }
+    if (!metrics.hasIssues) return const SizedBox.shrink();
 
     final Color accent = parseErrors > 0
         ? AppColors.danger
@@ -47,44 +47,96 @@ class ImportHealthBanner extends StatelessWidget {
         ? Icons.access_time_rounded
         : Icons.check_circle_outline_rounded;
 
-    final strip = Container(
-      decoration: BoxDecoration(
-        color: accent.withValues(alpha: 0.12),
-        border: Border(
-          bottom: BorderSide(color: accent.withValues(alpha: 0.25), width: 1),
-        ),
+    final brightness = Theme.of(context).brightness;
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.lg,
+        AppSpacing.sm,
+        AppSpacing.lg,
+        0,
       ),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-      child: Row(
-        children: [
-          Icon(icon, size: 13, color: accent),
-          const SizedBox(width: 6),
-          Expanded(
-            child: Text(
-              label,
-              style: const TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w600,
-                color: AppColors.textPrimary,
-                letterSpacing: 0.1,
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        elevation: 4,
+        shadowColor: Colors.black.withValues(alpha: 0.18),
+        child: GestureDetector(
+          onTap: onTap,
+          child: Container(
+            decoration: BoxDecoration(
+              color: brightness == Brightness.dark
+                  ? AppColors.surfaceElevated.withValues(alpha: 0.96)
+                  : Colors.white.withValues(alpha: 0.97),
+              borderRadius: BorderRadius.circular(AppRadius.lg),
+              border: Border.all(
+                color: accent.withValues(alpha: 0.35),
+                width: 1,
               ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.10),
+                  blurRadius: 12,
+                  offset: const Offset(0, 3),
+                ),
+              ],
+            ),
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.md,
+              vertical: AppSpacing.sm,
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 28,
+                  height: 28,
+                  decoration: BoxDecoration(
+                    color: accent.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(AppRadius.sm),
+                  ),
+                  child: Icon(icon, size: 15, color: accent),
+                ),
+                const SizedBox(width: AppSpacing.sm),
+                Expanded(
+                  child: Text(
+                    label,
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textPrimaryFor(brightness),
+                      letterSpacing: 0.1,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                if (onTap != null) ...[
+                  const SizedBox(width: AppSpacing.xs),
+                  Icon(
+                    Icons.chevron_right_rounded,
+                    size: 16,
+                    color: accent.withValues(alpha: 0.7),
+                  ),
+                ],
+                const SizedBox(width: AppSpacing.xs),
+                // Dismiss button
+                GestureDetector(
+                  onTap: onDismiss,
+                  behavior: HitTestBehavior.opaque,
+                  child: Padding(
+                    padding: const EdgeInsets.all(4),
+                    child: Icon(
+                      Icons.close_rounded,
+                      size: 14,
+                      color: AppColors.textMuted.withValues(alpha: 0.7),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
-          if (onTap != null)
-            Icon(
-              Icons.chevron_right_rounded,
-              size: 14,
-              color: accent.withValues(alpha: 0.6),
-            ),
-        ],
+        ),
       ),
     );
-
-    if (onTap != null) {
-      return GestureDetector(onTap: onTap, child: strip);
-    }
-    return strip;
   }
 }

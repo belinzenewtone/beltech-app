@@ -137,7 +137,7 @@ ThemeData buildDarkTheme() {
       labelStyle: const TextStyle(color: AppColors.textSecondary),
       prefixIconColor: AppColors.textSecondary,
       suffixIconColor: AppColors.textSecondary,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(10),
         borderSide: BorderSide(color: AppColors.border.withValues(alpha: 0.65)),
@@ -221,6 +221,8 @@ ThemeData buildDarkTheme() {
       side: BorderSide(color: AppColors.border.withValues(alpha: 0.6)),
       labelStyle: const TextStyle(color: AppColors.textPrimary),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 0),
+      labelPadding: const EdgeInsets.symmetric(horizontal: 6),
     ),
     dialogTheme: DialogThemeData(
       backgroundColor: AppColors.surface.withValues(alpha: 0.95),

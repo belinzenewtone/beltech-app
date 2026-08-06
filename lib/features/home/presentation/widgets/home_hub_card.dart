@@ -139,7 +139,7 @@ class _HubRow extends StatelessWidget {
                   height: 36,
                   decoration: BoxDecoration(
                     color: iconBgColor ?? AppColors.surfaceMutedFor(br),
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(10),
                   ),
                   alignment: Alignment.center,
                   child: Icon(icon, color: iconColor, size: 20),

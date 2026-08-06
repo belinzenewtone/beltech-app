@@ -16,7 +16,7 @@ enum AppCardTone { standard, accent, muted }
 ///   reserved for a few hero/featured cards per screen — not the 96 list/cards
 ///   rendered across the app. Defaulting to `false` keeps the visual language
 ///   consistent while staying smooth at 60fps.
-/// - Consistent crisp corners (default 8) and 16px internal padding.
+/// - Consistent crisp corners (default 6, matching Kotlin) and 16px internal padding.
 ///
 /// Because this is the single card component used everywhere, every screen
 /// inherits the same surface treatment automatically.
@@ -26,7 +26,7 @@ class AppCard extends StatelessWidget {
     required this.child,
     this.padding = const EdgeInsets.all(16),
     this.margin,
-    this.borderRadius = 8,
+    this.borderRadius = 6,
     this.tone = AppCardTone.standard,
     this.accentColor,
     this.onTap,

@@ -2,7 +2,6 @@
 import 'package:beltech/core/theme/app_typography.dart';
 import 'package:beltech/core/widgets/loading_indicator.dart';
 import 'package:beltech/core/utils/category_visual.dart';
-import 'package:beltech/core/widgets/app_button.dart';
 import 'package:beltech/core/widgets/app_card.dart';
 import 'package:beltech/core/widgets/app_form_sheet.dart';
 import 'package:beltech/features/expenses/presentation/providers/expense_categories_provider.dart';
@@ -27,18 +26,17 @@ class _CategoryManagerSheet extends ConsumerStatefulWidget {
 }
 
 class _CategoryManagerSheetState extends ConsumerState<_CategoryManagerSheet> {
-  final TextEditingController _newController = TextEditingController();
-
-  @override
-  void dispose() {
-    _newController.dispose();
-    super.dispose();
-  }
-
   @override
   Widget build(BuildContext context) {
     final categoriesAsync = ref.watch(expenseCategoriesProvider);
     final categories = categoriesAsync.value ?? const <String>[];
+
+    // Official categories not yet active — user can tap to restore them.
+    final available = expenseCategoryDefaults
+        .where((c) => !categories.any(
+              (a) => a.toLowerCase() == c.toLowerCase(),
+            ))
+        .toList();
 
     return AppFormSheet(
       title: 'Manage categories',
@@ -46,28 +44,32 @@ class _CategoryManagerSheetState extends ConsumerState<_CategoryManagerSheet> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Expanded(
-                child: TextField(
-                  controller: _newController,
-                  textCapitalization: TextCapitalization.words,
-                  decoration: const InputDecoration(
-                    hintText: 'New category',
+          if (available.isNotEmpty) ...[
+            Text('Add category', style: AppTypography.sectionTitle(context)),
+            const SizedBox(height: 10),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: available.map((name) {
+                final visual = categoryVisual(name);
+                return ActionChip(
+                  avatar: CircleAvatar(
+                    backgroundColor: visual.background,
+                    child: Icon(visual.icon,
+                        color: visual.foreground, size: 13),
                   ),
-                  onSubmitted: (_) => _add(),
-                ),
-              ),
-              const SizedBox(width: 12),
-              AppButton(
-                label: 'Add',
-                size: AppButtonSize.sm,
-                onPressed: categoriesAsync.isLoading ? null : _add,
-              ),
-            ],
-          ),
-          const SizedBox(height: 18),
-          Text('Categories', style: AppTypography.sectionTitle(context)),
+                  label: Text(name),
+                  onPressed: categoriesAsync.isLoading
+                      ? null
+                      : () => ref
+                          .read(expenseCategoriesProvider.notifier)
+                          .addCategory(name),
+                );
+              }).toList(),
+            ),
+            const SizedBox(height: 20),
+          ],
+          Text('Your categories', style: AppTypography.sectionTitle(context)),
           const SizedBox(height: 10),
           if (categoriesAsync.isLoading)
             const SizedBox(
@@ -86,13 +88,6 @@ class _CategoryManagerSheetState extends ConsumerState<_CategoryManagerSheet> {
         ],
       ),
     );
-  }
-
-  Future<void> _add() async {
-    final name = _newController.text.trim();
-    if (name.isEmpty) return;
-    await ref.read(expenseCategoriesProvider.notifier).addCategory(name);
-    _newController.clear();
   }
 
   Future<void> _delete(String name) async {

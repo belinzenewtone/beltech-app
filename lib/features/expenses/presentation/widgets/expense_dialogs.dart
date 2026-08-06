@@ -1,5 +1,6 @@
 import 'package:beltech/core/forms/form_schemas.dart';
 import 'package:beltech/core/theme/app_colors.dart';
+import 'package:beltech/core/theme/app_spacing.dart';
 import 'package:beltech/core/widgets/app_toast.dart';
 import 'package:beltech/core/theme/app_typography.dart';
 import 'package:beltech/core/utils/category_visual.dart';
@@ -65,6 +66,7 @@ class _ExpenseFormSheetState extends ConsumerState<_ExpenseFormSheet> {
   late String _selectedCategory;
 
   bool get _isEdit => widget.initialExpense != null;
+  bool get _isImported => widget.initialExpense?.isImported ?? false;
 
   @override
   void initState() {
@@ -117,18 +119,44 @@ class _ExpenseFormSheetState extends ConsumerState<_ExpenseFormSheet> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          TextField(
-            controller: _titleController,
-            textCapitalization: TextCapitalization.words,
-            decoration: const InputDecoration(hintText: 'Title'),
-          ),
-          const SizedBox(height: 14),
-          TextField(
-            controller: _amountController,
-            keyboardType: const TextInputType.numberWithOptions(decimal: true),
-            decoration: const InputDecoration(hintText: 'Amount (KES)'),
-          ),
-          const SizedBox(height: 14),
+          // Imported transactions: show locked fields as read-only info,
+          // then only expose the category picker.
+          if (_isImported) ...[
+            AppCard(
+              tone: AppCardTone.muted,
+              child: Row(
+                children: [
+                  const Icon(Icons.lock_outline_rounded,
+                      size: 16, color: AppColors.textMuted),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Detected transaction — only category can be changed.',
+                      style: AppTypography.bodySm(context).copyWith(
+                            color: AppColors.textMuted,
+                          ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: AppSpacing.md),
+          ],
+          if (!_isImported) ...[
+            TextField(
+              controller: _titleController,
+              textCapitalization: TextCapitalization.words,
+              decoration: const InputDecoration(hintText: 'Title'),
+            ),
+            const SizedBox(height: AppSpacing.md),
+            TextField(
+              controller: _amountController,
+              keyboardType:
+                  const TextInputType.numberWithOptions(decimal: true),
+              decoration: const InputDecoration(hintText: 'Amount (KES)'),
+            ),
+            const SizedBox(height: AppSpacing.md),
+          ],
           DropdownButtonFormField<String>(
             initialValue: _selectedCategory,
             decoration: const InputDecoration(labelText: 'Category'),
@@ -147,35 +175,40 @@ class _ExpenseFormSheetState extends ConsumerState<_ExpenseFormSheet> {
             }).toList(),
             onChanged: categoriesAsync.isLoading
                 ? null
-                : (v) { if (v != null) setState(() => _selectedCategory = v); },
+                : (v) {
+                    if (v != null) setState(() => _selectedCategory = v);
+                  },
           ),
-          const SizedBox(height: 18),
-          AppCard(
-            tone: AppCardTone.muted,
-            onTap: _pickOccurredAt,
-            child: Row(
-              children: [
-                const Icon(Icons.schedule_rounded, color: AppColors.accent),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('Occurred At', style: AppTypography.bodySm(context)),
-                      const SizedBox(height: 2),
-                      Text(
-                        _formatOccurredAt(_occurredAt),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: AppTypography.bodyMd(context),
-                      ),
-                    ],
+          if (!_isImported) ...[
+            const SizedBox(height: AppSpacing.lg),
+            AppCard(
+              tone: AppCardTone.muted,
+              onTap: _pickOccurredAt,
+              child: Row(
+                children: [
+                  const Icon(Icons.schedule_rounded, color: AppColors.accent),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Occurred At',
+                            style: AppTypography.bodySm(context)),
+                        const SizedBox(height: 2),
+                        Text(
+                          _formatOccurredAt(_occurredAt),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: AppTypography.bodyMd(context),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-                const Icon(Icons.chevron_right_rounded),
-              ],
+                  const Icon(Icons.chevron_right_rounded),
+                ],
+              ),
             ),
-          ),
+          ],
         ],
       ),
     );
@@ -210,6 +243,20 @@ class _ExpenseFormSheetState extends ConsumerState<_ExpenseFormSheet> {
   }
 
   void _submit() {
+    if (_isImported) {
+      // Only category changes — pass through original values for the rest.
+      final expense = widget.initialExpense!;
+      Navigator.of(context).pop(
+        ManualExpenseInput(
+          title: expense.title,
+          category: _selectedCategory,
+          amountKes: expense.amountKes,
+          occurredAt: expense.occurredAt,
+        ),
+      );
+      return;
+    }
+
     final result = FormSchemas.expenseSchema.validate({
       'title': _titleController.text,
       'amount': _amountController.text,

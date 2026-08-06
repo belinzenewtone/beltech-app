@@ -71,6 +71,8 @@ class ExpensesRepositoryImpl implements ExpensesRepository {
                 amountKes: tx.amountKes,
                 occurredAt: tx.occurredAt,
                 balanceAfterKes: tx.balanceAfterKes,
+                feeKes: tx.feeKes,
+                source: tx.source,
               ),
             )
             .toList(),

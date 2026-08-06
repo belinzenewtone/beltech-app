@@ -67,14 +67,16 @@ Future<void> editExpenseEntry(
   if (updated == null) {
     return;
   }
+  // Imported transactions: only category may change — preserve everything else.
   await ref
       .read(expenseWriteControllerProvider.notifier)
       .updateExpense(
         transactionId: expense.id,
-        title: updated.title,
+        title: expense.isImported ? expense.title : updated.title,
         category: updated.category,
-        amountKes: updated.amountKes,
-        occurredAt: updated.occurredAt,
+        amountKes: expense.isImported ? expense.amountKes : updated.amountKes,
+        occurredAt:
+            expense.isImported ? expense.occurredAt : updated.occurredAt,
       );
   if (context.mounted && !ref.read(expenseWriteControllerProvider).hasError) {
     AppFeedback.success(context, 'Transaction updated', ref: ref);

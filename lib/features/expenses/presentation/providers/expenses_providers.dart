@@ -22,6 +22,10 @@ final expenseFilterProvider = StateProvider<ExpenseFilter>(
   (_) => ExpenseFilter.month,
 );
 
+/// Tracks whether the import-health banner has been dismissed this session.
+/// Resets to false on app restart (in-memory only).
+final importHealthBannerDismissedProvider = StateProvider<bool>((_) => false);
+
 final expensesSnapshotProvider = StreamProvider<ExpensesSnapshot>(
   (ref) => ref.watch(expensesRepositoryProvider).watchSnapshot(),
 );

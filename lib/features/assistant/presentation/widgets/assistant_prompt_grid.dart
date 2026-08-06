@@ -1,5 +1,6 @@
 import 'package:beltech/core/theme/app_colors.dart';
 import 'package:beltech/core/theme/app_radius.dart';
+import 'package:beltech/core/theme/app_spacing.dart';
 import 'package:beltech/core/theme/app_typography.dart';
 import 'package:flutter/material.dart';
 
@@ -50,8 +51,8 @@ class _PromptPill extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        constraints: const BoxConstraints(minHeight: 36, maxWidth: 220),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        constraints: const BoxConstraints(minHeight: 34, maxWidth: 220),
+        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm - 2),
         decoration: BoxDecoration(
           color: AppColors.surfaceMutedFor(brightness),
           border: Border.all(color: AppColors.accent.withValues(alpha: 0.35)),

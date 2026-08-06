@@ -165,8 +165,8 @@ class _AppDriftQueries {
     int? limit,
   }) async {
     final sql = limit != null
-        ? 'SELECT id, title, category, amount, occurred_at, balance_after FROM transactions ORDER BY occurred_at DESC LIMIT ?'
-        : 'SELECT id, title, category, amount, occurred_at, balance_after FROM transactions ORDER BY occurred_at DESC';
+        ? 'SELECT id, title, category, amount, occurred_at, balance_after, fee, source FROM transactions ORDER BY occurred_at DESC LIMIT ?'
+        : 'SELECT id, title, category, amount, occurred_at, balance_after, fee, source FROM transactions ORDER BY occurred_at DESC';
     final rows = await store._db.runSelect(sql, limit != null ? [limit] : const []);
     return rows
         .map(
@@ -181,6 +181,10 @@ class _AppDriftQueries {
             balanceAfterKes: row['balance_after'] == null
                 ? null
                 : store._asDouble(row['balance_after']),
+            feeKes: row['fee'] == null
+                ? null
+                : store._asDouble(row['fee']),
+            source: (row['source'] ?? 'manual') as String,
           ),
         )
         .toList();

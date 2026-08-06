@@ -76,7 +76,7 @@ class HomeDashboardTransactionTile extends StatelessWidget {
                 height: 40,
                 decoration: BoxDecoration(
                   color: AppColors.surfaceMutedFor(br),
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(10),
                 ),
                 child: Icon(visual.icon, color: AppColors.textSecondary, size: 20),
               );

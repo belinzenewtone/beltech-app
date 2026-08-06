@@ -1,4 +1,5 @@
 import 'package:beltech/core/theme/app_colors.dart';
+import 'package:beltech/core/theme/app_radius.dart';
 import 'package:beltech/core/theme/app_spacing.dart';
 import 'package:beltech/core/theme/app_typography.dart';
 import 'package:beltech/core/utils/category_visual.dart';
@@ -146,13 +147,13 @@ class _ToggleChip extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(
           horizontal: AppSpacing.md,
-          vertical: AppSpacing.xs + 2,
+          vertical: AppSpacing.xs,
         ),
         decoration: BoxDecoration(
           color: active
               ? AppColors.accent.withValues(alpha: 0.16)
               : AppColors.textMuted.withValues(alpha: 0.10),
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(AppRadius.md),
           border: Border.all(
             color: active
                 ? AppColors.accent.withValues(alpha: 0.5)
@@ -322,14 +323,14 @@ class _QuickPickChip extends StatelessWidget {
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.sm + 2,
-          vertical: AppSpacing.xs + 1,
+          horizontal: AppSpacing.sm,
+          vertical: AppSpacing.xs,
         ),
         decoration: BoxDecoration(
           color: isActive
               ? visual.foreground.withValues(alpha: 0.18)
               : visual.background,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(AppRadius.md),
           border: Border.all(
             color: isActive
                 ? visual.foreground.withValues(alpha: 0.6)
@@ -339,7 +340,7 @@ class _QuickPickChip extends StatelessWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(visual.icon, size: 12, color: visual.foreground),
+            Icon(visual.icon, size: 13, color: visual.foreground),
             const SizedBox(width: AppSpacing.xs),
             Text(
               category,
@@ -371,12 +372,12 @@ class _MoreChip extends StatelessWidget {
       onTap: () => _showPicker(context),
       child: Container(
         padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.sm + 2,
-          vertical: AppSpacing.xs + 1,
+          horizontal: AppSpacing.sm,
+          vertical: AppSpacing.xs,
         ),
         decoration: BoxDecoration(
           color: AppColors.textMuted.withValues(alpha: 0.08),
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(AppRadius.md),
           border: Border.all(
             color: AppColors.textMuted.withValues(alpha: 0.20),
           ),
@@ -413,13 +414,13 @@ class _MoreChip extends StatelessWidget {
               child: Container(
                 padding: const EdgeInsets.symmetric(
                   horizontal: AppSpacing.md,
-                  vertical: AppSpacing.xs + 3,
+                  vertical: AppSpacing.xs,
                 ),
                 decoration: BoxDecoration(
                   color: isActive
                       ? visual.foreground.withValues(alpha: 0.18)
                       : visual.background,
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(AppRadius.md),
                   border: Border.all(
                     color: isActive
                         ? visual.foreground.withValues(alpha: 0.6)

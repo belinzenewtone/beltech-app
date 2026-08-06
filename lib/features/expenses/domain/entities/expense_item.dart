@@ -6,6 +6,8 @@ class ExpenseItem {
     required this.amountKes,
     required this.occurredAt,
     this.balanceAfterKes,
+    this.feeKes,
+    this.source = 'manual',
   });
 
   final int id;
@@ -14,6 +16,15 @@ class ExpenseItem {
   final double amountKes;
   final DateTime occurredAt;
   final double? balanceAfterKes;
+
+  /// M-Pesa transaction cost / service charge (KES), if present in the SMS.
+  final double? feeKes;
+
+  /// Origin of the transaction — 'manual' for user-entered, anything else
+  /// (e.g. 'mpesa_sms', 'csv') for detected / imported entries.
+  final String source;
+
+  bool get isImported => source != 'manual';
 
   @override
   bool operator ==(Object other) =>
@@ -25,11 +36,13 @@ class ExpenseItem {
           category == other.category &&
           amountKes == other.amountKes &&
           occurredAt == other.occurredAt &&
-          balanceAfterKes == other.balanceAfterKes;
+          balanceAfterKes == other.balanceAfterKes &&
+          feeKes == other.feeKes &&
+          source == other.source;
 
   @override
   int get hashCode =>
-      Object.hash(id, title, category, amountKes, occurredAt, balanceAfterKes);
+      Object.hash(id, title, category, amountKes, occurredAt, balanceAfterKes, feeKes, source);
 }
 
 class CategoryExpenseTotal {

@@ -87,20 +87,6 @@ class _MonthlyTrendBarsState extends State<MonthlyTrendBars>
             ],
           ),
           const SizedBox(height: AppSpacing.sm),
-          Padding(
-            padding: const EdgeInsets.only(left: 2),
-            child: Text(
-              'Tap a bar to view Wrapped →',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    fontSize: 10,
-                    color: Theme.of(context)
-                        .colorScheme
-                        .onSurface
-                        .withValues(alpha: 0.4),
-                  ),
-            ),
-          ),
-          const SizedBox(height: 12),
           SizedBox(
             height: 120,
             child: Row(
@@ -143,13 +129,14 @@ class _MonthlyTrendBarsState extends State<MonthlyTrendBars>
                     padding: const EdgeInsets.symmetric(horizontal: 3),
                     child: GestureDetector(
                       onTap: () {
+                        HapticFeedback.lightImpact();
+                        widget.onTapMonth?.call(point.year, point.month);
+                      },
+                      onLongPress: () {
                         HapticFeedback.selectionClick();
                         setState(() => _selectedBarIndex =
                             _selectedBarIndex == i ? null : i);
-                        widget.onTapMonth?.call(point.year, point.month);
                       },
-                      onLongPress: () =>
-                          widget.onTapMonth?.call(point.year, point.month),
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.end,
                         children: [
@@ -192,7 +179,7 @@ class _MonthlyTrendBarsState extends State<MonthlyTrendBars>
                                     ),
                                     decoration: BoxDecoration(
                                       color: AppColors.tooltipBackground,
-                                      borderRadius: BorderRadius.circular(12),
+                                      borderRadius: BorderRadius.circular(10),
                                     ),
                                     child: Text(
                                       CurrencyFormatter.compact(point.totalKes),

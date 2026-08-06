@@ -98,7 +98,7 @@ class _CategoryCard extends StatelessWidget {
         extra: share,
       ),
       child: AppCard(
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.all(AppSpacing.md),
       child: Row(
         children: [
           // Colored dot indicator

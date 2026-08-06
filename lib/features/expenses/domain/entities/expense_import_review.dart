@@ -147,6 +147,13 @@ class ExpenseImportMetrics {
   /// Pre-computed anomaly alerts for the current import state.
   final List<String> alerts;
 
+  /// True whenever any queue has items that need user attention.
+  bool get hasIssues =>
+      reviewQueueCount > 0 ||
+      quarantineCount > 0 ||
+      retryQueueCount > 0 ||
+      failedQueueCount > 0;
+
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||

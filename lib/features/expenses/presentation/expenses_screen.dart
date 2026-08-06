@@ -140,30 +140,10 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
       scrollable: false,
       topPadding: 0,
       horizontalPadding: 0,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Stack(
         children: [
-          // Fixed import health banner above the scrollable content.
-          // Isolated in its own Consumer: expenseImportMetricsProvider re-derives
-          // from the snapshot stream, so watching it at screen level rebuilt the
-          // whole Finance screen twice per emit. Only this strip rebuilds now.
-          Consumer(
-            builder: (context, ref, _) {
-              final metrics =
-                  ref.watch(expenseImportMetricsProvider).value ??
-                  const ExpenseImportMetrics(
-                    reviewQueueCount: 0,
-                    quarantineCount: 0,
-                    retryQueueCount: 0,
-                    failedQueueCount: 0,
-                  );
-              return ImportHealthBanner(
-                metrics: metrics,
-                onTap: () => context.pushNamed('import-health'),
-              );
-            },
-          ),
-          Expanded(
+          // Full-size scrollable content — banner floats above, no layout shift.
+          Positioned.fill(
             child: AnimatedBuilder(
               animation: _searchController,
               builder: (context, _) {
@@ -246,6 +226,37 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
                 );
               },
             ),
+          ),
+          // Floating import-health banner — shown once per session, overlays
+          // content without pushing it down. Isolated Consumer keeps rebuilds
+          // scoped to just this widget.
+          Consumer(
+            builder: (context, ref, _) {
+              final dismissed =
+                  ref.watch(importHealthBannerDismissedProvider);
+              if (dismissed) return const SizedBox.shrink();
+              final metrics =
+                  ref.watch(expenseImportMetricsProvider).value ??
+                  const ExpenseImportMetrics(
+                    reviewQueueCount: 0,
+                    quarantineCount: 0,
+                    retryQueueCount: 0,
+                    failedQueueCount: 0,
+                  );
+              if (!metrics.hasIssues) return const SizedBox.shrink();
+              return Positioned(
+                top: 0,
+                left: 0,
+                right: 0,
+                child: ImportHealthBanner(
+                  metrics: metrics,
+                  onTap: () => context.pushNamed('import-health'),
+                  onDismiss: () => ref
+                      .read(importHealthBannerDismissedProvider.notifier)
+                      .state = true,
+                ),
+              );
+            },
           ),
         ],
       ),

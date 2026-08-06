@@ -128,7 +128,7 @@ class _MonthCardState extends State<_MonthCard> {
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpacing.sm),
       child: AppCard(
-        padding: const EdgeInsets.all(AppSpacing.lg - 2),
+        padding: const EdgeInsets.all(AppSpacing.md),
         onTap: _toggle,
         child: Column(
           children: [

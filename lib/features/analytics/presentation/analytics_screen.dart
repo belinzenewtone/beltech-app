@@ -117,10 +117,13 @@ class _InlineInsightBanner extends StatelessWidget {
             : 'Spending down ${change.abs().toStringAsFixed(0)}% — keep it going';
 
     return GestureDetector(
-      onTap: () => context.pushNamed('insights'),
+      onTap: () {
+        final now = DateTime.now();
+        context.pushNamed('monthly-wrapped', extra: (now.year, now.month));
+      },
       child: Container(
         padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.lg - 2,
+          horizontal: AppSpacing.md,
           vertical: AppSpacing.sm + 2,
         ),
         decoration: BoxDecoration(
@@ -181,7 +184,7 @@ class _HealthGaugeCard extends StatelessWidget {
     return AppCard(
       padding: const EdgeInsets.symmetric(
         horizontal: AppSpacing.lg,
-        vertical: AppSpacing.lg - 2,
+        vertical: AppSpacing.md,
       ),
       child: Column(
         children: [
@@ -216,7 +219,7 @@ class _TopCategoryAllTimeCard extends ConsumerWidget {
         if (category == null || category.isEmpty) return const SizedBox.shrink();
         final visual = categoryVisual(category);
         return AppCard(
-          padding: const EdgeInsets.all(AppSpacing.lg - 2),
+          padding: const EdgeInsets.all(AppSpacing.md),
           child: Row(
             children: [
               Container(
@@ -456,21 +459,7 @@ class _InsightsTab extends ConsumerWidget {
     final insightsAsync = ref.watch(insightsProvider);
     const h = SizedBox(height: AppSpacing.md);
 
-    // Derived trend label
     final history = snapshot.monthlyHistory;
-    String? trendLabel;
-    if (history.length >= 6) {
-      final firstHalf = history.take(3).map((p) => p.totalKes).toList();
-      final secondHalf = history.skip(3).map((p) => p.totalKes).toList();
-      final avg1 = firstHalf.reduce((a, b) => a + b) / 3;
-      final avg2 = secondHalf.reduce((a, b) => a + b) / 3;
-      if (avg1 > 0) {
-        final change = ((avg2 - avg1) / avg1) * 100;
-        if (change > 5) trendLabel = '↑ Spending is increasing';
-        else if (change < -5) trendLabel = '↓ Spending is decreasing';
-        else trendLabel = '→ Spending is stable';
-      }
-    }
 
     // Highest / lowest month
     final nonZero = history.where((p) => p.totalKes > 0).toList();
@@ -503,22 +492,6 @@ class _InsightsTab extends ConsumerWidget {
           if (history.isNotEmpty) ...[
             const SizedBox(height: 10),
             _HistoryStatCards(history: history),
-          ],
-          if (trendLabel != null) ...[
-            const SizedBox(height: AppSpacing.sm),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 2),
-              child: Text(
-                trendLabel,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      fontWeight: FontWeight.w600,
-                      color: Theme.of(context)
-                          .colorScheme
-                          .onSurface
-                          .withValues(alpha: 0.7),
-                    ),
-              ),
-            ),
           ],
           // Financial Health Gauge in header — animated arc
           if (snapshot.productivityScore > 0) ...[
@@ -628,7 +601,7 @@ class _Chip extends StatelessWidget {
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 160),
         padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.lg - 2,
+          horizontal: AppSpacing.md,
           vertical: AppSpacing.sm - 2,
         ),
         decoration: BoxDecoration(
@@ -785,7 +758,7 @@ class _SkeletonLoader extends StatelessWidget {
             AppSkeleton(width: 100, height: 32, borderRadius: 20),
           ],
         ),
-        const SizedBox(height: AppSpacing.lg - 2),
+        const SizedBox(height: AppSpacing.md),
         // Summary cards 2x2
         Row(
           children: [
@@ -802,10 +775,10 @@ class _SkeletonLoader extends StatelessWidget {
             Expanded(child: AppSkeleton.card(context, height: 72)),
           ],
         ),
-        const SizedBox(height: 14),
+        const SizedBox(height: AppSpacing.md),
         // Comparison card
         AppSkeleton.card(context, height: 110),
-        const SizedBox(height: 14),
+        const SizedBox(height: AppSpacing.md),
         // Category cards
         for (int i = 0; i < 3; i++) ...[
           AppSkeleton.card(context, height: 64),
