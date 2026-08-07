@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 
 import 'package:beltech/core/logger/app_logger.dart';
 import 'package:beltech/core/theme/app_colors.dart';
+import 'package:beltech/core/widgets/app_dropdown_field.dart';
 import 'package:beltech/core/widgets/app_toast.dart';
 import 'package:beltech/core/theme/app_radius.dart';
 import 'package:beltech/core/theme/app_spacing.dart';
@@ -721,33 +722,17 @@ class _CategorySelector extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final brightness = Theme.of(context).brightness;
-    return DropdownButtonFormField<CalendarEventType>(
-      initialValue: selected,
-      isExpanded: true,
-      icon: const Icon(Icons.keyboard_arrow_down_rounded),
-      decoration: appFieldDecoration(context, hint: 'Category'),
-      dropdownColor: AppColors.surfaceFor(brightness),
-      style: AppTypography.bodyMd(context).copyWith(
-        color: AppColors.textPrimaryFor(brightness),
-        fontWeight: FontWeight.w500,
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppSpacing.md),
+      child: AppDropdownPicker<CalendarEventType>(
+        hint: 'Select category',
+        value: selected,
+        items: CalendarEventType.values.toList(),
+        labelFor: (type) => eventTypeOption(type).label,
+        iconFor: (type) => eventTypeOption(type).icon,
+        colorFor: (type) => eventTypeOption(type).color,
+        onChanged: onChanged,
       ),
-      items: CalendarEventType.values.map((type) {
-          final option = eventTypeOption(type);
-          return DropdownMenuItem<CalendarEventType>(
-            value: type,
-            child: Row(
-              children: [
-                Icon(option.icon, size: 18, color: option.color),
-                const SizedBox(width: 10),
-                Text(option.label),
-              ],
-            ),
-          );
-        }).toList(),
-        onChanged: (value) {
-          if (value != null) onChanged(value);
-        },
     );
   }
 }

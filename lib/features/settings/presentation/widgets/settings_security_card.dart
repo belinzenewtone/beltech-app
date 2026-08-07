@@ -1,10 +1,9 @@
 import 'package:beltech/core/di/repository_providers.dart';
 import 'package:beltech/core/security/session_lock_settings_repository.dart';
 import 'package:beltech/core/theme/app_colors.dart';
-import 'package:beltech/core/theme/app_radius.dart';
-import 'package:beltech/core/theme/app_typography.dart';
 import 'package:beltech/core/widgets/app_button.dart';
 import 'package:beltech/core/widgets/app_card.dart';
+import 'package:beltech/core/widgets/app_dropdown_field.dart';
 import 'package:beltech/core/widgets/app_feedback.dart';
 import 'package:beltech/features/auth/domain/entities/auth_state.dart';
 import 'package:beltech/features/auth/presentation/providers/auth_providers.dart';
@@ -142,30 +141,12 @@ class _GracePeriodSelector extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return DropdownButtonHideUnderline(
-      child: DropdownButton<int>(
-        value: value,
-        icon: const Icon(
-          Icons.keyboard_arrow_down_rounded,
-          color: AppColors.textMuted,
-          size: 20,
-        ),
-        dropdownColor: AppColors.surfaceElevated,
-        borderRadius: BorderRadius.circular(AppRadius.md),
-        style: AppTypography.body(
-          context,
-        ).copyWith(color: AppColors.textSecondary),
-        underline: const SizedBox.shrink(),
-        items: SessionLockSettingsRepository.supportedGracePeriods
-            .map(
-              (seconds) => DropdownMenuItem<int>(
-                value: seconds,
-                child: Text(_labelForGracePeriod(seconds)),
-              ),
-            )
-            .toList(),
-        onChanged: onChanged,
-      ),
+    return AppDropdownPicker<int>(
+      hint: 'Select grace period',
+      value: value,
+      items: SessionLockSettingsRepository.supportedGracePeriods,
+      labelFor: _labelForGracePeriod,
+      onChanged: (v) => onChanged?.call(v),
     );
   }
 

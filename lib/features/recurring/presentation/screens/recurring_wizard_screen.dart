@@ -1,5 +1,6 @@
 import 'package:beltech/core/theme/app_typography.dart';
 import 'package:beltech/core/widgets/app_card.dart';
+import 'package:beltech/core/widgets/app_dropdown_field.dart';
 import 'package:beltech/core/widgets/secondary_page_shell.dart';
 import 'package:beltech/core/widgets/app_toast.dart';
 import 'package:beltech/features/recurring/domain/entities/recurring_rule.dart';
@@ -138,17 +139,12 @@ class _RecurringWizardScreenState extends ConsumerState<RecurringWizardScreen> {
           onChanged: (v) => _ruleName = v,
         ),
         const SizedBox(height: 16),
-        DropdownButtonFormField<String>(
-          initialValue: _category,
-          decoration: const InputDecoration(labelText: 'Category'),
-          items: [
-            'Rent',
-            'Utilities',
-            'Subscription',
-            'Insurance',
-            'Other',
-          ].map((c) => DropdownMenuItem(value: c, child: Text(c))).toList(),
-          onChanged: (v) => setState(() => _category = v ?? _category),
+        AppDropdownPicker<String>(
+          hint: 'Select category',
+          value: _category,
+          items: const ['Rent', 'Utilities', 'Subscription', 'Insurance', 'Other'],
+          labelFor: (c) => c,
+          onChanged: (v) => setState(() => _category = v),
         ),
       ],
     );

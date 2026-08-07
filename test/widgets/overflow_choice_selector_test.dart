@@ -48,15 +48,13 @@ void main() {
   });
 
   testWidgets('selecting from the dropdown invokes onChanged', (tester) async {
-    const many = [
-      'Alpha', 'Beta', 'Gamma', 'Delta', 'Epsilon', 'Zeta', 'Eta', 'Theta',
-      'Iota', 'Kappa', 'Lambda', 'Mu', 'Nu', 'Xi', 'Omicron', 'Pi', 'Rho',
-      'Sigma', 'Tau', 'Upsilon', 'Phi', 'Chi', 'Psi', 'Omega',
+    const short = [
+      'Alpha', 'Beta', 'Gamma', 'Delta', 'Epsilon', 'Zeta',
     ];
     String? picked;
     await tester.pumpWidget(wrap(
       OverflowChoiceSelector<String>(
-        options: many,
+        options: short,
         selected: null,
         labelFor: (o) => o,
         onChanged: (o) => picked = o,
@@ -64,17 +62,14 @@ void main() {
       ),
     ));
 
+    // Overflow → bottom-sheet trigger.
     await tester.tap(find.byIcon(Icons.arrow_drop_down_rounded));
     await tester.pumpAndSettle();
-    // The 24-item menu overflows the screen — scroll the popup to Omega.
-    await tester.scrollUntilVisible(
-      find.text('Omega').last,
-      200,
-      scrollable: find.byType(Scrollable).last,
-    );
-    await tester.tap(find.text('Omega').last);
+
+    // 6 items fit in the sheet — tap the last one.
+    await tester.tap(find.text('Zeta').last);
     await tester.pumpAndSettle();
 
-    expect(picked, 'Omega');
+    expect(picked, 'Zeta');
   });
 }

@@ -1,5 +1,6 @@
 import 'package:beltech/core/theme/app_colors.dart';
 import 'package:beltech/core/theme/app_radius.dart';
+import 'package:beltech/core/theme/app_spacing.dart';
 import 'package:flutter/material.dart';
 
 /// A generic single-line option selector.
@@ -229,83 +230,166 @@ class _DropdownTrigger<T> extends StatelessWidget {
   Widget build(BuildContext context) {
     final brightness = Theme.of(context).brightness;
     final accent = selectedColor ?? AppColors.accent;
-    return PopupMenuButton<T>(
-      initialValue: options.where(isSelected).firstOrNull,
-      onSelected: onChanged,
-      itemBuilder: (context) => [
-        for (final option in options)
-          PopupMenuItem<T>(
-            value: option,
-            child: Row(
+    final trigger = Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        color: AppColors.surfaceMutedFor(brightness),
+        border: Border.all(color: AppColors.borderFor(brightness)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (leadingIcon != null) ...[
+            Icon(leadingIcon, size: 16, color: AppColors.textMuted),
+            const SizedBox(width: 8),
+          ],
+          if (selectedIcon != null) ...[
+            Icon(selectedIcon, size: 16, color: accent),
+            const SizedBox(width: 6),
+          ],
+          Flexible(
+            child: Text(
+              selectedLabel ?? hint,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color:
+                    selectedLabel == null ? AppColors.textMuted : accent,
+              ),
+            ),
+          ),
+          const SizedBox(width: 6),
+          const Icon(
+            Icons.arrow_drop_down_rounded,
+            size: 18,
+            color: AppColors.textMuted,
+          ),
+        ],
+      ),
+    );
+
+    // Use the smooth bottom-sheet pattern for overflow dropdowns too.
+    return GestureDetector(
+      onTap: () => _showSheet(context),
+      child: trigger,
+    );
+  }
+
+  void _showSheet(BuildContext context) {
+    final brightness = Theme.of(context).brightness;
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (ctx) {
+        return SafeArea(
+          child: Container(
+            decoration: const BoxDecoration(
+              color: AppColors.surfaceElevated,
+              borderRadius: BorderRadius.only(
+                topLeft: Radius.circular(AppRadius.xxl),
+                topRight: Radius.circular(AppRadius.xxl),
+              ),
+            ),
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.of(ctx).size.height * 0.6,
+            ),
+            padding: const EdgeInsets.only(
+              top: AppSpacing.md,
+              left: AppSpacing.md,
+              right: AppSpacing.md,
+              bottom: AppSpacing.lg,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                if (iconFor?.call(option) != null) ...[
-                  Icon(
-                    iconFor!(option),
-                    size: 16,
-                    color: colorFor?.call(option) ?? AppColors.textMuted,
-                  ),
-                  const SizedBox(width: 8),
-                ],
-                Expanded(
-                  child: Text(
-                    labelFor(option),
-                    style: TextStyle(
-                      color: isSelected(option)
-                          ? AppColors.accent
-                          : AppColors.textPrimaryFor(brightness),
-                      fontWeight:
-                          isSelected(option) ? FontWeight.w700 : FontWeight.w400,
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: AppColors.textMuted.withValues(alpha: 0.4),
+                      borderRadius: BorderRadius.circular(2),
                     ),
                   ),
                 ),
-                if (isSelected(option))
-                  const Icon(Icons.check_rounded,
-                      size: 16, color: AppColors.accent),
+                const SizedBox(height: AppSpacing.md),
+                Flexible(
+                  child: ListView(
+                    shrinkWrap: true,
+                    children: options.map((option) {
+                      final selected = isSelected(option);
+                      final icon = iconFor?.call(option);
+                      final color = colorFor?.call(option) ?? AppColors.textMuted;
+                      return Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          onTap: () {
+                            Navigator.of(ctx).pop();
+                            onChanged(option);
+                          },
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(
+                              vertical: 12,
+                            ),
+                            child: Row(
+                              children: [
+                                if (icon != null) ...[
+                                  Container(
+                                    width: 28,
+                                    height: 28,
+                                    decoration: BoxDecoration(
+                                      color: color.withValues(alpha: 0.12),
+                                      borderRadius:
+                                          BorderRadius.circular(6),
+                                    ),
+                                    child:
+                                        Icon(icon, size: 16, color: color),
+                                  ),
+                                  const SizedBox(width: 12),
+                                ],
+                                Expanded(
+                                  child: Text(
+                                    labelFor(option),
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .bodyMedium
+                                        ?.copyWith(
+                                          fontWeight: selected
+                                              ? FontWeight.w600
+                                              : FontWeight.w500,
+                                          color: selected
+                                              ? AppColors.accent
+                                              : AppColors
+                                                  .textPrimaryFor(
+                                                    brightness,
+                                                  ),
+                                        ),
+                                  ),
+                                ),
+                                if (selected)
+                                  const Icon(
+                                    Icons.check_rounded,
+                                    color: AppColors.accent,
+                                    size: 20,
+                                  ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                ),
               ],
             ),
           ),
-      ],
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(AppRadius.lg),
-          color: AppColors.surfaceMutedFor(brightness),
-          border: Border.all(color: AppColors.borderFor(brightness)),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (leadingIcon != null) ...[
-              Icon(leadingIcon, size: 16, color: AppColors.textMuted),
-              const SizedBox(width: 8),
-            ],
-            if (selectedIcon != null) ...[
-              Icon(selectedIcon, size: 16, color: accent),
-              const SizedBox(width: 6),
-            ],
-            Flexible(
-              child: Text(
-                selectedLabel ?? hint,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: selectedLabel == null
-                      ? AppColors.textMuted
-                      : accent,
-                ),
-              ),
-            ),
-            const SizedBox(width: 6),
-            const Icon(
-              Icons.arrow_drop_down_rounded,
-              size: 18,
-              color: AppColors.textMuted,
-            ),
-          ],
-        ),
-      ),
+        );
+      },
     );
   }
 }

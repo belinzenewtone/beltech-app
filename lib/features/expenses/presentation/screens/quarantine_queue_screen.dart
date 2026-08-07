@@ -1,4 +1,5 @@
 import 'package:beltech/core/di/expenses_providers.dart';
+import 'package:beltech/core/widgets/app_dropdown_field.dart';
 import 'package:beltech/core/widgets/loading_indicator.dart';
 import 'package:beltech/core/forms/form_schemas.dart';
 import 'package:beltech/core/theme/app_colors.dart';
@@ -775,25 +776,16 @@ class _QuarantineEditSheetState extends ConsumerState<_QuarantineEditSheet> {
             decoration: const InputDecoration(hintText: 'Amount (KES)'),
           ),
           const SizedBox(height: 14),
-          DropdownButtonFormField<String>(
-            initialValue: _selectedCategory,
-            decoration: const InputDecoration(labelText: 'Category'),
-            items: categories.map((c) {
-              final visual = categoryVisual(c);
-              return DropdownMenuItem<String>(
-                value: c,
-                child: Row(
-                  children: [
-                    Icon(visual.icon, size: 16, color: visual.foreground),
-                    const SizedBox(width: 10),
-                    Text(c),
-                  ],
-                ),
-              );
-            }).toList(),
-            onChanged: categoriesAsync.isLoading
-                ? null
-                : (v) { if (v != null) setState(() => _selectedCategory = v); },
+          AppDropdownPicker<String>(
+            hint: 'Select category',
+            value: _selectedCategory.isEmpty ? null : _selectedCategory,
+            items: categories,
+            labelFor: (c) => c,
+            iconFor: (c) => categoryVisual(c).icon,
+            colorFor: (c) => categoryVisual(c).foreground,
+            selectedTest: (c) => _selectedCategory == c,
+            enabled: !categoriesAsync.isLoading,
+            onChanged: (v) => setState(() => _selectedCategory = v),
           ),
         ],
       ),
