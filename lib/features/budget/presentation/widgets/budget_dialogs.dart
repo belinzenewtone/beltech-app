@@ -1,6 +1,7 @@
 import 'package:beltech/core/utils/category_visual.dart';
 import 'package:beltech/core/widgets/app_button.dart';
 import 'package:beltech/core/widgets/app_form_sheet.dart';
+import 'package:beltech/core/widgets/overflow_choice_selector.dart';
 import 'package:beltech/features/expenses/presentation/providers/expense_categories_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -105,28 +106,21 @@ class _BudgetDialogSheetState extends ConsumerState<_BudgetDialogSheet> {
               builder: (field) => Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: categories.map((name) {
-                      final selected = _selectedCategory == name;
-                      final visual = categoryVisual(name);
-                      return ChoiceChip(
-                        avatar: CircleAvatar(
-                          backgroundColor: selected
-                              ? visual.foreground.withOpacity(0.2)
-                              : visual.background,
-                          child: Icon(visual.icon,
-                              color: visual.foreground, size: 13),
-                        ),
-                        label: Text(name),
-                        selected: selected,
-                        onSelected: (_) {
-                          setState(() => _selectedCategory = name);
-                          field.didChange(name);
-                        },
-                      );
-                    }).toList(),
+                  OverflowChoiceSelector<String>(
+                    options: categories,
+                    selected: (_selectedCategory ?? '').isEmpty
+                        ? null
+                        : _selectedCategory,
+                    labelFor: (name) => name,
+                    iconFor: (name) => categoryVisual(name).icon,
+                    colorFor: (name) => categoryVisual(name).foreground,
+                    selectedTest: (name) => _selectedCategory == name,
+                    onChanged: (name) {
+                      setState(() => _selectedCategory = name);
+                      field.didChange(name);
+                    },
+                    hint: 'Select a category',
+                    leadingIcon: Icons.category_outlined,
                   ),
                   if (field.hasError) ...[
                     const SizedBox(height: 6),

@@ -32,14 +32,17 @@ final class _ImportOverview {
 final _importOverviewProvider = FutureProvider<_ImportOverview>((ref) async {
   final metrics = await ref.watch(expenseImportMetricsProvider.future);
   final totalProcessed = metrics.totalImportedFromSms;
-  final totalItems =
-      totalProcessed +
-      metrics.reviewQueueCount +
-      metrics.quarantineCount +
-      metrics.retryQueueCount +
-      metrics.failedQueueCount;
-  final successRate = totalItems > 0
-      ? (totalProcessed / totalItems * 100)
+
+  // Success rate mirrors Kotlin: imported / (imported + parse failures).
+  // Parse failures are quarantined + failed items. Review-queue entries are
+  // successfully parsed messages awaiting approval (not failures), and
+  // duplicate skips are recognised messages already in the ledger — neither
+  // belongs in the failure denominator.
+  final errors =
+      metrics.quarantineCount + metrics.failedQueueCount;
+  final attempted = totalProcessed + errors;
+  final successRate = attempted > 0
+      ? (totalProcessed / attempted * 100)
       : 100.0;
   return _ImportOverview(
     totalProcessed: totalProcessed,

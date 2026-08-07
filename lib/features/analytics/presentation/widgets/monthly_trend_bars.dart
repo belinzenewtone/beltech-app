@@ -86,6 +86,18 @@ class _MonthlyTrendBarsState extends State<MonthlyTrendBars>
               ),
             ],
           ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              Text(
+                'Tap → Wrapped',
+                style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                      fontSize: 10,
+                      color: Theme.of(context).colorScheme.outline,
+                    ),
+              ),
+            ],
+          ),
           const SizedBox(height: AppSpacing.sm),
           SizedBox(
             height: 120,

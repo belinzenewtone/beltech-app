@@ -31,7 +31,12 @@ class MonthlyWrappedScreen extends ConsumerStatefulWidget {
 class _MonthlyWrappedScreenState extends ConsumerState<MonthlyWrappedScreen> {
   late int _year;
   late int _month;
+  bool _goingForward = true;
 
+  /// Per-month cache so revisiting a month never flashes the loader.
+  final Map<String, MonthlyWrappedData> _dataCache = {};
+
+  String get _key => '$_year-$_month';
 
   @override
   void initState() {
@@ -40,28 +45,38 @@ class _MonthlyWrappedScreenState extends ConsumerState<MonthlyWrappedScreen> {
     _month = widget.month;
   }
 
-  void _prev() {
+  void _goTo(int year, int month, {required bool forward}) {
     setState(() {
-      if (_month > 1) {
-        _month--;
-      } else {
-        _month = 12;
-        _year--;
-      }
+      _year = year;
+      _month = month;
+      _goingForward = forward;
     });
+  }
+
+  void _prev() {
+    int y = _year;
+    int m = _month;
+    if (m > 1) {
+      m--;
+    } else {
+      m = 12;
+      y--;
+    }
+    _goTo(y, m, forward: false);
   }
 
   void _next() {
     final now = DateTime.now();
     if (_year > now.year || (_year == now.year && _month >= now.month)) return;
-    setState(() {
-      if (_month < 12) {
-        _month++;
-      } else {
-        _month = 1;
-        _year++;
-      }
-    });
+    int y = _year;
+    int m = _month;
+    if (m < 12) {
+      m++;
+    } else {
+      m = 1;
+      y++;
+    }
+    _goTo(y, m, forward: true);
   }
 
   bool get _isCurrentMonth {
@@ -135,7 +150,14 @@ class _MonthlyWrappedScreenState extends ConsumerState<MonthlyWrappedScreen> {
       'July', 'August', 'September', 'October', 'November', 'December',
     ];
 
-    final hasData = dataAsync.maybeWhen(data: (d) => d.hasData, orElse: () => false);
+    // Cache data as it arrives so switching months never flashes the loader.
+    final liveData = dataAsync.maybeWhen(
+      data: (d) => d.hasData ? d : null,
+      orElse: () => null,
+    );
+    if (liveData != null) _dataCache[_key] = liveData;
+    final data = _dataCache[_key];
+    final hasData = data != null;
 
     return SecondaryPageShell(
       title: 'Monthly Wrapped',
@@ -150,7 +172,7 @@ class _MonthlyWrappedScreenState extends ConsumerState<MonthlyWrappedScreen> {
               children: [
                 IconButton(
                   icon: const Icon(Icons.chevron_left_rounded),
-                  onPressed: hasData ? _prev : null,
+                  onPressed: _prev,
                 ),
                 Column(
                   children: [
@@ -161,9 +183,9 @@ class _MonthlyWrappedScreenState extends ConsumerState<MonthlyWrappedScreen> {
                           .titleMedium
                           ?.copyWith(fontWeight: FontWeight.w700),
                     ),
-                    dataAsync.maybeWhen(
-                      data: (d) => Text(
-                        '${d.txCount} transactions',
+                    if (data != null)
+                      Text(
+                        '${data.txCount} transactions',
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
                               color: Theme.of(context)
                                   .colorScheme
@@ -171,8 +193,6 @@ class _MonthlyWrappedScreenState extends ConsumerState<MonthlyWrappedScreen> {
                                   .withOpacity(0.5),
                             ),
                       ),
-                      orElse: () => const SizedBox.shrink(),
-                    ),
                   ],
                 ),
                 IconButton(
@@ -182,20 +202,16 @@ class _MonthlyWrappedScreenState extends ConsumerState<MonthlyWrappedScreen> {
                   ),
                   onPressed: _isCurrentMonth ? null : _next,
                 ),
-                dataAsync.maybeWhen(
-                  data: (d) => d.hasData
-                      ? IconButton(
-                          icon: const Icon(Icons.share_rounded, size: 20),
-                          tooltip: 'Share as image',
-                          onPressed: () => _shareCard(context, ref),
-                        )
-                      : null,
-                  orElse: () => null,
-                ) ?? const SizedBox.shrink(),
+                if (hasData)
+                  IconButton(
+                    icon: const Icon(Icons.share_rounded, size: 20),
+                    tooltip: 'Share as image',
+                    onPressed: () => _shareCard(context, ref),
+                  ),
               ],
             ),
           ),
-          // ── Content with swipe navigation ──────────────────────────────
+          // ── Content with swipe navigation + smooth month transition ──
           Expanded(
             child: GestureDetector(
               onHorizontalDragEnd: (details) {
@@ -203,20 +219,56 @@ class _MonthlyWrappedScreenState extends ConsumerState<MonthlyWrappedScreen> {
                 if (details.primaryVelocity! < -200) {
                   HapticFeedback.lightImpact();
                   _next();
-                } else if (details.primaryVelocity! > 200 && hasData) {
+                } else if (details.primaryVelocity! > 200) {
                   HapticFeedback.lightImpact();
                   _prev();
                 }
               },
-              child: dataAsync.when(
-                  loading: () => const Center(child: CircularProgressIndicator()),
-                  error: (e, _) => Center(child: Text('Error: $e')),
-                  data: (data) => data.hasData
-                      ? _WrappedContent(data: data)
-                      : _EmptyState(month: monthNames[_month - 1], year: _year),
+              child: AnimatedSwitcher(
+                duration: const Duration(milliseconds: 260),
+                reverseDuration: const Duration(milliseconds: 260),
+                switchInCurve: Curves.easeOutCubic,
+                switchOutCurve: Curves.easeInCubic,
+                transitionBuilder: (child, animation) {
+                  final offset = _goingForward
+                      ? Tween<Offset>(
+                          begin: const Offset(0.06, 0),
+                          end: Offset.zero,
+                        ).animate(animation)
+                      : Tween<Offset>(
+                          begin: const Offset(-0.06, 0),
+                          end: Offset.zero,
+                        ).animate(animation);
+                  return FadeTransition(
+                    opacity: animation,
+                    child: SlideTransition(position: offset, child: child),
+                  );
+                },
+                layoutBuilder: (currentChild, previousChildren) =>
+                    Stack(
+                  alignment: Alignment.topCenter,
+                  children: [
+                    ...previousChildren,
+                    ?currentChild,
+                  ],
+                ),
+                child: KeyedSubtree(
+                  key: ValueKey(_key),
+                  child: dataAsync.when(
+                    loading: () => data != null
+                        ? _WrappedContent(data: data)
+                        : const Center(child: CircularProgressIndicator()),
+                    error: (e, _) => data != null
+                        ? _WrappedContent(data: data)
+                        : Center(child: Text('Error: $e')),
+                    data: (d) => d.hasData
+                        ? _WrappedContent(data: d)
+                        : _EmptyState(month: monthNames[_month - 1], year: _year),
+                  ),
                 ),
               ),
             ),
+          ),
         ],
       ),
     );

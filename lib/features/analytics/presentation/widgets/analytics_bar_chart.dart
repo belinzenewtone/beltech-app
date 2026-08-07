@@ -6,7 +6,13 @@ import 'package:beltech/features/analytics/domain/entities/analytics_snapshot.da
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 
-class AnalyticsBarChart extends StatelessWidget {
+/// Daily spend bar chart.
+///
+/// Each bar is colored by whether the day's spend is above or below the
+/// average of days with spend — success (below avg) / danger (above avg),
+/// zero days render as a muted stub — matching the Monthly Trend theme.
+/// Tapping a bar highlights it and shows its value in a floating tooltip.
+class AnalyticsBarChart extends StatefulWidget {
   const AnalyticsBarChart({
     super.key,
     required this.title,
@@ -17,18 +23,25 @@ class AnalyticsBarChart extends StatelessWidget {
   final List<AnalyticsPoint> points;
 
   @override
+  State<AnalyticsBarChart> createState() => _AnalyticsBarChartState();
+}
+
+class _AnalyticsBarChartState extends State<AnalyticsBarChart> {
+  int? _selectedIndex;
+
+  @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final brightness = theme.brightness;
-    final barColor = AppColors.accent;
     final axisColor = AppColors.textSecondaryFor(brightness);
-    final maxY = _maxY(points);
+    final maxY = _maxY(widget.points);
+    final avg = _avgOfNonZero(widget.points);
 
     return AppCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title, style: AppTypography.sectionTitle(context)),
+          Text(widget.title, style: AppTypography.sectionTitle(context)),
           const SizedBox(height: 12),
           SizedBox(
             height: 200,
@@ -42,6 +55,14 @@ class AnalyticsBarChart extends StatelessWidget {
                 borderData: FlBorderData(show: false),
                 barTouchData: BarTouchData(
                   enabled: true,
+                  touchCallback: (event, response) {
+                    if (event is FlTapUpEvent) {
+                      setState(() {
+                        _selectedIndex =
+                            response?.spot?.touchedBarGroupIndex;
+                      });
+                    }
+                  },
                   touchTooltipData: BarTouchTooltipData(
                     getTooltipColor: (_) => AppColors.tooltipBackground,
                     fitInsideHorizontally: true,
@@ -52,7 +73,11 @@ class AnalyticsBarChart extends StatelessWidget {
                       vertical: 6,
                     ),
                     getTooltipItem: (group, groupIndex, rod, rodIndex) {
-                      final point = points[group.x.toInt()];
+                      final index = group.x.toInt();
+                      if (index < 0 || index >= widget.points.length) {
+                        return null;
+                      }
+                      final point = widget.points[index];
                       return BarTooltipItem(
                         '${point.label}\n${CurrencyFormatter.money(point.amountKes)}',
                         const TextStyle(
@@ -83,17 +108,17 @@ class AnalyticsBarChart extends StatelessWidget {
                       // to avoid the unreadable "1 2 3 4 5..." wall of numbers.
                       getTitlesWidget: (value, _) {
                         final index = value.toInt();
-                        if (index < 0 || index >= points.length) {
+                        if (index < 0 || index >= widget.points.length) {
                           return const SizedBox.shrink();
                         }
-                        final isMonthly = points.length > 10;
+                        final isMonthly = widget.points.length > 10;
                         if (isMonthly && index % 5 != 0) {
                           return const SizedBox.shrink();
                         }
                         return Padding(
                           padding: const EdgeInsets.only(top: 6),
                           child: Text(
-                            points[index].label,
+                            widget.points[index].label,
                             style: TextStyle(color: axisColor, fontSize: 11),
                           ),
                         );
@@ -102,18 +127,31 @@ class AnalyticsBarChart extends StatelessWidget {
                   ),
                 ),
                 barGroups: List<BarChartGroupData>.generate(
-                  points.length,
-                  (index) => BarChartGroupData(
-                    x: index,
-                    barRods: [
-                      BarChartRodData(
-                        toY: points[index].amountKes,
-                        color: barColor,
-                        width: points.length > 12 ? 8 : 12,
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                    ],
-                  ),
+                  widget.points.length,
+                  (index) {
+                    final point = widget.points[index];
+                    final isZero = point.amountKes <= 0;
+                    final aboveAvg = avg > 0 && point.amountKes > avg;
+                    final baseColor = isZero
+                        ? theme.colorScheme.outline.withValues(alpha: 0.3)
+                        : aboveAvg
+                            ? AppColors.danger
+                            : AppColors.success;
+                    final isSelected = _selectedIndex == index;
+                    return BarChartGroupData(
+                      x: index,
+                      barRods: [
+                        BarChartRodData(
+                          toY: point.amountKes <= 0 ? 0 : point.amountKes,
+                          color: isSelected
+                              ? baseColor.withValues(alpha: 0.45)
+                              : baseColor,
+                          width: widget.points.length > 12 ? 8 : 12,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ],
+                    );
+                  },
                 ),
               ),
               duration: const Duration(milliseconds: 420),
@@ -132,5 +170,12 @@ class AnalyticsBarChart extends StatelessWidget {
       }
     }
     return max;
+  }
+
+  double _avgOfNonZero(List<AnalyticsPoint> points) {
+    final nonzero = points.where((p) => p.amountKes > 0).toList();
+    if (nonzero.isEmpty) return 0;
+    return nonzero.fold<double>(0, (s, p) => s + p.amountKes) /
+        nonzero.length;
   }
 }

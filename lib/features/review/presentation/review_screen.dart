@@ -48,11 +48,11 @@ class _ReviewBody extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // Compute health score from live data.
+    // Real per-category tx counts (not the sparkline length) for accuracy.
     final uncategorized = snapshot.categoryBreakdown
         .where((c) => c.category.toLowerCase() == 'other' ||
             c.category.toLowerCase() == 'uncategorized')
-        .fold<int>(0, (sum, c) => sum + c.weeklySparkline.fold<int>(0,
-            (s, _) => s + 1));
+        .fold<int>(0, (sum, c) => sum + c.txCount);
 
     final score = FinancialHealthScore.compute(
       currentWeekSpendKes: snapshot.totalSpentThisPeriodKes,

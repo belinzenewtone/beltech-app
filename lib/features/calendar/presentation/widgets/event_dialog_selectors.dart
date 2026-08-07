@@ -1,5 +1,6 @@
 import 'package:beltech/core/theme/app_colors.dart';
 import 'package:beltech/core/widgets/app_button.dart';
+import 'package:beltech/core/widgets/overflow_choice_selector.dart';
 import 'package:beltech/features/calendar/domain/entities/calendar_event.dart';
 import 'package:beltech/features/calendar/presentation/widgets/event_dialog_helpers.dart';
 import 'package:flutter/material.dart';
@@ -54,22 +55,13 @@ class EventTypeSelector extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Wrap(
-      spacing: 8,
-      runSpacing: 8,
-      children: CalendarEventType.values.map((type) {
-        final option = eventTypeOption(type);
-        final isSelected = selected == type;
-        return AppButton(
-          label: option.label,
-          icon: option.icon,
-          size: AppButtonSize.sm,
-          variant: isSelected
-              ? AppButtonVariant.primary
-              : AppButtonVariant.secondary,
-          onPressed: () => onChanged(type),
-        );
-      }).toList(),
+    return OverflowChoiceSelector<CalendarEventType>(
+      options: CalendarEventType.values,
+      selected: selected,
+      labelFor: (type) => eventTypeOption(type).label,
+      iconFor: (type) => eventTypeOption(type).icon,
+      onChanged: onChanged,
+      hint: 'Select event type',
     );
   }
 }

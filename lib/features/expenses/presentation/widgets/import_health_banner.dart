@@ -23,9 +23,12 @@ class ImportHealthBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final duplicates = metrics.reviewQueueCount;
-    final parseErrors = metrics.failedQueueCount + metrics.quarantineCount;
+    // "Pending" = items awaiting retry; "duplicates" = messages skipped because
+    // they were already imported (duplicateSkipCount); "parse failed" =
+    // quarantined + failed (unrecognised or errored messages).
     final pending = metrics.retryQueueCount;
+    final duplicates = metrics.duplicateSkipCount;
+    final parseErrors = metrics.failedQueueCount + metrics.quarantineCount;
 
     if (!metrics.hasIssues) return const SizedBox.shrink();
 

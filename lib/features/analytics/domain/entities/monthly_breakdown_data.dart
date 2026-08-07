@@ -1,7 +1,7 @@
-/// Per-month breakdown data for the Insights tab.
-///
-/// Each card shows month label, delta, total, tx count, and
-/// expands to reveal top-5 category bars.
+// Per-month breakdown data for the Insights tab.
+//
+// Each card shows month label, delta, total, tx count, and
+// expands to reveal top-5 category bars.
 
 class MonthlyBreakdownData {
   const MonthlyBreakdownData({
@@ -36,8 +36,12 @@ class MonthlyBreakdownCategory {
   const MonthlyBreakdownCategory({
     required this.category,
     required this.totalKes,
+    this.pct = 0,
   });
 
   final String category;
   final double totalKes;
+
+  /// Share of this category within its month, 0–100.
+  final double pct;
 }

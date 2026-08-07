@@ -4,8 +4,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 // StateProvider lives in legacy.dart in Riverpod 3.x
 import 'package:flutter_riverpod/legacy.dart';
 
+/// Which of the two segments is selected on the Analytics screen.
+enum AnalyticsTab { analytics, insights }
+
 final analyticsPeriodProvider = StateProvider<AnalyticsPeriod>(
   (_) => AnalyticsPeriod.week,
+);
+
+final analyticsTabProvider = StateProvider<AnalyticsTab>(
+  (_) => AnalyticsTab.analytics,
 );
 
 final analyticsSnapshotProvider = StreamProvider<AnalyticsSnapshot>(

@@ -1,6 +1,8 @@
 // Domain entities for the Analytics feature.
 // Matches the Kotlin InsightsViewModel / AnalyticsData models 1-to-1.
 
+import 'monthly_breakdown_data.dart';
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Enums
 // ─────────────────────────────────────────────────────────────────────────────
@@ -31,6 +33,7 @@ class AnalyticsPoint {
 }
 
 /// One calendar month in the 6-month rolling history.
+/// Mirrors Kotlin `InsightsMonthBar`.
 class MonthlyTotalPoint {
   const MonthlyTotalPoint({
     required this.periodKey,
@@ -38,6 +41,9 @@ class MonthlyTotalPoint {
     required this.totalKes,
     required this.year,
     required this.month,
+    this.totalIncomeKes = 0,
+    this.txCount = 0,
+    this.monthOffset = 0,
   });
 
   /// "2025-07" format.
@@ -49,16 +55,32 @@ class MonthlyTotalPoint {
   final int year;
   final int month;
 
+  /// Total income recorded in this month.
+  final double totalIncomeKes;
+
+  /// Number of expense transactions in this month.
+  final int txCount;
+
+  /// Months behind the current month (0 = current, 5 = five months ago).
+  final int monthOffset;
+
+  /// "Jul 2025" style full label used by the Insights history rows.
+  String get fullLabel => '$monthLabel $year';
+
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       other is MonthlyTotalPoint &&
           runtimeType == other.runtimeType &&
           periodKey == other.periodKey &&
-          totalKes == other.totalKes;
+          totalKes == other.totalKes &&
+          totalIncomeKes == other.totalIncomeKes &&
+          txCount == other.txCount &&
+          monthOffset == other.monthOffset;
 
   @override
-  int get hashCode => Object.hash(periodKey, totalKes);
+  int get hashCode =>
+      Object.hash(periodKey, totalKes, totalIncomeKes, txCount, monthOffset);
 }
 
 /// Per-category breakdown with 8-week sparkline and top merchant.
@@ -67,6 +89,7 @@ class AnalyticsCategoryShare {
     required this.category,
     required this.totalKes,
     required this.percentage,
+    this.txCount = 0,
     this.topMerchant,
     this.weeklySparkline = const [],
   });
@@ -76,6 +99,9 @@ class AnalyticsCategoryShare {
 
   /// 0–100 percentage of period spend.
   final double percentage;
+
+  /// Number of transactions in this category within the period.
+  final int txCount;
 
   /// Most-visited merchant within this category (by tx count).
   final String? topMerchant;
@@ -90,10 +116,11 @@ class AnalyticsCategoryShare {
           runtimeType == other.runtimeType &&
           category == other.category &&
           totalKes == other.totalKes &&
-          percentage == other.percentage;
+          percentage == other.percentage &&
+          txCount == other.txCount;
 
   @override
-  int get hashCode => Object.hash(category, totalKes, percentage);
+  int get hashCode => Object.hash(category, totalKes, percentage, txCount);
 }
 
 /// Per-merchant spend share.
@@ -144,10 +171,16 @@ class AnalyticsSnapshot {
     required this.categoryBreakdown,
     required this.topMerchants,
     required this.monthlyHistory,
+    required this.monthBreakdown,
     this.postIncomeAvgDailySpendKes,
     this.otherDaysAvgDailySpendKes,
     this.topFeeCategory,
     this.incomeEventsCount,
+    this.avgMonthlyExpenseKes = 0,
+    this.totalTrackedKes = 0,
+    this.topCategoryAllTime,
+    this.topCategoryAllTimePct,
+    this.trend = 'stable',
   });
 
   // ── Period totals ────────────────────────────────────────────────────────
@@ -186,6 +219,25 @@ class AnalyticsSnapshot {
 
   // ── 6-month rolling history (Insights tab) ───────────────────────────────
   final List<MonthlyTotalPoint> monthlyHistory;
+
+  // ── Per-month breakdown (Insights tab History) ──────────────────────────
+  final List<MonthlyBreakdownData> monthBreakdown;
+
+  // ── Insights-tab aggregates ──────────────────────────────────────────────
+  /// Average of months with spend over the 6-month window.
+  final double avgMonthlyExpenseKes;
+
+  /// Sum of months with spend over the 6-month window.
+  final double totalTrackedKes;
+
+  /// Top category by cumulative spend over the window.
+  final String? topCategoryAllTime;
+
+  /// Share of the top category over the window, 0–100.
+  final double? topCategoryAllTimePct;
+
+  /// "increasing" | "decreasing" | "stable" — last-3 vs previous-3 month avg.
+  final String trend;
 
   // ── Payday pulse (Insights tab) ──────────────────────────────────────────
   /// Average daily spend in the 7 days after any income receipt.
@@ -244,7 +296,13 @@ class AnalyticsSnapshot {
           _listEquals(monthlySpending, other.monthlySpending) &&
           _listEquals(categoryBreakdown, other.categoryBreakdown) &&
           _listEquals(topMerchants, other.topMerchants) &&
-          _listEquals(monthlyHistory, other.monthlyHistory);
+          _listEquals(monthlyHistory, other.monthlyHistory) &&
+          _listEquals(monthBreakdown, other.monthBreakdown) &&
+          avgMonthlyExpenseKes == other.avgMonthlyExpenseKes &&
+          totalTrackedKes == other.totalTrackedKes &&
+          topCategoryAllTime == other.topCategoryAllTime &&
+          topCategoryAllTimePct == other.topCategoryAllTimePct &&
+          trend == other.trend;
 
   @override
   int get hashCode => Object.hash(
@@ -274,6 +332,14 @@ class AnalyticsSnapshot {
         Object.hashAll(categoryBreakdown),
         Object.hashAll(topMerchants),
         Object.hashAll(monthlyHistory),
+        Object.hashAll(monthBreakdown),
+        Object.hash(
+          avgMonthlyExpenseKes,
+          totalTrackedKes,
+          topCategoryAllTime,
+          topCategoryAllTimePct,
+          trend,
+        ),
       );
 }
 

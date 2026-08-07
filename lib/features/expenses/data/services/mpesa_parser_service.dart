@@ -529,25 +529,32 @@ class MpesaParserService {
     MpesaConfidence.low => MpesaParseRoute.quarantine,
   };
 
+  /// Maps a parsed M-Pesa transaction type to the app's category vocabulary.
+  ///
+  /// Mirrors Kotlin `MpesaParsingConfig.CATEGORY_DISPLAY` so imported rows land
+  /// on categories that exist in `expenseCategoryDefaults` and the analytics
+  /// category registry (previously `sent` → "Other", paybill → "Bills",
+  /// withdrawal/deposit → "Cash", fuliza → "Loan" — all mismatched names that
+  /// polluted the Finance breakdown and category picker).
   String _categoryFor(
     MpesaTransactionType type,
     String message, {
     bool isReceivedReversal = false,
   }) => switch (type) {
     MpesaTransactionType.received => 'Income',
-    MpesaTransactionType.paybill => 'Bills',
+    MpesaTransactionType.sent => 'Transfer',
+    MpesaTransactionType.paybill => 'Bills & Utilities',
     MpesaTransactionType.buyGoods => 'Shopping',
-    MpesaTransactionType.withdrawal => 'Cash',
-    MpesaTransactionType.deposit => 'Cash',
+    MpesaTransactionType.withdrawal => 'Cash Withdrawal',
+    MpesaTransactionType.deposit => 'Cash Deposit',
     MpesaTransactionType.airtime => 'Airtime',
     MpesaTransactionType.reversal =>
       _categoryForReversal(message, isReceivedReversal: isReceivedReversal),
-    MpesaTransactionType.fulizaDraw => 'Loan',
-    MpesaTransactionType.fulizaRepayment => 'Loan',
-    MpesaTransactionType.fulizaCharge => 'Loan',
+    MpesaTransactionType.fulizaDraw => 'Loans & Credit',
+    MpesaTransactionType.fulizaRepayment => 'Loans & Credit',
+    MpesaTransactionType.fulizaCharge => 'Loans & Credit',
     MpesaTransactionType.unknown =>
       message.toLowerCase().contains('salary') ? 'Income' : 'Other',
-    _ => 'Other',
   };
 
   String _categoryForReversal(

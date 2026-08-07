@@ -53,7 +53,7 @@ final appRouterProvider = Provider<GoRouter>(
             return CategoryDrillDownScreen(
               category: category,
               totalKes: extra.totalKes,
-              txCount: extra.weeklySparkline.fold<int>(0, (s, _) => s + 1),
+              txCount: 0, // real count loaded by the screen's own query
               share: extra,
             );
           }

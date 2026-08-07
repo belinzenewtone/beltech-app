@@ -5,6 +5,7 @@ import 'package:beltech/core/theme/app_typography.dart';
 import 'package:beltech/core/widgets/app_button.dart';
 import 'package:beltech/core/widgets/app_card.dart';
 import 'package:beltech/core/widgets/app_form_sheet.dart';
+import 'package:beltech/core/widgets/overflow_choice_selector.dart';
 import 'package:beltech/features/loans/domain/entities/loan_item.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -140,20 +141,12 @@ class _LoanFormSheetState extends ConsumerState<LoanFormSheet> {
           const SizedBox(height: 14),
           Text('Status', style: AppTypography.sectionTitle(context)),
           const SizedBox(height: 10),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: LoanStatus.values.map((s) {
-              final selected = _status == s;
-              return AppButton(
-                label: s.label,
-                size: AppButtonSize.sm,
-                variant: selected
-                    ? AppButtonVariant.primary
-                    : AppButtonVariant.secondary,
-                onPressed: () => setState(() => _status = s),
-              );
-            }).toList(),
+          OverflowChoiceSelector<LoanStatus>(
+            options: LoanStatus.values,
+            selected: _status,
+            labelFor: (s) => s.label,
+            onChanged: (value) => setState(() => _status = value),
+            hint: 'Select status',
           ),
         ],
       ),

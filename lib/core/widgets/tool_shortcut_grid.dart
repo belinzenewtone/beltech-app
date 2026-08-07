@@ -134,7 +134,7 @@ class ToolShortcutGrid extends ConsumerWidget {
         // Tile height is content-driven so tiles can never overflow at any
         // width: icon (36) + gap (8) + label line (~19) + vertical padding
         // (16) + border (2), plus a little headroom for text scale.
-        const tileContentHeight = 36.0 + 8.0 + 19.0 + 16.0 + 2.0;
+        const tileContentHeight = 36.0 + 8.0 + 19.0 + 12.0 + 2.0;
         final tileWidth =
             (constraints.maxWidth - (crossAxisCount - 1) * crossSpacing) /
             crossAxisCount;

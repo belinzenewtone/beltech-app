@@ -79,6 +79,7 @@ void main() {
         AnalyticsMerchantShare(merchant: 'Shop', totalKes: 700, transactionCount: 3),
       ],
       monthlyHistory: [],
+      monthBreakdown: [],
     );
     const b = AnalyticsSnapshot(
       totalSpentThisPeriodKes: 1000,
@@ -103,6 +104,7 @@ void main() {
         AnalyticsMerchantShare(merchant: 'Shop', totalKes: 700, transactionCount: 3),
       ],
       monthlyHistory: [],
+      monthBreakdown: [],
     );
 
     expect(a, equals(b));

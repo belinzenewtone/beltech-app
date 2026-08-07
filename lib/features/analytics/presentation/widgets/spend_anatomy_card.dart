@@ -37,7 +37,9 @@ class _SpendAnatomyCardState extends State<SpendAnatomyCard>
 
   @override
   Widget build(BuildContext context) {
-    final total = widget.snapshot.totalTxCount;
+    final total = widget.snapshot.microTxCount +
+        widget.snapshot.mediumTxCount +
+        widget.snapshot.largeTxCount;
     if (total == 0) return const SizedBox.shrink();
 
     final microPct = (widget.snapshot.microTxCount / total * 100).toStringAsFixed(0);
@@ -90,7 +92,7 @@ class _SpendAnatomyCardState extends State<SpendAnatomyCard>
           const SizedBox(height: 10),
           _AnatomyBar(
             label: 'Large',
-            sublabel: '≥ KES 2k',
+            sublabel: '> KES 2k',
             count: widget.snapshot.largeTxCount,
             total: total,
             color: AppColors.danger,

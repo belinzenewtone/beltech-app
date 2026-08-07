@@ -10,7 +10,7 @@ import 'package:beltech/features/analytics/presentation/widgets/analytics_fees_c
 import 'package:beltech/features/analytics/presentation/widgets/analytics_summary_cards.dart';
 import 'package:beltech/features/analytics/presentation/widgets/analytics_top_merchants.dart';
 import 'package:beltech/features/analytics/presentation/widgets/category_spend_cards.dart';
-import 'package:beltech/features/analytics/presentation/widgets/monthly_trend_bars.dart';
+import 'package:beltech/features/analytics/presentation/widgets/insights_tab_content.dart';
 import 'package:beltech/features/analytics/presentation/widgets/spending_comparison_card.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -109,11 +109,64 @@ class _InlineInsightBanner extends StatelessWidget {
 
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Segmented Analytics | Insights control
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _SegmentedTabs extends StatelessWidget {
+  const _SegmentedTabs({required this.selected, required this.onSelected});
+
+  final AnalyticsTab selected;
+  final ValueChanged<AnalyticsTab> onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Row(
+      children: [
+        for (final tab in AnalyticsTab.values) ...[
+          if (tab != AnalyticsTab.values.first)
+            const SizedBox(width: AppSpacing.sm),
+          Expanded(
+            child: GestureDetector(
+              onTap: () => onSelected(tab),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 160),
+                padding: const EdgeInsets.symmetric(vertical: 10),
+                decoration: BoxDecoration(
+                  color: selected == tab
+                      ? scheme.primary
+                      : scheme.surfaceContainerHighest.withValues(alpha: 0.6),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Center(
+                  child: Text(
+                    tab == AnalyticsTab.analytics ? 'Analytics' : 'Insights',
+                    style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                          fontWeight: selected == tab
+                              ? FontWeight.w600
+                              : FontWeight.w400,
+                          color: selected == tab
+                              ? scheme.onPrimary
+                              : scheme.onSurfaceVariant,
+                        ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Analytics tab
 // ─────────────────────────────────────────────────────────────────────────────
 
 class _AnalyticsTab extends ConsumerStatefulWidget {
-  const _AnalyticsTab({super.key, required this.snapshot});
+  const _AnalyticsTab({required this.snapshot});
   final AnalyticsSnapshot snapshot;
 
   @override
@@ -138,102 +191,114 @@ class _AnalyticsTabState extends ConsumerState<_AnalyticsTab> {
   @override
   Widget build(BuildContext context) {
     final period = ref.watch(analyticsPeriodProvider);
+    final tab = ref.watch(analyticsTabProvider);
     final snapshot = widget.snapshot;
-    const h = SizedBox(height: AppSpacing.md);
 
     return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(0, AppSpacing.md, 0, AppSpacing.xxl),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Inline insight banner — highest-confidence insight
-          if (snapshot.periodChangePercent != null) ...[
-            _InlineInsightBanner(snapshot: snapshot),
-            const SizedBox(height: AppSpacing.md),
-          ],
-          // Period filter chips
-          _PeriodChips(
-            selected: period,
-            customRangeLabel: _customRangeLabel,
-            onChanged: (p) {
-              ref.read(analyticsPeriodProvider.notifier).state = p;
-              if (p != period) setState(() => _customRange = null);
-            },
-            onCustomTap: () async {
-              final now = DateTime.now();
-              final range = await showDateRangePicker(
-                context: context,
-                firstDate: DateTime(now.year - 2, 1, 1),
-                lastDate: now,
-                initialDateRange: _customRange ??
-                    DateTimeRange(
-                      start: now.subtract(const Duration(days: 30)),
-                      end: now,
-                    ),
-              );
-              if (range != null) {
-                setState(() => _customRange = range);
-                // TODO(phase-4): pass range to a customRangeSnapshotProvider
-                // once the repository supports watchSnapshotRange(start, end).
-                // For now the chip shows the selection visually.
-                ref.invalidate(analyticsSnapshotProvider);
-              }
-            },
+          _SegmentedTabs(
+            selected: tab,
+            onSelected: (t) =>
+                ref.read(analyticsTabProvider.notifier).state = t,
           ),
-          h,
-          // 4-card summary row wrapped in AnimatedSwitcher for period changes
-          AnimatedSwitcher(
-            duration: const Duration(milliseconds: 200),
-            child: AnalyticsSummaryCards(
-              key: ValueKey(period),
-              snapshot: snapshot,
-            ),
-          ),
-          h,
-          // vs Last period comparison
-          AnimatedSwitcher(
-            duration: const Duration(milliseconds: 200),
-            child: SpendingComparisonCard(
-              key: ValueKey(period),
-              snapshot: snapshot,
-            ),
-          ),
-          h,
-          // Spending bar chart for current period
-          if ((period == AnalyticsPeriod.week
-                  ? snapshot.weeklySpending
-                  : snapshot.monthlySpending)
-              .isNotEmpty)
-            AnalyticsBarChart(
-              title: period == AnalyticsPeriod.week
-                  ? 'Daily spending this week'
-                  : 'Daily spending this month',
-              points: period == AnalyticsPeriod.week
-                  ? snapshot.weeklySpending
-                  : snapshot.monthlySpending,
-            ),
-          h,
-          // 6-month rolling bar chart — tap a month to see its Wrapped
-          if (snapshot.monthlyHistory.length > 1)
-            MonthlyTrendBars(
-              monthlyHistory: snapshot.monthlyHistory,
-              onTapMonth: (year, month) =>
-                  context.pushNamed('monthly-wrapped', extra: (year, month)),
-            ),
-          h,
-          // Category spend cards (with sparklines)
-          CategorySpendCards(categories: snapshot.categoryBreakdown),
-          h,
-          // Fees
-          AnalyticsFeesCard(snapshot: snapshot),
-          h,
-          // Top merchants
-          if (snapshot.topMerchants.isNotEmpty) ...[
-            SectionHeader('Top Merchants'),
-            AnalyticsTopMerchants(merchants: snapshot.topMerchants),
-          ],
+          const SizedBox(height: AppSpacing.md),
+          if (tab == AnalyticsTab.insights)
+            InsightsTabContent(snapshot: snapshot)
+          else
+            _buildAnalyticsContent(period, snapshot),
         ],
       ),
+    );
+  }
+
+  Widget _buildAnalyticsContent(AnalyticsPeriod period, AnalyticsSnapshot snapshot) {
+    const h = SizedBox(height: AppSpacing.md);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Inline insight banner — highest-confidence insight
+        if (snapshot.periodChangePercent != null) ...[
+          _InlineInsightBanner(snapshot: snapshot),
+          const SizedBox(height: AppSpacing.md),
+        ],
+        // Period filter chips
+        _PeriodChips(
+          selected: period,
+          customRangeLabel: _customRangeLabel,
+          onChanged: (p) {
+            ref.read(analyticsPeriodProvider.notifier).state = p;
+            if (p != period) setState(() => _customRange = null);
+          },
+          onCustomTap: () async {
+            final now = DateTime.now();
+            final range = await showDateRangePicker(
+              context: context,
+              firstDate: DateTime(now.year - 2, 1, 1),
+              lastDate: now,
+              initialDateRange: _customRange ??
+                  DateTimeRange(
+                    start: now.subtract(const Duration(days: 30)),
+                    end: now,
+                  ),
+            );
+            if (range != null) {
+              setState(() => _customRange = range);
+              // TODO(phase-4): pass range to a customRangeSnapshotProvider
+              // once the repository supports watchSnapshotRange(start, end).
+              // For now the chip shows the selection visually.
+              ref.invalidate(analyticsSnapshotProvider);
+            }
+          },
+        ),
+        h,
+        // 4-card summary row wrapped in AnimatedSwitcher for period changes
+        AnimatedSwitcher(
+          duration: const Duration(milliseconds: 200),
+          child: AnalyticsSummaryCards(
+            key: ValueKey(period),
+            snapshot: snapshot,
+          ),
+        ),
+        h,
+        // vs Last period comparison
+        AnimatedSwitcher(
+          duration: const Duration(milliseconds: 200),
+          child: SpendingComparisonCard(
+            key: ValueKey(period),
+            snapshot: snapshot,
+          ),
+        ),
+        h,
+        // Daily spending bar chart for current period
+        if ((period == AnalyticsPeriod.week
+                ? snapshot.weeklySpending
+                : snapshot.monthlySpending)
+            .isNotEmpty)
+          AnalyticsBarChart(
+            title: period == AnalyticsPeriod.week
+                ? 'Daily spending this week'
+                : 'Daily spending this month',
+            points: period == AnalyticsPeriod.week
+                ? snapshot.weeklySpending
+                : snapshot.monthlySpending,
+          ),
+        h,
+        // Category spend cards (with sparklines)
+        CategorySpendCards(categories: snapshot.categoryBreakdown),
+        h,
+        // Fees
+        AnalyticsFeesCard(snapshot: snapshot),
+        h,
+        // Top merchants
+        if (snapshot.topMerchants.isNotEmpty) ...[
+          SectionHeader('Top Merchants'),
+          AnalyticsTopMerchants(merchants: snapshot.topMerchants),
+        ],
+      ],
     );
   }
 }

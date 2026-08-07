@@ -2,6 +2,7 @@ import 'package:beltech/core/theme/app_typography.dart';
 import 'package:beltech/core/widgets/app_button.dart';
 import 'package:beltech/core/widgets/app_card.dart';
 import 'package:beltech/core/widgets/app_form_sheet.dart';
+import 'package:beltech/core/widgets/overflow_choice_selector.dart';
 import 'package:beltech/core/widgets/super_add_sheet_sections.dart';
 import 'package:beltech/features/bills/domain/entities/bill_item.dart';
 import 'package:flutter/material.dart';
@@ -103,26 +104,22 @@ Future<BillFormResult?> showBillFormSheet(
               const SizedBox(height: 14),
               Text('Repeat', style: AppTypography.sectionTitle(context)),
               const SizedBox(height: 10),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children:
-                    [
-                      (null, 'One-time'),
-                      ('monthly', 'Monthly'),
-                      ('weekly', 'Weekly'),
-                      ('yearly', 'Yearly'),
-                    ].map((option) {
-                      final selected = recurrence == option.$1;
-                      return AppButton(
-                        label: option.$2,
-                        size: AppButtonSize.sm,
-                        variant: selected
-                            ? AppButtonVariant.primary
-                            : AppButtonVariant.secondary,
-                        onPressed: () => setState(() => recurrence = option.$1),
-                      );
-                    }).toList(),
+              OverflowChoiceSelector<String?>(
+                options: const [
+                  null,
+                  'monthly',
+                  'weekly',
+                  'yearly',
+                ],
+                selected: recurrence,
+                labelFor: (value) => switch (value) {
+                  null => 'One-time',
+                  'monthly' => 'Monthly',
+                  'weekly' => 'Weekly',
+                  _ => 'Yearly',
+                },
+                onChanged: (value) => setState(() => recurrence = value),
+                hint: 'Select repeat',
               ),
               const SizedBox(height: 14),
               Text('Urgency', style: AppTypography.sectionTitle(context)),

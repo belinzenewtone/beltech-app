@@ -163,9 +163,9 @@ class _CategoryCard extends StatelessWidget {
                     ],
                   ],
                 ),
-                // Sparkline
-                if (share.weeklySparkline.isNotEmpty &&
-                    share.weeklySparkline.any((v) => v > 0)) ...[
+                // Sparkline — only render weeks with actual spend so blank
+                // weeks don't consume space with empty bars.
+                if (share.weeklySparkline.any((v) => v > 0)) ...[
                   const SizedBox(height: 8),
                   ChartSemantics(
                     label: 'Spending trend for ${share.category}',
@@ -205,9 +205,11 @@ class _Sparkline extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final maxVal = globalMax > 0 ? globalMax : data.fold<double>(0, (prev, v) => v > prev ? v : prev);
+    final nonzero = data.where((v) => v > 0).toList();
+    if (nonzero.isEmpty) return const SizedBox.shrink();
     return Row(
       crossAxisAlignment: CrossAxisAlignment.end,
-      children: data.map((v) {
+      children: nonzero.map((v) {
         final frac = maxVal > 0 ? (v / maxVal).clamp(0.0, 1.0) : 0.0;
         return Expanded(
           child: Padding(
@@ -215,7 +217,7 @@ class _Sparkline extends StatelessWidget {
             child: Container(
               height: math.max(2, frac * 24),
               decoration: BoxDecoration(
-                color: v > 0 ? color.withOpacity(0.7) : color.withOpacity(0.15),
+                color: color.withOpacity(0.7),
                 borderRadius: BorderRadius.circular(2),
               ),
             ),

@@ -513,11 +513,21 @@ void main() {
       expect(r!.category, 'Income');
     });
 
-    test('paybill → Bills', () {
+    test('sent → Transfer', () {
+      final r = parser.parseSingleDetailed(
+        'AA11BB22CC Confirmed. Ksh1,200.00 sent to JANE DOE on 1/1/26 at 9:00 AM.',
+      );
+      final tx = r;
+      expect(tx, isNotNull);
+      expect(tx?.transactionType, MpesaTransactionType.sent);
+      expect(tx?.category, 'Transfer');
+    });
+
+    test('paybill → Bills & Utilities', () {
       final r = parser.parseSingleDetailed(
         'AA11BB22CC Confirmed. Ksh850.00 sent to KPLC for account 99887 on 1/1/26 at 8:00 AM.',
       );
-      expect(r!.category, 'Bills');
+      expect(r!.category, 'Bills & Utilities');
     });
 
     test('buyGoods → Shopping', () {
@@ -527,18 +537,18 @@ void main() {
       expect(r!.category, 'Shopping');
     });
 
-    test('withdrawal → Cash', () {
+    test('withdrawal → Cash Withdrawal', () {
       final r = parser.parseSingleDetailed(
         'AA11BB22CC Confirmed. Ksh1,000.00 withdraw at agent on 1/1/26 at 9:00 AM.',
       );
-      expect(r!.category, 'Cash');
+      expect(r!.category, 'Cash Withdrawal');
     });
 
-    test('deposit → Cash', () {
+    test('deposit → Cash Deposit', () {
       final r = parser.parseSingleDetailed(
         'AA11BB22CC Confirmed. Ksh2,000.00 deposit received on 1/1/26 at 9:00 AM.',
       );
-      expect(r!.category, 'Cash');
+      expect(r!.category, 'Cash Deposit');
     });
 
     test('airtime → Airtime', () {
@@ -548,18 +558,18 @@ void main() {
       expect(r!.category, 'Airtime');
     });
 
-    test('fulizaDraw → Loan', () {
+    test('fulizaDraw → Loans & Credit', () {
       final r = parser.parseSingleDetailed(
         'AA11BB22CC Confirmed. Ksh500.00 Fuliza M-PESA amount credited on 1/1/26 at 9:00 AM.',
       );
-      expect(r!.category, 'Loan');
+      expect(r!.category, 'Loans & Credit');
     });
 
-    test('fulizaRepayment → Loan', () {
+    test('fulizaRepayment → Loans & Credit', () {
       final r = parser.parseSingleDetailed(
         'AA11BB22CC Confirmed. Ksh200.00 paid from your Fuliza M-PESA on 1/1/26 at 9:00 AM.',
       );
-      expect(r!.category, 'Loan');
+      expect(r!.category, 'Loans & Credit');
     });
 
     test('reversal of sent payment is refined to Income', () {

@@ -1,5 +1,6 @@
 import 'package:beltech/data/local/drift/app_drift_store.dart';
 import 'package:beltech/features/analytics/domain/entities/analytics_snapshot.dart';
+import 'package:beltech/features/analytics/domain/entities/monthly_breakdown_data.dart';
 import 'package:beltech/features/analytics/domain/repositories/analytics_repository.dart';
 
 /// Full analytics snapshot repository.
@@ -7,13 +8,21 @@ import 'package:beltech/features/analytics/domain/repositories/analytics_reposit
 /// Mirrors Kotlin InsightsViewModel.loadAnalyticsTab() / loadInsightsTab():
 ///   • Period-scoped summary (spend, income, fees, categories, merchants)
 ///   • 8-week rolling sparklines per category + top merchant per category
-///   • 6-month rolling history for the Insights tab trend chart
+///   • 6-month rolling history + per-month breakdown for the Insights tab
 ///   • Payday-pulse computation (post-income avg vs other days avg)
 ///   • Spend-anatomy counts (micro / medium / large)
+///
+/// Expenses are rows whose `transaction_type` is 'expense' (the default);
+/// income-type rows live in the separate `incomes` table.
 class AnalyticsRepositoryImpl implements AnalyticsRepository {
   AnalyticsRepositoryImpl(this._store);
 
   final AppDriftStore _store;
+
+  /// Rows with this transaction_type (or NULL, the legacy default) are
+  /// treated as expenses — matching the finance records the app writes.
+  static const _expenseTypeFilter =
+      "AND COALESCE(transaction_type, 'expense') = 'expense'";
 
   @override
   Stream<AnalyticsSnapshot> watchSnapshot(AnalyticsPeriod period) async* {
@@ -47,6 +56,7 @@ class AnalyticsRepositoryImpl implements AnalyticsRepository {
     } else {
       periodStart = DateTime(now.year, now.month, 1);
       periodEnd = _nextMonth(now.year, now.month);
+      // Kotlin "vs Last Month" — compare against the previous calendar month.
       prevStart = _prevMonthStart(now.year, now.month);
       prevEnd = periodStart;
     }
@@ -83,42 +93,47 @@ class AnalyticsRepositoryImpl implements AnalyticsRepository {
       'SELECT amount, category, occurred_at, title '
       'FROM transactions '
       'WHERE occurred_at >= ? AND occurred_at < ? '
+      '$_expenseTypeFilter '
       'ORDER BY occurred_at ASC',
       [pStartMs, pEndMs],
     );
 
-    // ── Q2: Weekly chart transactions ──────────────────────────────────────
+    // ── Q2: Weekly chart transactions (expenses only) ──────────────────────
     final weekRows = await ex.runSelect(
       'SELECT amount, occurred_at '
       'FROM transactions '
-      'WHERE occurred_at >= ? AND occurred_at < ?',
+      'WHERE occurred_at >= ? AND occurred_at < ? '
+      '$_expenseTypeFilter',
       [wStartMs, wEndMs],
     );
 
-    // ── Q3: Previous period total ──────────────────────────────────────────
+    // ── Q3: Previous period total (expenses only) ──────────────────────────
     final prevRows = await ex.runSelect(
       'SELECT COALESCE(SUM(amount), 0) AS total '
       'FROM transactions '
-      'WHERE occurred_at >= ? AND occurred_at < ?',
+      'WHERE occurred_at >= ? AND occurred_at < ? '
+      '$_expenseTypeFilter',
       [prevStartMs, prevEndMs],
     );
     final previousPeriodTotal = _asDouble(prevRows.firstOrNull?['total']);
 
-    // ── Q4: Fees in period ─────────────────────────────────────────────────
+    // ── Q4: Fees in period (expenses only) ─────────────────────────────────
     final feeRows = await ex.runSelect(
       'SELECT COALESCE(SUM(fee), 0) AS total '
       'FROM transactions '
       'WHERE occurred_at >= ? AND occurred_at < ? '
+      '$_expenseTypeFilter '
       'AND fee IS NOT NULL AND fee > 0',
       [pStartMs, pEndMs],
     );
     final feesPaid = _asDouble(feeRows.firstOrNull?['total']);
 
-    // ── Q4b: Top fee category ───────────────────────────────────────────────
+    // ── Q4b: Top fee category (expenses only) ───────────────────────────────
     final topFeeRows = await ex.runSelect(
       'SELECT category, SUM(fee) AS total '
       'FROM transactions '
       'WHERE occurred_at >= ? AND occurred_at < ? '
+      '$_expenseTypeFilter '
       'AND fee IS NOT NULL AND fee > 0 '
       'GROUP BY category '
       'ORDER BY total DESC '
@@ -139,11 +154,12 @@ class AnalyticsRepositoryImpl implements AnalyticsRepository {
       [mStartMs, mEndMs],
     );
 
-    // ── Q7: Top merchants by spend in period ───────────────────────────────
+    // ── Q7: Top merchants by spend in period (expenses only) ───────────────
     final merchantRows = await ex.runSelect(
       'SELECT title, SUM(amount) AS total, COUNT(*) AS c '
       'FROM transactions '
       'WHERE occurred_at >= ? AND occurred_at < ? '
+      '$_expenseTypeFilter '
       'GROUP BY title '
       'ORDER BY total DESC '
       'LIMIT 5',
@@ -158,33 +174,53 @@ class AnalyticsRepositoryImpl implements AnalyticsRepository {
       [pStartMs, pEndMs],
     );
     final totalIncome = _asDouble(incomeRows.firstOrNull?['total']);
-    final incomeEventsCount = _asInt(incomeRows.firstOrNull?['cnt']);
 
-    // ── Q9: 6-month rolling history (GROUP BY period) ──────────────────────
+    // ── Q9: 6-month rolling history (GROUP BY period, expenses only) ────────
     final historyRows = await ex.runSelect(
       "SELECT strftime('%Y-%m', datetime(occurred_at / 1000, 'unixepoch', 'localtime')) AS pk, "
-      'SUM(amount) AS total '
+      'SUM(amount) AS total, COUNT(*) AS c '
       'FROM transactions '
       'WHERE occurred_at >= ? '
+      '$_expenseTypeFilter '
       "GROUP BY pk "
       "ORDER BY pk ASC",
       [histStartMs],
     );
 
-    // ── Q10: 8-week sparkline transactions (all categories) ────────────────
+    // ── Q10: 8-week sparkline transactions (all categories, expenses only) ─
     final sparkRows = await ex.runSelect(
       'SELECT category, amount, occurred_at '
       'FROM transactions '
-      'WHERE occurred_at >= ?',
+      'WHERE occurred_at >= ? '
+      '$_expenseTypeFilter',
       [sparkStartMs],
     );
 
-    // ── Q11: Income receipt dates for payday pulse ─────────────────────────
+    // ── Q11: Income receipt dates for payday pulse (6-month window) ────────
     final incomeDateRows = await ex.runSelect(
       'SELECT received_at FROM incomes '
       'WHERE received_at >= ? '
       'ORDER BY received_at ASC',
-      [sparkStartMs],
+      [histStartMs],
+    );
+
+    // ── Q12: 6-month window expenses for the Insights tab ──────────────────
+    final windowRows = await ex.runSelect(
+      'SELECT category, amount, occurred_at '
+      'FROM transactions '
+      'WHERE occurred_at >= ? '
+      '$_expenseTypeFilter',
+      [histStartMs],
+    );
+
+    // ── Q13: 6-month window income totals per month (Insights tab) ─────────
+    final windowIncomeRows = await ex.runSelect(
+      "SELECT strftime('%Y-%m', datetime(received_at / 1000, 'unixepoch', 'localtime')) AS pk, "
+      'SUM(amount) AS total '
+      'FROM incomes '
+      'WHERE received_at >= ? '
+      "GROUP BY pk",
+      [histStartMs],
     );
 
     // ─────────────────────────────────────────────────────────────────────
@@ -192,9 +228,9 @@ class AnalyticsRepositoryImpl implements AnalyticsRepository {
     // ─────────────────────────────────────────────────────────────────────
     double periodTotal = 0;
     final categoryTotals = <String, double>{};
+    final categoryTxCounts = <String, int>{};
     // category → merchant → visit count (for top-merchant-per-category)
     final catMerchants = <String, Map<String, int>>{};
-    int microCount = 0, mediumCount = 0, largeCount = 0;
 
     final daysInPeriod = periodEnd.difference(periodStart).inDays;
     final monthDailyMap = <String, double>{
@@ -208,6 +244,7 @@ class AnalyticsRepositoryImpl implements AnalyticsRepository {
 
       periodTotal += amount;
       categoryTotals[category] = (categoryTotals[category] ?? 0) + amount;
+      categoryTxCounts[category] = (categoryTxCounts[category] ?? 0) + 1;
 
       // Monthly daily chart — use period-relative day bucket so week mode
       // (keys "1"–"7") maps correctly instead of raw calendar day.
@@ -220,15 +257,6 @@ class AnalyticsRepositoryImpl implements AnalyticsRepository {
       // Merchant frequency per category
       catMerchants.putIfAbsent(category, () => {})[title] =
           (catMerchants[category]![title] ?? 0) + 1;
-
-      // Spend anatomy
-      if (amount < 500) {
-        microCount++;
-      } else if (amount < 2000) {
-        mediumCount++;
-      } else {
-        largeCount++;
-      }
     }
 
     // ─────────────────────────────────────────────────────────────────────
@@ -276,6 +304,7 @@ class AnalyticsRepositoryImpl implements AnalyticsRepository {
             totalKes: e.value,
             percentage:
                 periodTotal > 0 ? (e.value / periodTotal) * 100 : 0,
+            txCount: categoryTxCounts[e.key] ?? 0,
             topMerchant: topMerchant,
             weeklySparkline: catSparkline[e.key] ?? List.filled(8, 0.0),
           );
@@ -294,7 +323,7 @@ class AnalyticsRepositoryImpl implements AnalyticsRepository {
         .toList();
 
     // ─────────────────────────────────────────────────────────────────────
-    // 6-month history
+    // 6-month history + Insights-tab payload
     // ─────────────────────────────────────────────────────────────────────
     const monthNames = [
       'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
@@ -302,6 +331,13 @@ class AnalyticsRepositoryImpl implements AnalyticsRepository {
     ];
     final histMap = <String, double>{
       for (final row in historyRows)
+        '${row['pk']}': _asDouble(row['total']),
+    };
+    final histTxCount = <String, int>{
+      for (final row in historyRows) '${row['pk']}': _asInt(row['c']),
+    };
+    final incomeByMonth = <String, double>{
+      for (final row in windowIncomeRows)
         '${row['pk']}': _asDouble(row['total']),
     };
 
@@ -320,50 +356,140 @@ class AnalyticsRepositoryImpl implements AnalyticsRepository {
         totalKes: histMap[key] ?? 0,
         year: y,
         month: m,
+        totalIncomeKes: incomeByMonth[key] ?? 0,
+        txCount: histTxCount[key] ?? 0,
+        monthOffset: -offset,
       ));
     }
 
-    // ─────────────────────────────────────────────────────────────────────
-    // Payday pulse
-    // ─────────────────────────────────────────────────────────────────────
+    // Insights-tab aggregates (Kotlin loadInsightsTab).
+    final expenseMonths = monthlyHistory.where((p) => p.totalKes > 0).toList();
+    final totalTracked =
+        expenseMonths.fold<double>(0, (sum, p) => sum + p.totalKes);
+    final avgExpense =
+        expenseMonths.isEmpty ? 0.0 : totalTracked / expenseMonths.length;
+
+    // Top category all-time over the window.
+    final catTotalsWindow = <String, double>{};
+    for (final row in windowRows) {
+      final cat = '${row['category'] ?? 'Other'}';
+      catTotalsWindow[cat] = (catTotalsWindow[cat] ?? 0) + _asDouble(row['amount']);
+    }
+    final catTotalsSorted = catTotalsWindow.entries.toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
+    final grandTotal = catTotalsSorted.fold<double>(0, (s, e) => s + e.value);
+    final topCategoryAllTime = catTotalsSorted.isEmpty ? null : catTotalsSorted.first.key;
+    final topCategoryAllTimePct = (topCategoryAllTime != null && grandTotal > 0)
+        ? (catTotalsSorted.first.value / grandTotal) * 100
+        : null;
+
+    // Trend: last-3 vs previous-3 month average, ±5% band.
+    final last3 = monthlyHistory.length >= 3
+        ? monthlyHistory.sublist(monthlyHistory.length - 3)
+        : monthlyHistory;
+    final prev3 = monthlyHistory.length >= 3
+        ? monthlyHistory.sublist(0, 3)
+        : monthlyHistory;
+    final last3Avg =
+        last3.fold<double>(0, (s, p) => s + p.totalKes) /
+            (last3.isEmpty ? 1 : last3.length);
+    final prev3Avg =
+        prev3.fold<double>(0, (s, p) => s + p.totalKes) /
+            (prev3.isEmpty ? 1 : prev3.length);
+    final trendDiff = (last3Avg - prev3Avg) / (prev3Avg > 0 ? prev3Avg : 1.0);
+    final trend = trendDiff > 0.05
+        ? 'increasing'
+        : trendDiff < -0.05
+            ? 'decreasing'
+            : 'stable';
+
+    // Per-month breakdown (Kotlin: reversed, delta vs previous month).
+    final monthBreakdown = <MonthlyBreakdownData>[];
+    for (int i = 0; i < monthlyHistory.length; i++) {
+      final bar = monthlyHistory[i];
+      final prevExpense =
+          i > 0 ? monthlyHistory[i - 1].totalKes : 0.0;
+      final monthTxns = <String, double>{};
+      for (final row in windowRows) {
+        final dt = DateTime.fromMillisecondsSinceEpoch(_asInt(row['occurred_at']));
+        if (dt.year == bar.year && dt.month == bar.month) {
+          final cat = '${row['category'] ?? 'Other'}';
+          monthTxns[cat] = (monthTxns[cat] ?? 0) + _asDouble(row['amount']);
+        }
+      }
+      final monthTotal = monthTxns.values.fold<double>(0, (s, v) => s + v);
+      final topCats = (monthTxns.entries.toList()
+            ..sort((a, b) => b.value.compareTo(a.value)))
+          .take(5)
+          .map((e) => MonthlyBreakdownCategory(
+                category: e.key,
+                totalKes: e.value,
+                pct: monthTotal > 0 ? (e.value / monthTotal) * 100 : 0,
+              ))
+          .toList();
+      monthBreakdown.add(MonthlyBreakdownData(
+        periodKey: bar.periodKey,
+        monthLabel: bar.monthLabel,
+        year: bar.year,
+        month: bar.month,
+        totalKes: bar.totalKes,
+        previousMonthTotalKes: prevExpense,
+        txCount: bar.txCount,
+        topCategories: topCats,
+      ));
+    }
+    monthBreakdown.sort((a, b) {
+      final byYear = b.year.compareTo(a.year);
+      return byYear != 0 ? byYear : b.month.compareTo(a.month);
+    });
+
+    // Spend anatomy over the 6-month window (Kotlin micro/medium/large).
+    int microCount6 = 0, mediumCount6 = 0, largeCount6 = 0;
+    for (final row in windowRows) {
+      final amount = _asDouble(row['amount']);
+      if (amount < 500) {
+        microCount6++;
+      } else if (amount < 2000) {
+        mediumCount6++;
+      } else {
+        largeCount6++;
+      }
+    }
+
+    // Payday pulse (Kotlin: RECEIVED rows, window start→now, take 12, ≥2).
     double? postIncomeAvg;
     double? otherDaysAvg;
-
-    if (incomeDateRows.isNotEmpty) {
-      // Identify post-income windows (7 days after each income receipt).
+    if (incomeDateRows.length >= 2) {
+      final incomeDates = incomeDateRows.take(12).map((row) => _dayOf(
+            DateTime.fromMillisecondsSinceEpoch(_asInt(row['received_at'])),
+          ));
       final postIncomeDays = <DateTime>{};
-      for (final row in incomeDateRows) {
-        final incomeDay = _dayOf(DateTime.fromMillisecondsSinceEpoch(
-          _asInt(row['received_at']),
-        ));
-        for (int i = 1; i <= 7; i++) {
+      for (final incomeDay in incomeDates) {
+        for (int i = 0; i <= 6; i++) {
           postIncomeDays.add(incomeDay.add(Duration(days: i)));
         }
       }
-
-      // Aggregate daily spend from the sparkline transactions.
       final dailySpend = <DateTime, double>{};
-      for (final row in sparkRows) {
+      for (final row in windowRows) {
         final day = _dayOf(
           DateTime.fromMillisecondsSinceEpoch(_asInt(row['occurred_at'])),
         );
         dailySpend[day] = (dailySpend[day] ?? 0) + _asDouble(row['amount']);
       }
-
-      if (dailySpend.isNotEmpty) {
-        final postEntries =
-            dailySpend.entries.where((e) => postIncomeDays.contains(e.key)).toList();
-        final otherEntries =
-            dailySpend.entries.where((e) => !postIncomeDays.contains(e.key)).toList();
-
-        if (postEntries.isNotEmpty) {
-          postIncomeAvg = postEntries.map((e) => e.value).reduce((a, b) => a + b) /
-              postEntries.length;
+      var postTotal = 0.0, postDays = 0;
+      var otherTotal = 0.0, otherDays = 0;
+      dailySpend.forEach((day, total) {
+        if (postIncomeDays.contains(day)) {
+          postTotal += total;
+          postDays++;
+        } else {
+          otherTotal += total;
+          otherDays++;
         }
-        if (otherEntries.isNotEmpty) {
-          otherDaysAvg = otherEntries.map((e) => e.value).reduce((a, b) => a + b) /
-              otherEntries.length;
-        }
+      });
+      if (postDays > 0 && otherDays > 0) {
+        postIncomeAvg = postTotal / postDays;
+        otherDaysAvg = otherTotal / otherDays;
       }
     }
 
@@ -394,9 +520,11 @@ class AnalyticsRepositoryImpl implements AnalyticsRepository {
       averageDailySpendingKes: avgDaily,
       feesPaidKes: feesPaid,
       totalTxCount: txRows.length,
-      microTxCount: microCount,
-      mediumTxCount: mediumCount,
-      largeTxCount: largeCount,
+      // Spend anatomy is reported over the 6-month Insights window (Kotlin
+      // InsightsSizeBreakdown) — the Insights-tab Spend Anatomy card uses it.
+      microTxCount: microCount6,
+      mediumTxCount: mediumCount6,
+      largeTxCount: largeCount6,
       totalTasksCompleted: completed,
       totalTasksPending: pending,
       totalEventsThisMonth: eventsCount,
@@ -414,10 +542,18 @@ class AnalyticsRepositoryImpl implements AnalyticsRepository {
       categoryBreakdown: categoryBreakdown,
       topMerchants: topMerchants,
       monthlyHistory: monthlyHistory,
+      monthBreakdown: monthBreakdown,
       postIncomeAvgDailySpendKes: postIncomeAvg,
       otherDaysAvgDailySpendKes: otherDaysAvg,
       topFeeCategory: topFeeCategory,
-      incomeEventsCount: incomeEventsCount,
+      // Income-event count from the 6-month window (Kotlin Payday Pulse uses
+      // the window's RECEIVED rows, capped at 12).
+      incomeEventsCount: incomeDateRows.length,
+      avgMonthlyExpenseKes: avgExpense,
+      totalTrackedKes: totalTracked,
+      topCategoryAllTime: topCategoryAllTime,
+      topCategoryAllTimePct: topCategoryAllTimePct,
+      trend: trend,
     );
   }
 
@@ -433,7 +569,8 @@ class AnalyticsRepositoryImpl implements AnalyticsRepository {
     final rows = await _store.executor.runSelect(
       'SELECT COALESCE(SUM(amount), 0) AS total '
       'FROM transactions '
-      'WHERE occurred_at >= ? AND occurred_at < ?',
+      'WHERE occurred_at >= ? AND occurred_at < ? '
+      '$_expenseTypeFilter',
       [start, end],
     );
     return _asDouble(rows.firstOrNull?['total']);
@@ -445,6 +582,7 @@ class AnalyticsRepositoryImpl implements AnalyticsRepository {
     final rows = await _store.executor.runSelect(
       'SELECT category, SUM(amount) AS total '
       'FROM transactions '
+      'WHERE $_expenseTypeFilter '
       'GROUP BY category '
       'ORDER BY total DESC '
       'LIMIT 1',
@@ -452,6 +590,42 @@ class AnalyticsRepositoryImpl implements AnalyticsRepository {
     );
     if (rows.isEmpty) return null;
     return '${rows.first['category']}';
+  }
+
+  @override
+  Future<List<CategoryTransaction>> getCategoryTransactions(
+    String category, {
+    DateTime? start,
+    DateTime? end,
+  }) async {
+    await _store.ensureInitialized();
+    final startMs = start?.millisecondsSinceEpoch;
+    final endMs = end?.millisecondsSinceEpoch;
+    final rows = await _store.executor.runSelect(
+      'SELECT id, title, amount, occurred_at, fee '
+      'FROM transactions '
+      'WHERE category = ? '
+      '$_expenseTypeFilter '
+      '${startMs != null ? 'AND occurred_at >= ? ' : ''}'
+      '${endMs != null ? 'AND occurred_at < ? ' : ''}'
+      'ORDER BY occurred_at DESC',
+      [
+        category,
+        ?startMs,
+        ?endMs,
+      ],
+    );
+    return rows
+        .map((row) => CategoryTransaction(
+              id: _asInt(row['id']),
+              title: '${row['title'] ?? ''}',
+              amountKes: _asDouble(row['amount']),
+              occurredAt: DateTime.fromMillisecondsSinceEpoch(
+                _asInt(row['occurred_at']),
+              ),
+              feeKes: row['fee'] == null ? null : _asDouble(row['fee']),
+            ))
+        .toList();
   }
 
   // ─────────────────────────────────────────────────────────────────────────

@@ -2,6 +2,7 @@ import 'package:beltech/core/theme/app_colors.dart';
 import 'package:beltech/core/theme/app_typography.dart';
 import 'package:beltech/core/widgets/app_button.dart';
 import 'package:beltech/core/widgets/app_card.dart';
+import 'package:beltech/core/widgets/overflow_choice_selector.dart';
 import 'package:beltech/core/widgets/super_add_sheet_models.dart';
 import 'package:flutter/material.dart';
 
@@ -235,31 +236,14 @@ class SuperAddYearSelector extends StatelessWidget {
       children: [
         Text('Birth year', style: AppTypography.sectionTitle(context)),
         const SizedBox(height: 10),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: [
-            AppButton(
-              label: 'Not set',
-              size: AppButtonSize.sm,
-              variant: selectedYear == null
-                  ? AppButtonVariant.primary
-                  : AppButtonVariant.secondary,
-              onPressed: () => onChanged(null),
-            ),
-            ...years
-                .take(10)
-                .map(
-                  (year) => AppButton(
-                    label: '$year',
-                    size: AppButtonSize.sm,
-                    variant: selectedYear == year
-                        ? AppButtonVariant.primary
-                        : AppButtonVariant.secondary,
-                    onPressed: () => onChanged(year),
-                  ),
-                ),
-          ],
+        // 11+ options — render as a compact dropdown instead of a chip wall.
+        OverflowChoiceSelector<int?>(
+          options: [null, ...years.take(10)],
+          selected: selectedYear,
+          labelFor: (year) => year == null ? 'Not set' : '$year',
+          onChanged: onChanged,
+          hint: 'Select birth year',
+          leadingIcon: Icons.cake_outlined,
         ),
       ],
     );
