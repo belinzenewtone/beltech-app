@@ -106,7 +106,7 @@ const defaultToolShortcuts = [
     label: 'Assistant',
     icon: Icons.forum_outlined,
     color: AppColors.accent,
-    shellTab: ShellTab.assistant,
+    routeName: 'more',
   ),
 ];
 

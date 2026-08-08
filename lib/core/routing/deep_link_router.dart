@@ -18,9 +18,10 @@ abstract final class DeepLinkRouter {
     '/': ShellTab.home,
     '/home': ShellTab.home,
     '/finance': ShellTab.finance,
-    '/calendar': ShellTab.calendar,
-    '/assistant': ShellTab.assistant,
-    '/profile': ShellTab.profile,
+    '/more': ShellTab.more,
+    '/calendar': ShellTab.more,
+    '/assistant': ShellTab.more,
+    '/profile': ShellTab.more,
   };
 
   /// Returns the [ShellTab] that corresponds to [route], or `null` if the

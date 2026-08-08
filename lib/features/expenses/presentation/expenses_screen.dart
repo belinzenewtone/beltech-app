@@ -2,7 +2,6 @@ import 'package:beltech/core/theme/app_motion.dart';
 import 'package:beltech/core/theme/app_spacing.dart';
 import 'package:beltech/core/widgets/app_feedback.dart';
 import 'package:beltech/core/widgets/app_toast.dart';
-import 'package:beltech/core/widgets/app_icon_pill_button.dart';
 import 'package:beltech/core/widgets/app_skeleton.dart';
 import 'package:beltech/core/widgets/error_message.dart';
 import 'package:beltech/core/widgets/page_header.dart';
@@ -12,18 +11,13 @@ import 'package:beltech/core/theme/app_typography.dart';
 import 'package:beltech/core/utils/currency_formatter.dart';
 import 'package:beltech/core/widgets/app_card.dart';
 import 'package:beltech/features/budget/presentation/providers/budget_providers.dart';
-import 'package:beltech/features/expenses/domain/entities/expense_import_review.dart';
 import 'package:beltech/features/expenses/presentation/providers/expenses_providers.dart';
 import 'package:beltech/features/income/presentation/providers/income_providers.dart';
 import 'package:beltech/features/expenses/presentation/expenses_screen_helpers.dart';
 import 'package:beltech/features/expenses/presentation/widgets/expense_dialogs.dart';
 import 'package:beltech/features/expenses/presentation/widgets/expenses_snapshot_content.dart';
-import 'package:beltech/features/expenses/presentation/widgets/fuliza_banner.dart';
-import 'package:beltech/features/expenses/presentation/widgets/import_health_banner.dart';
-import 'package:beltech/features/expenses/presentation/widgets/import_progress_banner.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 
 class ExpensesScreen extends ConsumerStatefulWidget {
   const ExpensesScreen({super.key});
@@ -159,70 +153,6 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
       const SizedBox(height: AppSpacing.screenTop),
       const PageHeader(eyebrow: 'Your Money', title: 'Finance'),
       const SizedBox(height: AppSpacing.sm),
-      const ImportProgressBanner(),
-      SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        clipBehavior: Clip.none,
-        child: Row(
-          children: [
-            AppIconPillButton(
-              icon: Icons.add_rounded,
-              label: 'Add',
-              tone: AppIconPillTone.accent,
-              onPressed: writeBusy
-                  ? null
-                  : () async {
-                      final input = await showAddExpenseDialog(context);
-                      if (input == null) return;
-                      await ref
-                          .read(expenseWriteControllerProvider.notifier)
-                          .addExpense(
-                            title: input.title,
-                            category: input.category,
-                            amountKes: input.amountKes,
-                            occurredAt: input.occurredAt,
-                          );
-                      if (context.mounted &&
-                          !ref.read(expenseWriteControllerProvider).hasError) {
-                        AppFeedback.success(
-                          context,
-                          'Transaction added',
-                          ref: ref,
-                        );
-                      }
-                    },
-            ),
-            const SizedBox(width: 8),
-            AppIconPillButton(
-              icon: Icons.hub_outlined,
-              label: 'Hub',
-              tone: AppIconPillTone.subtle,
-              onPressed: () => context.pushNamed('finance-hub'),
-            ),
-            const SizedBox(width: 8),
-            AppIconPillButton(
-              icon: Icons.sms_outlined,
-              label: 'Import SMS',
-              tone: AppIconPillTone.subtle,
-              onPressed: writeBusy
-                  ? null
-                  : () => handleExpenseSmsImport(context, ref),
-            ),
-            const SizedBox(width: 8),
-            AppIconPillButton(
-              icon: Icons.upload_file_outlined,
-              label: 'Import CSV',
-              tone: AppIconPillTone.subtle,
-              onPressed: writeBusy
-                  ? null
-                  : () => context.pushNamed('csv-import'),
-            ),
-          ],
-        ),
-      ),
-      const SizedBox(height: AppSpacing.md),
-      const FulizaBanner(),
-      const SizedBox(height: AppSpacing.md),
       _SpendingHeroCard(
         monthKes: monthKes,
         todayKes: todayKes,
@@ -365,37 +295,6 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
                 );
               },
             ),
-          ),
-          // Floating import-health banner — shown once per session, overlays
-          // content without pushing it down. Isolated Consumer keeps rebuilds
-          // scoped to just this widget.
-          Consumer(
-            builder: (context, ref, _) {
-              final dismissed =
-                  ref.watch(importHealthBannerDismissedProvider);
-              if (dismissed) return const SizedBox.shrink();
-              final metrics =
-                  ref.watch(expenseImportMetricsProvider).value ??
-                  const ExpenseImportMetrics(
-                    reviewQueueCount: 0,
-                    quarantineCount: 0,
-                    retryQueueCount: 0,
-                    failedQueueCount: 0,
-                  );
-              if (!metrics.hasIssues) return const SizedBox.shrink();
-              return Positioned(
-                top: 0,
-                left: 0,
-                right: 0,
-                child: ImportHealthBanner(
-                  metrics: metrics,
-                  onTap: () => context.pushNamed('import-health'),
-                  onDismiss: () => ref
-                      .read(importHealthBannerDismissedProvider.notifier)
-                      .state = true,
-                ),
-              );
-            },
           ),
         ],
       ),

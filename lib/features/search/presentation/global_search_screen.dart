@@ -175,9 +175,8 @@ class _GlobalSearchScreenState extends ConsumerState<GlobalSearchScreen> {
         context.pushNamed('tasks');
         return;
       case GlobalSearchKind.event:
-        ref.read(shellTabIndexProvider.notifier).state =
-            ShellTab.calendar.index;
         context.pop();
+        context.pushNamed('events');
         return;
       case GlobalSearchKind.budget:
         context.pushNamed('budget');

@@ -13,6 +13,7 @@ import 'package:beltech/features/finance_hub/presentation/finance_hub_screen.dar
 import 'package:beltech/features/insights/presentation/screens/insights_screen.dart';
 import 'package:beltech/features/income/presentation/income_screen.dart';
 import 'package:beltech/features/loans/presentation/screens/loans_screen.dart';
+import 'package:beltech/features/more/presentation/more_screen.dart';
 import 'package:beltech/features/goals/presentation/screens/goals_screen.dart';
 import 'package:beltech/features/expenses/presentation/screens/categorize_screen.dart';
 import 'package:beltech/features/expenses/presentation/screens/fee_analytics_screen.dart';
@@ -122,6 +123,11 @@ final appRouterProvider = Provider<GoRouter>(
         path: '/finance-hub',
         name: 'finance-hub',
         builder: (context, state) => const FinanceHubScreen(),
+      ),
+      GoRoute(
+        path: '/more',
+        name: 'more',
+        builder: (context, state) => const MoreScreen(),
       ),
       GoRoute(
         path: '/analytics',

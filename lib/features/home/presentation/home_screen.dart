@@ -1,3 +1,4 @@
+import 'package:beltech/core/navigation/shell_providers.dart';
 import 'package:beltech/core/feedback/app_haptics.dart';
 import 'package:beltech/core/widgets/page_header.dart';
 import 'package:beltech/core/theme/app_colors.dart';
@@ -7,11 +8,14 @@ import 'package:beltech/core/widgets/app_empty_state.dart';
 import 'package:beltech/core/widgets/app_skeleton.dart';
 import 'package:beltech/core/widgets/page_shell.dart';
 import 'package:beltech/core/widgets/stagger_reveal.dart';
+import 'package:beltech/core/widgets/app_card.dart';
+import 'package:beltech/core/utils/currency_formatter.dart';
+import 'package:beltech/core/theme/app_typography.dart';
+import 'package:beltech/features/expenses/presentation/providers/expenses_providers.dart';
+import 'package:beltech/features/expenses/presentation/widgets/expense_dialogs.dart';
 import 'package:beltech/features/home/domain/entities/home_overview.dart';
 import 'package:beltech/features/home/presentation/providers/home_providers.dart';
 import 'package:beltech/features/home/presentation/widgets/home_spending_cards.dart';
-import 'package:beltech/features/home/presentation/widgets/home_hub_card.dart';
-import 'package:beltech/features/home/presentation/widgets/home_tools_row.dart';
 import 'package:beltech/features/profile/presentation/providers/profile_providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -125,12 +129,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
 // ── Dashboard overview section ────────────────────────────────────────────────
 
-class _HomeOverviewSection extends StatelessWidget {
+class _HomeOverviewSection extends ConsumerWidget {
   const _HomeOverviewSection({required this.overview});
   final HomeOverview overview;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    // Recent transactions for instant feedback after adding
+    final snapshot = ref.watch(expensesSnapshotProvider).value;
+    final recentTxns = snapshot?.transactions.take(5).toList() ?? const [];
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -139,17 +147,104 @@ class _HomeOverviewSection extends StatelessWidget {
           child: HomeSpendSnapshotStrip(overview: overview),
         ),
         const SizedBox(height: AppSpacing.sectionGap),
+        // Quick-add row — add expense or income in one tap
         StaggerReveal(
           delay: const Duration(milliseconds: 55),
-          child: HomeHubCard(overview: overview),
+          child: Row(
+            children: [
+              Expanded(
+                child: AppButton(
+                  icon: Icons.add_rounded,
+                  label: 'Add Expense',
+                  variant: AppButtonVariant.primary,
+                  size: AppButtonSize.sm,
+                  onPressed: () async {
+                    final input = await showAddExpenseDialog(context);
+                    if (input == null || !context.mounted) return;
+                    await ref
+                        .read(expenseWriteControllerProvider.notifier)
+                        .addExpense(
+                          title: input.title,
+                          category: input.category,
+                          amountKes: input.amountKes,
+                          occurredAt: input.occurredAt,
+                        );
+                  },
+                ),
+              ),
+              const SizedBox(width: AppSpacing.sm),
+              Expanded(
+                child: AppButton(
+                  icon: Icons.attach_money_rounded,
+                  label: 'Add Income',
+                  variant: AppButtonVariant.secondary,
+                  size: AppButtonSize.sm,
+                  onPressed: () => context.pushNamed('income'),
+                ),
+              ),
+            ],
+          ),
         ),
         const SizedBox(height: AppSpacing.sectionGap),
-        const StaggerReveal(
-          delay: Duration(milliseconds: 110),
-          child: HomeToolsRow(),
-        ),
-        const SizedBox(height: AppSpacing.sectionGap),
-        SizedBox(height: AppSpacing.fabBottom(context)),
+        // Recent transactions — immediate confirmation
+        if (recentTxns.isNotEmpty) ...[
+          StaggerReveal(
+            delay: const Duration(milliseconds: 80),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text('Recent', style: AppTypography.sectionTitle(context)),
+                TextButton(
+                  onPressed: () => ref
+                      .read(shellTabIndexProvider.notifier)
+                      .state = 1, // switch to Finance
+                  child: const Text('See all'),
+                ),
+              ],
+            ),
+          ),
+          StaggerReveal(
+            delay: const Duration(milliseconds: 95),
+            child: AppCard(
+              padding: EdgeInsets.zero,
+              child: Column(
+                children: [
+                  for (var i = 0; i < recentTxns.length; i++) ...[
+                    if (i > 0) const Divider(height: 1, indent: 16, endIndent: 16),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 10,
+                      ),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              recentTxns[i].title.isNotEmpty
+                                  ? recentTxns[i].title
+                                  : 'Transaction',
+                              style: AppTypography.bodyMd(context),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            CurrencyFormatter.money(recentTxns[i].amountKes),
+                            style: AppTypography.bodyMd(context).copyWith(
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ),
+          SizedBox(height: AppSpacing.fabBottom(context)),
+        ],
       ],
     );
   }

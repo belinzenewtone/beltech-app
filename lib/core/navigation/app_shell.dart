@@ -19,11 +19,9 @@ import 'package:beltech/core/theme/app_motion.dart';
 import 'package:beltech/core/theme/app_spacing.dart';
 import 'package:beltech/core/widgets/app_toast.dart';
 import 'package:beltech/core/widgets/offline_banner.dart';
-import 'package:beltech/features/assistant/presentation/assistant_screen.dart';
-import 'package:beltech/features/calendar/presentation/calendar_screen.dart';
 import 'package:beltech/features/expenses/presentation/expenses_screen.dart';
 import 'package:beltech/features/home/presentation/home_screen.dart';
-import 'package:beltech/features/profile/presentation/profile_screen.dart';
+import 'package:beltech/features/more/presentation/more_screen.dart';
 import 'package:beltech/core/sync/background_sync_coordinator.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -36,9 +34,7 @@ class AppShell extends ConsumerStatefulWidget {
   static const List<Widget> _screens = [
     HomeScreen(),
     ExpensesScreen(),
-    CalendarScreen(),
-    AssistantScreen(),
-    ProfileScreen(),
+    MoreScreen(),
   ];
 
   static const List<AppTabItem> _tabs = [
@@ -53,19 +49,9 @@ class AppShell extends ConsumerStatefulWidget {
       selectedIcon: Icons.account_balance_wallet_rounded,
     ),
     AppTabItem(
-      label: 'Calendar',
-      icon: Icons.calendar_today_outlined,
-      selectedIcon: Icons.calendar_today_rounded,
-    ),
-    AppTabItem(
-      label: 'AI',
-      icon: Icons.auto_awesome_outlined,
-      selectedIcon: Icons.auto_awesome_rounded,
-    ),
-    AppTabItem(
-      label: 'Profile',
-      icon: Icons.person_outline_rounded,
-      selectedIcon: Icons.person_rounded,
+      label: 'More',
+      icon: Icons.menu_rounded,
+      selectedIcon: Icons.menu_rounded,
     ),
   ];
 
